@@ -4,67 +4,106 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Asisten SPMB SMK Wikrama Bogor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <!-- Tailwind versi browser: langsung jalan tanpa proses build. -->
   <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.1.11"></script>
   <style type="text/tailwindcss">
-    /* Token warna. Tailwind otomatis membuat class seperti bg-accent dan bg-paper dari sini. */
+    /* Token warna dan font. Tailwind otomatis membuat class seperti bg-accent, text-ink, dan font-mono dari sini. */
     @theme {
-      --color-accent: #ffe14d;
-      --color-paper: #f5f4ef;
+      --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --color-accent: #facc15;
+      --color-accent-strong: #eab308;
+      --color-ink: #1f1f1f;
+      --color-paper: #f7f7f8;
     }
     @layer base {
       button, label[for] { cursor: pointer; }
       button:disabled { cursor: not-allowed; }
-      :focus-visible { outline: 3px solid #000; outline-offset: 3px; }
+      :focus-visible { outline: 2px solid var(--color-ink); outline-offset: 2px; }
     }
-    /* Komponen: garis hitam tebal dan sudut siku, tanpa bayangan. */
+    /* Komponen: sudut membulat, garis abu-abu tipis, dan satu aksen kuning. */
     @layer components {
-      .panel { @apply border-3 border-black bg-white; }
-      .panel-bar { @apply flex items-center justify-between gap-2 border-b-3 border-black px-4 py-2; }
-      .btn { @apply inline-flex min-h-11 shrink-0 items-center justify-center border-2 border-black bg-white px-4 text-sm font-bold text-black hover:bg-paper active:bg-stone-200; }
-      .btn-accent { @apply bg-accent hover:bg-yellow-300 active:bg-yellow-400; }
-      .btn:disabled { @apply bg-stone-200 text-stone-600; }
-      .field-label { @apply block text-sm font-bold; }
-      .field { @apply min-h-11 w-full min-w-0 border-2 border-black bg-white px-3 text-sm placeholder:text-stone-600; }
-      .hint { @apply text-xs text-stone-700; }
-      .bubble { @apply max-w-[85%] border-2 border-black px-3 py-2; }
-      .bubble-user { @apply bg-accent; }
-      .bubble-agent { @apply bg-paper; }
+      .field-label { @apply text-sm font-semibold text-ink; }
+      .field { @apply min-h-11 w-full min-w-0 rounded-xl border border-stone-300 bg-white px-4 text-sm text-ink placeholder:text-stone-500 focus:border-ink focus:ring-2 focus:ring-accent/60 focus-visible:outline-hidden; }
+      .hint { @apply text-xs leading-relaxed text-stone-600; }
+      .meta { @apply font-mono text-[11px] text-stone-600; }
+      .kbd { @apply rounded-md border border-stone-200 bg-stone-100 px-1.5 py-0.5 font-mono text-[11px] text-stone-700; }
+      .btn { @apply inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl border border-stone-300 bg-white px-4 text-sm font-semibold text-ink hover:bg-stone-50 active:bg-stone-100 disabled:border-stone-200 disabled:bg-stone-100 disabled:text-stone-400; }
+      .btn-accent { @apply border-accent bg-accent hover:border-accent-strong hover:bg-accent-strong active:bg-accent-strong; }
+      .bubble { @apply rounded-2xl px-4 py-3 text-[15px] leading-relaxed; }
+      .bubble-user { @apply max-w-[85%] rounded-br-md bg-ink text-white; }
+      .bubble-agent { @apply max-w-[44rem] rounded-tl-md border border-stone-200 bg-white text-ink shadow-sm; }
     }
   </style>
 </head>
-<body class="min-h-screen bg-paper font-sans text-black">
-  <header class="border-b-3 border-black bg-white">
-    <div class="mx-auto max-w-6xl px-4 py-5">
-      <h1 class="font-bold text-3xl leading-none sm:text-4xl">Asisten SPMB SMK Wikrama Bogor</h1>
-      <p class="mt-2 text-sm font-medium">Isi API key, lalu uji pertanyaan calon murid atau orang tua di kolom chat.</p>
-    </div>
-  </header>
-
-  <main id="app-main" class="mx-auto grid max-w-6xl gap-6 px-4 py-6 lg:grid-cols-[22rem_minmax(0,1fr)]">
-    <section id="settings-panel" aria-labelledby="settings-title" class="panel self-start">
-      <div class="panel-bar">
-        <h2 id="settings-title" class="font-bold text-xl">Pengaturan</h2>
+<body class="bg-paper font-sans text-ink antialiased lg:h-dvh lg:overflow-hidden">
+  <div class="flex min-h-dvh flex-col lg:h-dvh">
+    <header class="grid h-16 shrink-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-4 border-b border-stone-200 bg-white px-4 sm:px-5 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
+      <div class="flex min-w-0 items-center gap-3">
+        <span class="grid size-10 shrink-0 place-items-center rounded-xl bg-ink text-white">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="size-5"><path d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z"/><path d="M22 10v6"/><path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"/></svg>
+        </span>
+        <div class="min-w-0">
+          <h1 class="truncate text-lg font-bold leading-tight">Asisten SPMB Wikrama</h1>
+          <p class="truncate text-xs text-stone-600">SMK Wikrama Bogor</p>
+        </div>
       </div>
+      <span class="hidden rounded-xl bg-stone-100 px-4 py-2 text-sm font-semibold md:inline-block">Simulasi CS</span>
+      <p class="meta hidden justify-self-end sm:block">Tingkat 1 · konteks teks</p>
+    </header>
 
-      <div class="space-y-6 p-4">
-        <div id="api-key-group">
-          <label for="api-key" class="field-label">API key Netra</label>
-          <input id="api-key" type="password" autocomplete="off" spellcheck="false"
-            placeholder="Tempel API key di sini" aria-describedby="api-key-hint" class="field mt-1">
-          <p id="api-key-hint" class="hint mt-1">Tidak disimpan di mana pun. Key hanya dikirim ke api.netra.sh dan hilang saat halaman dimuat ulang.</p>
+    <main id="app-main" class="grid flex-1 grid-cols-[minmax(0,1fr)] lg:min-h-0 lg:grid-cols-[26rem_minmax(0,1fr)] lg:grid-rows-[minmax(0,1fr)] xl:grid-cols-[28rem_minmax(0,1fr)]">
+      <aside id="settings-panel" aria-labelledby="settings-title" class="flex flex-col border-b border-stone-200 bg-white lg:min-h-0 lg:border-r lg:border-b-0">
+        <div class="flex items-center gap-3 border-b border-stone-200 px-5 py-4">
+          <span class="grid size-10 shrink-0 place-items-center rounded-xl bg-stone-100 text-stone-700">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="size-5"><line x1="21" x2="14" y1="4" y2="4"/><line x1="10" x2="3" y1="4" y2="4"/><line x1="21" x2="12" y1="12" y2="12"/><line x1="8" x2="3" y1="12" y2="12"/><line x1="21" x2="16" y1="20" y2="20"/><line x1="12" x2="3" y1="20" y2="20"/><line x1="14" x2="14" y1="2" y2="6"/><line x1="8" x2="8" y1="10" y2="14"/><line x1="16" x2="16" y1="18" y2="22"/></svg>
+          </span>
+          <div>
+            <h2 id="settings-title" class="text-lg font-bold leading-tight">Pengaturan</h2>
+            <p class="text-xs text-stone-600">Parameter simulasi asisten</p>
+          </div>
         </div>
 
-        <div id="model-group">
-          <label for="model" class="field-label">Model</label>
-          <input id="model" type="text" spellcheck="false" value="deepseek/deepseek-v4.1-flash" class="field mt-1">
-        </div>
+        <div class="flex-1 space-y-6 p-5 lg:overflow-y-auto">
+          <div id="api-key-group">
+            <div class="flex items-baseline justify-between gap-2">
+              <label for="api-key" class="field-label">API key Netra <span class="text-red-600" aria-hidden="true">*</span></label>
+              <span class="meta">Bearer</span>
+            </div>
+            <div class="mt-2 flex rounded-xl border border-stone-300 bg-white focus-within:border-ink focus-within:ring-2 focus-within:ring-accent/60">
+              <input id="api-key" type="password" autocomplete="off" spellcheck="false" aria-describedby="api-key-hint"
+                placeholder="Tempel API key di sini"
+                class="min-h-11 w-full min-w-0 rounded-l-xl bg-transparent px-4 font-mono text-sm placeholder:font-sans placeholder:text-stone-500 focus-visible:outline-hidden">
+              <button id="btn-toggle-key" type="button" aria-controls="api-key" aria-pressed="false"
+                class="inline-flex min-w-36 shrink-0 items-center justify-center gap-2 rounded-r-xl border-l border-stone-300 px-3 text-sm font-medium text-stone-700 hover:bg-stone-50">
+                <svg id="icon-eye-show" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="size-4"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg>
+                <svg id="icon-eye-hide" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="hidden size-4"><path d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49"/><path d="M14.084 14.158a3 3 0 0 1-4.242-4.242"/><path d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143"/><path d="m2 2 20 20"/></svg>
+                <span id="btn-toggle-key-label">Tampilkan</span>
+              </button>
+            </div>
+            <p id="api-key-hint" class="hint mt-2 flex items-start gap-1.5">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="mt-0.5 size-3.5 shrink-0"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              <span>Tidak disimpan di mana pun. Key hanya dikirim ke <code class="font-mono text-ink">api.netra.sh</code> dan hilang saat halaman dimuat ulang.</span>
+            </p>
+          </div>
 
-        <div id="context-text-group">
-          <label for="context-text" class="field-label">Konteks teks</label>
-          <p id="context-text-hint" class="hint mt-1">Info sekolah yang jadi bahan jawaban. Sudah terisi dari konteks-wikrama.txt dan boleh diedit.</p>
-          <textarea id="context-text" rows="12" aria-describedby="context-text-hint"
-            class="field mt-2 p-3">=== CONTEXT CHATBOT: ASISTEN INFORMASI SMK WIKRAMA BOGOR ===
+          <div id="model-group" class="border-t border-stone-200 pt-6">
+            <label for="model" class="field-label">Model</label>
+            <input id="model" type="text" spellcheck="false" value="deepseek/deepseek-v4.1-flash" aria-describedby="model-hint" class="field mt-2 font-mono">
+            <p id="model-hint" class="hint mt-2">Model bawaan tutorial. Boleh diganti dengan ID model lain yang tersedia di Netra.</p>
+          </div>
+
+          <div id="context-text-group" class="border-t border-stone-200 pt-6">
+            <div class="flex items-baseline justify-between gap-2">
+              <label for="context-text" class="field-label">Konteks teks</label>
+              <button id="btn-reset-context" type="button" class="text-sm font-semibold text-yellow-700 hover:underline disabled:text-stone-400 disabled:no-underline">Kembalikan isi awal</button>
+            </div>
+            <p id="context-text-hint" class="hint mt-1">Info sekolah yang jadi bahan jawaban. Sudah terisi dari konteks-wikrama.txt dan boleh diedit.</p>
+            <textarea id="context-text" rows="10" aria-describedby="context-text-hint"
+              class="field mt-3 min-h-48 resize-y py-3 leading-relaxed">=== CONTEXT CHATBOT: ASISTEN INFORMASI SMK WIKRAMA BOGOR ===
 
 [PERAN]
 Kamu adalah asisten virtual informasi SMK Wikrama Bogor. Tugasmu menjawab pertanyaan calon murid, orang tua/wali, dan masyarakat umum tentang pendaftaran murid baru (SPMB/PPDB), jurusan, ekstrakurikuler, keunggulan sekolah, dan info umum SMK Wikrama Bogor.
@@ -304,31 +343,77 @@ Asisten: Seru, Kak! Ada dua yang cocok:
 - PPLG, kalau Kakak pengen bikin game-nya (coding + game 2D/3D).
 - DKV, kalau Kakak lebih suka desain, ilustrasi, dan animasinya.
 Oh iya, jurusan IT biasanya cepat penuh, jadi lebih aman daftar di gelombang awal ya!</textarea>
+            <div class="meta mt-2 flex justify-between gap-2">
+              <span id="context-chars"></span>
+              <span id="context-tokens" title="Perkiraan kasar: 1 token kira-kira 4 karakter. Jumlah token asli muncul di bawah setiap jawaban."></span>
+            </div>
+          </div>
+
+          <div id="context-status" class="flex gap-3 rounded-xl border p-4"></div>
         </div>
-      </div>
-    </section>
 
-    <section id="chat-panel" aria-labelledby="chat-title" class="panel flex h-[36rem] flex-col lg:h-[calc(100dvh-10rem)] lg:min-h-[32rem]">
-      <div class="panel-bar">
-        <h2 id="chat-title" class="font-bold text-xl">Chat</h2>
-        <button id="btn-clear-chat" type="button" class="btn">Hapus percakapan</button>
-      </div>
-
-      <div id="chat-messages" class="flex-1 space-y-4 overflow-y-auto p-4"></div>
-      <p id="chat-status" role="status" aria-live="polite" class="sr-only"></p>
-
-      <form id="chat-form" class="border-t-3 border-black p-3">
-        <label for="chat-input" class="field-label">Pertanyaan calon murid</label>
-        <div class="mt-1 flex items-end gap-2">
-          <textarea id="chat-input" rows="2" aria-describedby="chat-input-hint"
-            placeholder="Contoh: Cara daftarnya gimana?"
-            class="field resize-none p-3"></textarea>
-          <button id="btn-send" type="submit" class="btn btn-accent">Kirim</button>
+        <div class="flex items-center justify-between gap-3 border-t border-stone-200 px-5 py-3">
+          <p class="flex min-w-0 items-center gap-2 text-sm font-medium">
+            <span id="connection-dot" class="size-2.5 shrink-0 rounded-full bg-stone-400"></span>
+            <span id="connection-text" class="truncate"></span>
+          </p>
+          <span class="meta shrink-0">api.netra.sh</span>
         </div>
-        <p id="chat-input-hint" class="hint mt-1">Enter untuk kirim, Shift+Enter untuk baris baru.</p>
-      </form>
-    </section>
-  </main>
+      </aside>
+
+      <section id="chat-panel" aria-labelledby="chat-title" class="flex h-[40rem] flex-col bg-paper lg:h-auto lg:min-h-0">
+        <div class="flex items-center justify-between gap-3 border-b border-stone-200 bg-white px-4 py-3 sm:px-5">
+          <div class="flex min-w-0 items-center gap-3">
+            <span class="grid size-11 shrink-0 place-items-center rounded-full bg-accent text-ink">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="size-5"><path d="M3 11h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-5Zm0 0a9 9 0 1 1 18 0m0 0v5a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3Z"/><path d="M21 16v2a4 4 0 0 1-4 4h-5"/></svg>
+            </span>
+            <div class="min-w-0">
+              <h2 id="chat-title" class="text-lg font-bold leading-tight">Chat Simulasi CS</h2>
+              <p class="truncate text-sm text-stone-600">Asisten Wikrama menjawab sesuai konteks sekolah</p>
+            </div>
+          </div>
+          <button id="btn-clear-chat" type="button" aria-label="Hapus percakapan" class="btn">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="size-4"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+            <span class="hidden sm:inline">Hapus percakapan</span>
+          </button>
+        </div>
+
+        <div id="chat-messages" class="flex-1 space-y-6 overflow-y-auto px-4 py-6 sm:px-6"></div>
+        <p id="chat-status" role="status" aria-live="polite" class="sr-only"></p>
+
+        <form id="chat-form" class="border-t border-stone-200 bg-white px-4 py-3 sm:px-5">
+          <div class="flex items-center justify-between gap-2">
+            <label for="chat-input" class="field-label flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="size-4 text-stone-600"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              Pertanyaan calon murid
+            </label>
+            <span class="hidden items-center gap-2 text-xs text-stone-600 sm:flex">Pintasan: <kbd class="kbd">Enter</kbd></span>
+          </div>
+          <div class="mt-2 flex items-end gap-2">
+            <textarea id="chat-input" rows="1" aria-describedby="chat-input-hint"
+              placeholder="Contoh: Cara daftarnya gimana?"
+              class="field max-h-40 resize-none py-3 leading-normal"></textarea>
+            <button id="btn-send" type="submit" class="btn btn-accent min-w-28">
+              <span id="btn-send-label">Kirim</span>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="size-4"><path d="M3.714 3.048a.498.498 0 0 0-.683.627l2.843 7.627a2 2 0 0 1 0 1.396l-2.842 7.627a.498.498 0 0 0 .682.627l18-8.5a.5.5 0 0 0 0-.904z"/><path d="M6 12h16"/></svg>
+            </button>
+          </div>
+          <div class="mt-2 flex flex-wrap items-center justify-between gap-2">
+            <p id="chat-input-hint" class="hint"><kbd class="kbd">Enter</kbd> untuk kirim, <kbd class="kbd">Shift+Enter</kbd> untuk baris baru.</p>
+            <span class="meta hidden sm:inline">Mode: simulasi calon murid</span>
+          </div>
+        </form>
+      </section>
+    </main>
+  </div>
+
+  <!-- Ikon yang dipakai berulang oleh JavaScript. Disalin dengan cloneNode, jadi tidak perlu innerHTML. -->
+  <template id="icon-bot"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg></template>
+  <template id="icon-chat"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></template>
+  <template id="icon-sent"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 7 17l-5-5"/><path d="m22 10-7.5 7.5L13 16"/></svg></template>
+  <template id="icon-copy"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg></template>
+  <template id="icon-ok"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg></template>
+  <template id="icon-alert"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg></template>
 
   <script>
 'use strict';
@@ -339,22 +424,37 @@ const DEFAULT_MODEL = 'deepseek/deepseek-v4.1-flash';
 // Sekitar 15 ribu token. Konteks yang lebih panjang dipotong agar permintaan tidak ditolak.
 const MAX_CONTEXT_CHARS = 60000;
 
+// Contoh pertanyaan di layar kosong. Diklik hanya mengisi kolom input, belum mengirim.
+const SAMPLE_QUESTIONS = ['Cara daftarnya gimana?', 'Ada beasiswa nggak?', 'Jurusan apa aja yang ada?'];
+
 // Semua data aplikasi ada di sini. Tampilan selalu digambar ulang dari state ini.
 const state = {
-  history: [], // { role: 'user' | 'assistant', content }
+  history: [], // { role: 'user' | 'assistant', content, time, latencyMs?, tokens? }
   isSending: false,
   error: '',
+  connection: 'idle', // hasil permintaan terakhir ke Netra: 'idle' | 'ok' | 'error'
 };
 
 const el = {
   apiKey: document.getElementById('api-key'),
+  toggleKey: document.getElementById('btn-toggle-key'),
+  toggleKeyLabel: document.getElementById('btn-toggle-key-label'),
+  eyeShow: document.getElementById('icon-eye-show'),
+  eyeHide: document.getElementById('icon-eye-hide'),
   model: document.getElementById('model'),
   contextText: document.getElementById('context-text'),
+  contextChars: document.getElementById('context-chars'),
+  contextTokens: document.getElementById('context-tokens'),
+  contextStatus: document.getElementById('context-status'),
+  resetContext: document.getElementById('btn-reset-context'),
+  connectionDot: document.getElementById('connection-dot'),
+  connectionText: document.getElementById('connection-text'),
   chatMessages: document.getElementById('chat-messages'),
   chatStatus: document.getElementById('chat-status'),
   chatForm: document.getElementById('chat-form'),
   chatInput: document.getElementById('chat-input'),
   sendButton: document.getElementById('btn-send'),
+  sendLabel: document.getElementById('btn-send-label'),
   clearButton: document.getElementById('btn-clear-chat'),
 };
 
@@ -416,31 +516,182 @@ async function askAgent(apiKey, model, messages) {
 
   const reply = data?.choices?.[0]?.message?.content?.trim();
   if (!reply) throw new Error('Model tidak mengirim jawaban. Coba kirim ulang pertanyaannya.');
-  return reply;
+  // total_tokens = system prompt + riwayat + jawaban (termasuk token berpikir). Ini yang memotong saldo.
+  return { content: reply, tokens: data?.usage?.total_tokens ?? null };
+}
+
+/* Bantuan kecil untuk membuat elemen */
+
+const numberFormat = new Intl.NumberFormat('id-ID');
+const secondsFormat = new Intl.NumberFormat('id-ID', { maximumFractionDigits: 1 });
+
+function formatTime(time) {
+  return new Date(time).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+}
+
+function formatLatency(ms) {
+  return ms < 1000 ? `${Math.round(ms)} ms` : `${secondsFormat.format(ms / 1000)} dtk`;
+}
+
+// Teks selalu dimasukkan lewat textContent, bukan innerHTML, supaya jawaban AI tidak bisa menjalankan kode (XSS).
+function make(tag, className, text) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text !== undefined) node.textContent = text;
+  return node;
+}
+
+function icon(name, className) {
+  const svg = document.getElementById(`icon-${name}`).content.firstElementChild.cloneNode(true);
+  svg.setAttribute('class', className);
+  return svg;
+}
+
+/* Panel Pengaturan */
+
+function renderContextInfo() {
+  const chars = el.contextText.value.trim().length;
+  const isTooLong = buildContext().length > MAX_CONTEXT_CHARS;
+
+  el.contextChars.textContent = `${numberFormat.format(chars)} karakter`;
+  el.contextTokens.textContent = `≈${numberFormat.format(Math.ceil(buildSystemPrompt().length / 4))} token`;
+  el.resetContext.disabled = el.contextText.value === el.contextText.defaultValue;
+
+  let tone = 'border-emerald-200 bg-emerald-50 text-emerald-900';
+  let iconName = 'ok';
+  let title = 'Konteks aktif';
+  let body = 'Asisten siap menjawab calon murid berdasarkan info di atas.';
+  if (!chars) {
+    tone = 'border-amber-200 bg-amber-50 text-amber-900';
+    iconName = 'alert';
+    title = 'Konteks kosong';
+    body = 'Asisten belum punya info sekolah, jadi akan menyarankan menghubungi CS SPMB.';
+  } else if (isTooLong) {
+    tone = 'border-amber-200 bg-amber-50 text-amber-900';
+    iconName = 'alert';
+    title = 'Konteks terlalu panjang';
+    body = `Hanya ${numberFormat.format(MAX_CONTEXT_CHARS)} karakter pertama yang dikirim ke model.`;
+  }
+
+  const text = make('div', 'text-sm');
+  text.append(make('p', 'font-semibold', title), make('p', 'mt-0.5 leading-relaxed', body));
+  el.contextStatus.className = `flex gap-3 rounded-xl border p-4 ${tone}`;
+  el.contextStatus.replaceChildren(icon(iconName, 'mt-0.5 size-5 shrink-0'), text);
+}
+
+const CONNECTION = {
+  idle: { dot: 'bg-stone-400', text: 'Belum ada permintaan ke Netra' },
+  sending: { dot: 'bg-amber-500 animate-pulse', text: 'Menghubungi Netra...' },
+  ok: { dot: 'bg-emerald-500', text: 'Netra merespons' },
+  error: { dot: 'bg-red-500', text: 'Permintaan terakhir gagal' },
+};
+
+function renderConnection() {
+  const status = CONNECTION[state.isSending ? 'sending' : state.connection];
+  el.connectionDot.className = `size-2.5 shrink-0 rounded-full ${status.dot}`;
+  el.connectionText.textContent = status.text;
 }
 
 /* Tampilan chat */
 
-// Teks selalu dimasukkan lewat textContent, bukan innerHTML, supaya jawaban AI tidak bisa menjalankan kode (XSS).
-function createBubble(role, text) {
-  const isUser = role === 'user';
-  const wrapper = document.createElement('div');
-  wrapper.className = `flex ${isUser ? 'justify-end' : 'justify-start'}`;
+function createAvatar() {
+  const avatar = make('span', 'grid size-9 shrink-0 place-items-center rounded-full bg-ink text-white');
+  avatar.append(icon('bot', 'size-[18px]'));
+  return avatar;
+}
 
-  const bubble = document.createElement('div');
-  bubble.className = isUser ? 'bubble bubble-user' : 'bubble bubble-agent';
+function createCopyButton(text) {
+  const button = make('button', 'inline-flex min-h-8 items-center gap-1 rounded-md px-1.5 hover:bg-stone-200/70 hover:text-ink');
+  button.type = 'button';
+  const label = make('span', '', 'Salin');
+  button.append(icon('copy', 'size-3.5'), label);
+  button.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      label.textContent = 'Tersalin';
+    } catch {
+      label.textContent = 'Gagal menyalin';
+    }
+    setTimeout(() => { label.textContent = 'Salin'; }, 1500);
+  });
+  return button;
+}
 
-  const label = document.createElement('p');
-  label.className = 'text-xs font-bold';
-  label.textContent = isUser ? 'Calon Murid' : 'Asisten Wikrama';
+function createBubble(message) {
+  const isUser = message.role === 'user';
+  const bubble = make('div', isUser ? 'bubble bubble-user' : 'bubble bubble-agent');
+  bubble.append(make('p', 'whitespace-pre-wrap break-words', message.content));
 
-  const body = document.createElement('p');
-  body.className = 'mt-1 whitespace-pre-wrap break-words text-sm';
-  body.textContent = text;
+  if (isUser) {
+    const wrapper = make('div', 'flex flex-col items-end');
+    const meta = make('p', 'meta mt-1.5 flex items-center gap-1', formatTime(message.time));
+    meta.append(icon('sent', 'size-3.5 text-emerald-600'));
+    wrapper.append(make('p', 'mb-1 text-xs font-semibold text-stone-600', 'Calon Murid'), bubble, meta);
+    return wrapper;
+  }
 
-  bubble.append(label, body);
-  wrapper.append(bubble);
+  const head = make('div', 'mb-1.5 flex flex-wrap items-center gap-2');
+  head.append(
+    make('p', 'text-sm font-bold', 'Asisten Wikrama'),
+    make('span', 'rounded-md bg-stone-200/70 px-1.5 py-0.5 font-mono text-[11px] text-stone-700', 'konteks teks'),
+  );
+
+  const details = [formatTime(message.time)];
+  if (message.latencyMs != null) details.push(`latensi ${formatLatency(message.latencyMs)}`);
+  if (message.tokens != null) details.push(`${numberFormat.format(message.tokens)} token`);
+  const meta = make('div', 'meta mt-1.5 flex flex-wrap items-center gap-x-2');
+  meta.append(make('span', '', details.join(' · ')), createCopyButton(message.content));
+
+  const column = make('div', 'flex min-w-0 flex-1 flex-col items-start');
+  column.append(head, bubble, meta);
+  const wrapper = make('div', 'flex items-start gap-3');
+  wrapper.append(createAvatar(), column);
   return wrapper;
+}
+
+function createEmptyState() {
+  const box = make('div', 'mx-auto mt-8 max-w-md text-center');
+  const badge = make('span', 'mx-auto grid size-14 place-items-center rounded-2xl bg-accent text-ink');
+  badge.append(icon('chat', 'size-6'));
+
+  const samples = make('div', 'mt-3 flex flex-wrap justify-center gap-2');
+  for (const question of SAMPLE_QUESTIONS) {
+    const chip = make('button', 'min-h-11 rounded-full border border-stone-300 bg-white px-4 text-sm font-medium hover:border-ink', question);
+    chip.type = 'button';
+    chip.addEventListener('click', () => {
+      el.chatInput.value = question;
+      fitChatInput();
+      el.chatInput.focus();
+    });
+    samples.append(chip);
+  }
+
+  box.append(
+    badge,
+    make('p', 'mt-4 text-lg font-bold', 'Belum ada percakapan'),
+    make('p', 'mt-1 text-sm leading-relaxed text-stone-600', 'Isi API key di panel Pengaturan, lalu kirim pertanyaan seolah-olah kamu calon murid atau orang tua.'),
+    make('p', 'meta mt-6', 'Coba tanya:'),
+    samples,
+  );
+  return box;
+}
+
+function createLoading() {
+  const bubble = make('div', 'bubble bubble-agent flex items-center gap-3');
+  const dots = make('span', 'flex gap-1');
+  for (const delay of ['[animation-delay:-0.3s]', '[animation-delay:-0.15s]', '']) {
+    dots.append(make('span', `size-1.5 animate-bounce rounded-full bg-stone-500 ${delay}`));
+  }
+  bubble.append(dots, make('span', 'text-sm text-stone-600', 'Asisten Wikrama sedang menulis jawaban...'));
+  const wrapper = make('div', 'flex items-start gap-3');
+  wrapper.append(createAvatar(), bubble);
+  return wrapper;
+}
+
+function createError(text) {
+  const box = make('div', 'flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-800');
+  box.append(icon('alert', 'mt-0.5 size-4 shrink-0'), make('p', '', text));
+  return box;
 }
 
 // Tiga keadaan layar: kosong, memuat, dan error. Semuanya dibaca dari state.
@@ -448,46 +699,34 @@ function renderMessages() {
   el.chatMessages.replaceChildren();
 
   if (state.history.length === 0 && !state.isSending && !state.error) {
-    const empty = document.createElement('div');
-    empty.className = 'mx-auto mt-6 max-w-sm border-2 border-dashed border-black p-6 text-center text-sm';
-    const title = document.createElement('p');
-    title.className = 'font-bold text-lg';
-    title.textContent = 'Belum ada percakapan';
-    const help = document.createElement('p');
-    help.className = 'mt-1';
-    help.textContent = 'Isi API key di panel Pengaturan, lalu kirim pertanyaan seolah-olah kamu calon murid atau orang tua.';
-    empty.append(title, help);
-    el.chatMessages.append(empty);
+    el.chatMessages.append(createEmptyState());
   }
-
   for (const message of state.history) {
-    el.chatMessages.append(createBubble(message.role, message.content));
+    el.chatMessages.append(createBubble(message));
   }
+  if (state.isSending) el.chatMessages.append(createLoading());
+  if (state.error) el.chatMessages.append(createError(state.error));
 
-  if (state.isSending) {
-    const loading = document.createElement('p');
-    loading.className = 'inline-block border-2 border-black bg-paper px-3 py-2 text-sm font-bold';
-    loading.textContent = 'Asisten Wikrama sedang menulis jawaban...';
-    el.chatMessages.append(loading);
-  }
-
-  if (state.error) {
-    const error = document.createElement('div');
-    error.className = 'border-2 border-black bg-red-100 p-3 text-sm font-bold';
-    error.textContent = state.error;
-    el.chatMessages.append(error);
-  }
-
-  el.chatMessages.scrollTop = el.chatMessages.scrollHeight;
+  // Scroll ke pesan terbaru setelah browser selesai menata ulang (Tailwind menambah CSS untuk class baru dulu).
+  requestAnimationFrame(() => {
+    el.chatMessages.scrollTop = el.chatMessages.scrollHeight;
+  });
   el.clearButton.disabled = state.history.length === 0 || state.isSending;
+  renderConnection();
 }
 
 function setSending(isSending) {
   state.isSending = isSending;
   el.sendButton.disabled = isSending;
-  el.sendButton.textContent = isSending ? 'Mengirim...' : 'Kirim';
+  el.sendLabel.textContent = isSending ? 'Mengirim...' : 'Kirim';
   el.chatForm.setAttribute('aria-busy', String(isSending));
   renderMessages();
+}
+
+// Kolom pertanyaan ikut memanjang saat isinya lebih dari satu baris (maksimal 160 piksel).
+function fitChatInput() {
+  el.chatInput.style.height = 'auto';
+  el.chatInput.style.height = `${Math.min(el.chatInput.scrollHeight + 2, 160)}px`;
 }
 
 async function handleSubmit(event) {
@@ -511,23 +750,32 @@ async function handleSubmit(event) {
   }
 
   state.error = '';
-  state.history.push({ role: 'user', content: question });
+  state.history.push({ role: 'user', content: question, time: Date.now() });
   el.chatInput.value = '';
+  fitChatInput();
   setSending(true);
   el.chatStatus.textContent = 'Asisten Wikrama sedang menulis jawaban.';
 
   // Riwayat chat ikut dikirim setiap kali, karena API tidak mengingat percakapan sebelumnya.
-  const messages = [{ role: 'system', content: buildSystemPrompt() }, ...state.history];
+  // Hanya role dan content yang dikirim; jam, latensi, dan token cuma untuk tampilan.
+  const messages = [
+    { role: 'system', content: buildSystemPrompt() },
+    ...state.history.map(({ role, content }) => ({ role, content })),
+  ];
+  const startedAt = performance.now();
 
   try {
-    const reply = await askAgent(apiKey, model, messages);
-    state.history.push({ role: 'assistant', content: reply });
-    el.chatStatus.textContent = `Asisten Wikrama: ${reply}`;
+    const { content, tokens } = await askAgent(apiKey, model, messages);
+    state.history.push({ role: 'assistant', content, time: Date.now(), latencyMs: performance.now() - startedAt, tokens });
+    state.connection = 'ok';
+    el.chatStatus.textContent = `Asisten Wikrama: ${content}`;
   } catch (error) {
     // Pertanyaan yang gagal dikembalikan ke kolom input supaya bisa langsung dikirim ulang.
     state.history.pop();
     el.chatInput.value = question;
+    fitChatInput();
     state.error = error.message;
+    state.connection = 'error';
     el.chatStatus.textContent = error.message;
   } finally {
     setSending(false);
@@ -546,6 +794,8 @@ el.chatInput.addEventListener('keydown', (event) => {
   }
 });
 
+el.chatInput.addEventListener('input', fitChatInput);
+
 el.clearButton.addEventListener('click', () => {
   state.history = [];
   state.error = '';
@@ -554,6 +804,24 @@ el.clearButton.addEventListener('click', () => {
   el.chatInput.focus();
 });
 
+el.toggleKey.addEventListener('click', () => {
+  const show = el.apiKey.type === 'password';
+  el.apiKey.type = show ? 'text' : 'password';
+  el.toggleKey.setAttribute('aria-pressed', String(show));
+  el.toggleKeyLabel.textContent = show ? 'Sembunyikan' : 'Tampilkan';
+  el.eyeShow.classList.toggle('hidden', show);
+  el.eyeHide.classList.toggle('hidden', !show);
+});
+
+el.contextText.addEventListener('input', renderContextInfo);
+
+el.resetContext.addEventListener('click', () => {
+  el.contextText.value = el.contextText.defaultValue;
+  renderContextInfo();
+  el.contextText.focus();
+});
+
+renderContextInfo();
 renderMessages();
   </script>
 </body>
