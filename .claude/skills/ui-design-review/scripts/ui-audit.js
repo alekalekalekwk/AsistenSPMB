@@ -1,7 +1,7 @@
-// ui-audit.js: pemeriksaan UI otomatis untuk halaman AsistenSPMB.
+// ui-audit.js: pemeriksaan UI otomatis untuk halaman Sigi.
 // Dijalankan DI HALAMAN lewat javascript_tool (bukan di Node). Isi file ini dikirim apa adanya,
 // dan nilai terakhirnya (objek hasil) dikembalikan ke Claude.
-// Ikut memeriksa isi Shadow DOM yang terbuka, misalnya widget AsistenSPMB.
+// Ikut memeriksa isi Shadow DOM yang terbuka, misalnya widget Sigi.
 (() => {
   const LIMIT = 25;
   const viewportWidth = document.documentElement.clientWidth;

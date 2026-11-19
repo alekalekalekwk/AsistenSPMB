@@ -1,7 +1,7 @@
-// Data sekolah untuk widget dan dashboard AsistenSPMB: SMK Wikrama Bogor.
+// Data sekolah untuk widget dan dashboard Sigi: SMK Wikrama Bogor.
 // Isi halaman di bawah dipecah dari konteks-wikrama.txt. Ini data bawaan; perubahan dari dashboard
 // disimpan terpisah di browser (localStorage) dan menimpa data ini.
-window.AsistenSPMB = {
+window.Sigi = {
   id: 'wikrama',
   schoolName: 'SMK Wikrama Bogor',
   // Warna widget mengikuti identitas sekolah (navy dan kuning emas Wikrama).

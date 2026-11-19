@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>SMK Wikrama Bogor · Demo AsistenSPMB</title>
+  <title>SMK Wikrama Bogor · Demo Sigi</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap" rel="stylesheet">
@@ -41,10 +41,10 @@
   <!-- Penanda demo: halaman ini contoh integrasi, bukan situs resmi sekolah. -->
   <div class="bg-slate-900 text-xs text-white">
     <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-4 gap-y-1 px-4 py-2">
-      <p><span class="font-bold text-gold">Halaman demo</span> integrasi AsistenSPMB · bukan situs resmi SMK Wikrama Bogor</p>
+      <p><span class="font-bold text-gold">Halaman demo</span> integrasi Sigi · bukan situs resmi SMK Wikrama Bogor</p>
       <span class="flex gap-4">
         <a href="dashboard.html" class="font-semibold underline underline-offset-2 hover:text-gold">Dashboard</a>
-        <a href="index.html" class="font-semibold underline underline-offset-2 hover:text-gold">Kembali ke AsistenSPMB</a>
+        <a href="index.html" class="font-semibold underline underline-offset-2 hover:text-gold">Kembali ke Sigi</a>
       </span>
     </div>
   </div>
@@ -452,11 +452,11 @@
   <footer class="bg-slate-950 text-sm text-white/70">
     <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-6">
       <p><span class="font-bold text-white">SMK Wikrama Bogor</span> · Yayasan Wikrama Indonesia · NPSN 20220299</p>
-      <p>Halaman demo AsistenSPMB, bukan situs resmi. Situs resmi: <a href="https://smkwikrama.sch.id" target="_blank" rel="noopener" class="font-semibold text-white underline underline-offset-2 hover:text-gold">smkwikrama.sch.id</a></p>
+      <p>Halaman demo Sigi, bukan situs resmi. Situs resmi: <a href="https://smkwikrama.sch.id" target="_blank" rel="noopener" class="font-semibold text-white underline underline-offset-2 hover:text-gold">smkwikrama.sch.id</a></p>
     </div>
   </footer>
 
-  <!-- Integrasi AsistenSPMB: dua baris ini saja yang ditempel di website sekolah. -->
+  <!-- Integrasi Sigi: dua baris ini saja yang ditempel di website sekolah. -->
   <script src="sekolah/wikrama.js"></script>
   <script src="widget.js" defer></script>
   <script>
@@ -496,7 +496,7 @@
     // Tombol "Tanya Asisten SPMB" membuka widget; tombol pertanyaan contoh langsung mengirim pertanyaannya.
     // Kalau API key belum diisi, widget menyimpan pertanyaannya di kolom input dan meminta key dulu.
     document.addEventListener('click', (event) => {
-      const widget = window.AsistenSPMBWidget;
+      const widget = window.SigiWidget;
       if (!widget) return;
       const ask = event.target.closest('[data-ask]');
       if (ask) widget.ask(ask.dataset.ask);

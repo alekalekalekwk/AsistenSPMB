@@ -1,9 +1,9 @@
 ---
 name: ui-design-review
-description: Review tampilan (UI) halaman AsistenSPMB, yaitu website index.html, dashboard.html, halaman sekolah demo-wikrama.html, playground.html, dan widget chat widget.js. Mengecek layout desktop dan HP 375px, scroll ke samping, kontras warna, konsistensi brand (teal-limau AsistenSPMB vs warna sekolah), keadaan kosong/memuat/error, aksesibilitas, dan kejujuran copy (klaim fitur, harga, label demo), dan ciri "AI slop" (emoji, label di atas judul, kartu seragam, animasi berulang, kata-kata kosong). Pakai skill ini setiap kali user minta review, audit, cek, atau kritik UI/desain/tampilan ("rapi nggak?", "cek di HP", "udah bagus belum?"), sebelum demo ke investor atau sekolah, setelah mengubah HTML, class Tailwind, atau CSS widget, atau saat user kirim screenshot dan nanya tampilannya, walaupun user tidak menyebut kata "design review".
+description: Review tampilan (UI) halaman Sigi, yaitu website index.html, dashboard.html, halaman sekolah demo-wikrama.html, playground.html, dan widget chat widget.js. Mengecek layout desktop dan HP 375px, scroll ke samping, kontras warna, konsistensi brand (teal-limau Sigi vs warna sekolah), keadaan kosong/memuat/error, aksesibilitas, dan kejujuran copy (klaim fitur, harga, label demo), dan ciri "AI slop" (emoji, label di atas judul, kartu seragam, animasi berulang, kata-kata kosong). Pakai skill ini setiap kali user minta review, audit, cek, atau kritik UI/desain/tampilan ("rapi nggak?", "cek di HP", "udah bagus belum?"), sebelum demo ke investor atau sekolah, setelah mengubah HTML, class Tailwind, atau CSS widget, atau saat user kirim screenshot dan nanya tampilannya, walaupun user tidak menyebut kata "design review".
 ---
 
-# UI design review AsistenSPMB
+# UI design review Sigi
 
 Tujuannya laporan temuan desain yang bisa langsung ditindaklanjuti, berdasarkan bukti (angka pengukuran dan screenshot), bukan selera. Proyek ini dipakai untuk demo ke investor dan sekolah, jadi tampilan yang rusak di HP atau klaim yang tidak benar lebih mahal akibatnya daripada soal estetika kecil.
 
@@ -13,8 +13,8 @@ Selama review, jangan mengubah file. Tulis temuannya, lalu tawarkan perbaikan di
 
 | File | Isi | Warna |
 |---|---|---|
-| `index.html` | Website jualan AsistenSPMB | Brand AsistenSPMB: teal `#0f766e`, deep `#042f2e`, limau `#bef264`, mint `#ccfbf1` |
-| `dashboard.html` | Dashboard sekolah bergaya catatan (Notion-like) | Netral, aksen teal AsistenSPMB |
+| `index.html` | Website jualan Sigi | Brand Sigi: teal `#0f766e`, deep `#042f2e`, limau `#bef264`, mint `#ccfbf1` |
+| `dashboard.html` | Dashboard sekolah bergaya catatan (Notion-like) | Netral, aksen teal Sigi |
 | `demo-wikrama.html` | Contoh website sekolah + widget | Wikrama: navy `#001e42`, emas `#e3ce0f`, royal `#223987` |
 | `playground.html` | Alat uji jawaban untuk tim/admin sekolah | Wikrama navy-emas |
 | `widget.js` + `sekolah/*.js` | Tombol dan jendela chat di Shadow DOM | Dari `colors` di file sekolah |
@@ -50,7 +50,7 @@ Pengecualian yang disengaja: contoh percakapan di hero `index.html` memakai warn
    - desktop: `resize_window` preset `desktop`
    - HP: preset `mobile` (375x812), lalu muat ulang halaman supaya layout dihitung ulang
 
-   Untuk widget, buka dulu dengan `window.AsistenSPMBWidget.open()` di `demo-wikrama.html`, lalu jalankan skripnya lagi. Skrip ikut memeriksa isi Shadow DOM.
+   Untuk widget, buka dulu dengan `window.SigiWidget.open()` di `demo-wikrama.html`, lalu jalankan skripnya lagi. Skrip ikut memeriksa isi Shadow DOM.
 
 3. **Pemeriksaan visual.** Screenshot tiap halaman per bagian. Untuk pindah ke tiap bagian, pakai `window.scrollTo({ top, behavior: 'instant' })`, bukan `scrollIntoView` biasa. Website memakai `scroll-behavior: smooth`, jadi scroll lewat skrip berjalan sebagai animasi, dan animasi itu tertahan selama panel browser tersembunyi. Akibatnya `scrollY` tetap 0 dan halaman terlihat seperti tidak bisa di-scroll, padahal pengunjung tidak mengalaminya. Kalau `tabs_context` bilang panel tersembunyi, screenshot juga bisa tertinggal satu langkah. Beri jeda 1–2 detik dan ambil ulang sebelum menyimpulkan ada yang salah.
 
