@@ -9,18 +9,31 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.1.11"></script>
   <style type="text/tailwindcss">
-    /* Halaman contoh website sekolah. Palet SMK Wikrama: navy dan kuning emas. */
+    /* Halaman contoh website sekolah. Palet SMK Wikrama: navy dan kuning emas.
+       Semua isi diambil dari konteks-wikrama.txt (data SPMB yang juga dipakai chatbot). */
     @theme {
       --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
       --color-navy: #001e42;
       --color-navy-700: #002c62;
       --color-royal: #223987;
+      /* Warna batang grafik: biru Wikrama yang sedikit lebih terang, supaya lolos pemeriksaan
+         rentang terang-gelap untuk grafik (validator skill dataviz). */
+      --color-chart: #3352b0;
       --color-gold: #e3ce0f;
       --color-cloud: #f3f6fa;
     }
     @layer base {
       html { scroll-behavior: smooth; }
       :focus-visible { outline: 2px solid var(--color-royal); outline-offset: 2px; }
+      [id] { scroll-margin-top: 5rem; }
+    }
+    @layer components {
+      .wk-h2 { @apply text-balance text-3xl font-bold tracking-tight text-navy sm:text-4xl; }
+      .wk-lead { @apply text-pretty text-lg leading-relaxed text-slate-600; }
+      .wk-btn-gold { @apply inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-gold px-6 font-bold text-navy hover:brightness-95; }
+      .wk-btn-line { @apply inline-flex min-h-12 items-center justify-center gap-2 rounded-full px-6 font-bold ring-1 hover:bg-white/10; }
+      /* Pertanyaan contoh yang langsung dikirim ke Asisten SPMB. */
+      .wk-ask { @apply inline-flex min-h-11 items-center rounded-full border px-4 text-left text-sm font-medium; }
     }
   </style>
 </head>
@@ -37,8 +50,8 @@
   </div>
 
   <header class="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur">
-    <div class="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4">
-      <a href="#beranda" class="flex min-w-0 items-center gap-3">
+    <div class="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-4">
+      <a href="#beranda" class="flex min-w-0 items-center gap-2.5 sm:gap-3">
         <span class="grid size-10 shrink-0 place-items-center rounded-full bg-navy text-gold">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="size-5"><path d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z"/><path d="M22 10v6"/><path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"/></svg>
         </span>
@@ -48,147 +61,389 @@
           <span class="hidden truncate text-xs text-slate-600 sm:block">Yayasan Wikrama Indonesia</span>
         </span>
       </a>
-      <nav aria-label="Menu utama" class="hidden items-center gap-6 text-sm font-medium text-slate-700 md:flex">
-        <a href="#profil" class="hover:text-navy">Profil</a>
-        <a href="#jurusan" class="hover:text-navy">Jurusan</a>
-        <a href="#spmb" class="hover:text-navy">SPMB</a>
-        <a href="#ekskul" class="hover:text-navy">Ekskul</a>
-        <a href="#kontak" class="hover:text-navy">Kontak</a>
+      <nav aria-label="Menu utama" class="hidden items-center gap-1 text-sm font-medium text-slate-700 lg:flex">
+        <a href="#jurusan" class="rounded-full px-3 py-2 hover:bg-cloud hover:text-navy">Jurusan</a>
+        <a href="#keunggulan" class="rounded-full px-3 py-2 hover:bg-cloud hover:text-navy">Keunggulan</a>
+        <a href="#spmb" class="rounded-full px-3 py-2 hover:bg-cloud hover:text-navy">SPMB</a>
+        <a href="#ekskul" class="rounded-full px-3 py-2 hover:bg-cloud hover:text-navy">Ekskul</a>
+        <a href="#kontak" class="rounded-full px-3 py-2 hover:bg-cloud hover:text-navy">Kontak</a>
       </nav>
-      <a href="https://spmb.smkwikrama.sch.id/register" target="_blank" rel="noopener"
-        class="inline-flex min-h-11 shrink-0 items-center whitespace-nowrap rounded-full bg-gold px-4 text-sm font-bold text-navy hover:brightness-95 sm:px-5">Daftar SPMB</a>
+      <div class="flex shrink-0 items-center gap-1">
+        <a href="https://spmb.smkwikrama.sch.id/register" target="_blank" rel="noopener"
+          class="inline-flex min-h-11 items-center whitespace-nowrap rounded-full bg-gold px-4 text-sm font-bold text-navy hover:brightness-95 sm:px-5">Daftar<span class="hidden sm:inline">&nbsp;SPMB</span></a>
+        <!-- Menu HP. Skrip di akhir halaman menutupnya setelah tautan diklik, klik di luar, atau Esc. -->
+        <details id="menu-hp" class="relative lg:hidden">
+          <summary aria-label="Menu" class="grid size-11 cursor-pointer list-none place-items-center rounded-full text-navy hover:bg-cloud [&::-webkit-details-marker]:hidden">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="size-5"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/></svg>
+          </summary>
+          <nav aria-label="Menu utama di HP" class="absolute right-0 top-full mt-2 w-56 rounded-2xl border border-slate-200 bg-white p-2 text-[15px] font-medium text-slate-700 shadow-lg">
+            <a href="#jurusan" class="flex min-h-11 items-center rounded-xl px-3 hover:bg-cloud">Jurusan</a>
+            <a href="#keunggulan" class="flex min-h-11 items-center rounded-xl px-3 hover:bg-cloud">Keunggulan</a>
+            <a href="#spmb" class="flex min-h-11 items-center rounded-xl px-3 hover:bg-cloud">SPMB</a>
+            <a href="#ekskul" class="flex min-h-11 items-center rounded-xl px-3 hover:bg-cloud">Ekskul</a>
+            <a href="#kontak" class="flex min-h-11 items-center rounded-xl px-3 hover:bg-cloud">Kontak</a>
+          </nav>
+        </details>
+      </div>
     </div>
   </header>
 
   <main>
+    <!-- Beranda: ajakan daftar di kiri, ringkasan SPMB yang paling sering ditanyakan di kanan. -->
     <section id="beranda" class="bg-navy text-white">
-      <div class="mx-auto grid max-w-6xl gap-10 px-4 py-16 md:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] md:items-center md:py-24">
+      <div class="mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)] gap-10 px-4 py-14 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)] lg:items-center lg:py-24">
         <div>
-          <h1 class="text-balance text-4xl font-bold leading-tight sm:text-5xl">Siap jadi bagian dari SMK Wikrama Bogor?</h1>
-          <p class="mt-5 max-w-xl text-pretty text-lg text-white/80"><span class="font-semibold text-gold">Pendaftaran SPMB Tahun Ajaran 2027–2028 sudah dibuka.</span> Sekolah swasta terakreditasi A di Bogor Timur dengan 7 jurusan di bidang Teknologi Informasi, Bisnis Manajemen, dan Pariwisata.</p>
-          <div class="mt-8 flex flex-wrap gap-3">
-            <a href="https://spmb.smkwikrama.sch.id/register" target="_blank" rel="noopener"
-              class="inline-flex min-h-12 items-center rounded-full bg-gold px-6 font-bold text-navy hover:brightness-95">Daftar sekarang</a>
-            <button type="button" data-open-asisten
-              class="inline-flex min-h-12 items-center gap-2 rounded-full px-6 font-bold text-white ring-1 ring-white/40 hover:bg-white/10">
+          <h1 class="text-balance text-4xl font-bold leading-tight tracking-tight sm:text-5xl lg:text-6xl">Siap jadi bagian dari SMK Wikrama Bogor?</h1>
+          <p class="mt-5 max-w-xl text-pretty text-lg leading-relaxed text-white/80"><span class="font-bold text-gold">Pendaftaran SPMB Tahun Ajaran <span class="whitespace-nowrap">2027–2028</span> sudah dibuka.</span> Sekolah swasta terakreditasi A di Bogor Timur, dengan 7 jurusan di bidang Teknologi Informasi, Bisnis Manajemen, dan Pariwisata.</p>
+          <div class="mt-8 flex flex-col gap-3 sm:flex-row">
+            <a href="https://spmb.smkwikrama.sch.id/register" target="_blank" rel="noopener" class="wk-btn-gold">Daftar sekarang</a>
+            <button type="button" data-open-asisten class="wk-btn-line text-white ring-white/40">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="size-5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
               Tanya Asisten SPMB
             </button>
           </div>
         </div>
-        <div class="rounded-3xl bg-white/5 p-6 ring-1 ring-white/10">
-          <h2 class="text-lg font-bold text-gold">Kenapa Wikrama?</h2>
-          <ul class="mt-2 divide-y divide-white/10 text-white/85">
-            <li class="py-3">SMK Pusat Keunggulan dari Kemendikbudristek sejak 2021</li>
-            <li class="py-3">Sekolah percontohan SMK PK Cyber Security, dengan Lab Security Operation Center</li>
-            <li class="py-3">Sekolah Adiwiyata Mandiri tingkat nasional sejak 2012</li>
-            <li class="py-3">Teaching Factory, plus hotel dan kafe sendiri untuk praktik siswa</li>
-          </ul>
+
+        <div class="rounded-3xl bg-white p-6 text-slate-800 sm:p-8">
+          <h2 class="text-lg font-bold text-navy">SPMB 2027–2028 secara singkat</h2>
+          <dl class="mt-4 divide-y divide-slate-200 text-[15px]">
+            <div class="grid gap-1 py-3 sm:grid-cols-[7rem_minmax(0,1fr)] sm:gap-4">
+              <dt class="font-bold text-navy">Cara daftar</dt>
+              <dd>Online di spmb.smkwikrama.sch.id, atau datang langsung ke sekolah.</dd>
+            </div>
+            <div class="grid gap-1 py-3 sm:grid-cols-[7rem_minmax(0,1fr)] sm:gap-4">
+              <dt class="font-bold text-navy">Gelombang</dt>
+              <dd>Dibagi beberapa gelombang. Makin awal daftar, biasanya makin hemat.</dd>
+            </div>
+            <div class="grid gap-1 py-3 sm:grid-cols-[7rem_minmax(0,1fr)] sm:gap-4">
+              <dt class="font-bold text-navy">Kuota</dt>
+              <dd>Jurusan IT (PPLG, TJKT, DKV) biasanya paling cepat penuh.</dd>
+            </div>
+            <div class="grid gap-1 py-3 sm:grid-cols-[7rem_minmax(0,1fr)] sm:gap-4">
+              <dt class="font-bold text-navy">Hotline</dt>
+              <dd class="whitespace-nowrap">0251-8242411</dd>
+            </div>
+          </dl>
+          <p class="mt-5 text-sm font-bold text-navy">Coba tanya Asisten SPMB</p>
+          <div class="mt-2 flex flex-wrap gap-2">
+            <button type="button" data-ask="Cara daftarnya gimana?" class="wk-ask border-slate-300 text-navy hover:bg-cloud">Cara daftarnya gimana?</button>
+            <button type="button" data-ask="Biaya masuknya berapa?" class="wk-ask border-slate-300 text-navy hover:bg-cloud">Biaya masuknya berapa?</button>
+          </div>
         </div>
       </div>
     </section>
 
-    <section id="profil" class="border-b border-slate-200 bg-cloud">
-      <dl class="mx-auto grid max-w-6xl grid-cols-2 gap-px px-4 py-10 text-center md:grid-cols-4">
-        <div class="p-4"><dt class="text-sm text-slate-600">Akreditasi</dt><dd class="mt-1 text-3xl font-bold text-navy">A</dd></div>
-        <div class="p-4"><dt class="text-sm text-slate-600">Jurusan</dt><dd class="mt-1 text-3xl font-bold text-navy">7</dd></div>
-        <div class="p-4"><dt class="text-sm text-slate-600">Bidang keahlian</dt><dd class="mt-1 text-3xl font-bold text-navy">3</dd></div>
-        <div class="p-4"><dt class="text-sm text-slate-600">Kurikulum</dt><dd class="mt-1 text-xl font-bold text-navy sm:text-3xl">Merdeka</dd></div>
+    <!-- Fakta singkat: semua angka dari data sekolah. -->
+    <section aria-label="Fakta singkat" class="border-b border-slate-200">
+      <dl class="mx-auto grid max-w-6xl grid-cols-2 gap-x-6 gap-y-8 px-4 py-10 lg:grid-cols-4">
+        <!-- dt harus sebelum dd di HTML; flex-col-reverse menampilkan angkanya di atas. -->
+        <div class="flex flex-col-reverse justify-end">
+          <dt class="mt-1 text-sm text-slate-600">Akreditasi sekolah</dt>
+          <dd class="text-3xl font-bold text-navy">A</dd>
+        </div>
+        <div class="flex flex-col-reverse justify-end">
+          <dt class="mt-1 text-sm text-slate-600">di 3 bidang keahlian</dt>
+          <dd class="text-3xl font-bold text-navy">7 jurusan</dd>
+        </div>
+        <div class="flex flex-col-reverse justify-end">
+          <dt class="mt-1 text-sm text-slate-600">murid baru diterima di TA 2024/2025</dt>
+          <dd class="text-3xl font-bold text-navy">648</dd>
+        </div>
+        <div class="flex flex-col-reverse justify-end">
+          <dt class="mt-1 text-sm text-slate-600">SMK Pusat Keunggulan dari Kemendikbudristek</dt>
+          <dd class="text-3xl font-bold text-navy">Sejak 2021</dd>
+        </div>
       </dl>
     </section>
 
-    <section id="jurusan" class="mx-auto max-w-6xl px-4 py-16">
-      <h2 class="text-3xl font-bold text-navy">7 jurusan, 3 bidang keahlian</h2>
-      <div class="mt-10 grid gap-8 lg:grid-cols-3">
-        <div>
-          <h3 class="font-bold text-slate-900">Teknologi Informasi</h3>
-          <ul class="mt-4 space-y-3">
-            <li class="rounded-2xl border border-slate-200 p-4"><p class="font-bold text-navy">PPLG</p><p class="text-sm font-medium">Pengembangan Perangkat Lunak dan Gim</p><p class="mt-1 text-sm text-slate-600">Aplikasi web dan mobile, game 2D/3D, database, dan pemanfaatan AI.</p></li>
-            <li class="rounded-2xl border border-slate-200 p-4"><p class="font-bold text-navy">TJKT</p><p class="text-sm font-medium">Teknik Jaringan Komputer dan Telekomunikasi</p><p class="mt-1 text-sm text-slate-600">Jaringan, administrasi sistem, dan keamanan jaringan. Ada sertifikasi CNAP dan MCNA.</p></li>
-            <li class="rounded-2xl border border-slate-200 p-4"><p class="font-bold text-navy">DKV</p><p class="text-sm font-medium">Desain Komunikasi Visual</p><p class="mt-1 text-sm text-slate-600">Desain grafis, fotografi, videografi, animasi, dan branding.</p></li>
-          </ul>
+    <!-- Jurusan: dikelompokkan per bidang, tiap jurusan satu baris (bukan kartu), dengan arah karier. -->
+    <section id="jurusan" class="mx-auto max-w-6xl px-4 py-20">
+      <div class="flex flex-wrap items-end justify-between gap-6">
+        <div class="max-w-2xl">
+          <h2 class="wk-h2">7 jurusan, 3 bidang keahlian</h2>
+          <p class="wk-lead mt-3">Pilih sesuai minat. Kalau masih bingung, ceritakan hobimu ke Asisten SPMB dan minta saran jurusan.</p>
         </div>
-        <div>
-          <h3 class="font-bold text-slate-900">Bisnis Manajemen</h3>
-          <ul class="mt-4 space-y-3">
-            <li class="rounded-2xl border border-slate-200 p-4"><p class="font-bold text-navy">PMN</p><p class="text-sm font-medium">Pemasaran</p><p class="mt-1 text-sm text-slate-600">Sales, promosi digital, pembuatan konten, dan affiliate marketing.</p></li>
-            <li class="rounded-2xl border border-slate-200 p-4"><p class="font-bold text-navy">MPLB</p><p class="text-sm font-medium">Manajemen Perkantoran dan Layanan Bisnis</p><p class="mt-1 text-sm text-slate-600">Administrasi perkantoran, layanan bisnis, dan aplikasi perkantoran digital.</p></li>
-          </ul>
+        <button type="button" data-ask="Aku masih bingung pilih jurusan. Bisa bantu?" class="wk-ask border-navy font-bold text-navy hover:bg-cloud">Bantu pilih jurusan</button>
+      </div>
+
+      <div class="mt-12 space-y-12">
+        <div class="grid grid-cols-[minmax(0,1fr)] gap-4 border-t-2 border-navy pt-6 lg:grid-cols-[14rem_minmax(0,1fr)] lg:gap-10">
+          <div>
+            <h3 class="text-xl font-bold text-navy">Teknologi Informasi</h3>
+            <p class="mt-1 text-sm text-slate-600">3 jurusan · biasanya paling cepat penuh</p>
+          </div>
+          <dl class="divide-y divide-slate-200">
+            <div class="grid gap-2 py-5 first:pt-0 md:grid-cols-[5rem_minmax(0,1fr)_minmax(0,1fr)] md:gap-6">
+              <dt class="text-2xl font-bold text-royal">PPLG</dt>
+              <dd><p class="font-bold text-slate-900">Pengembangan Perangkat Lunak dan Gim</p><p class="mt-1 text-slate-600">Aplikasi web dan mobile, game 2D/3D, database, dan pemanfaatan AI, lewat proyek.</p></dd>
+              <dd class="text-sm text-slate-600"><span class="font-bold text-slate-800">Cocok kalau</span> suka coding atau bikin game.<br><span class="font-bold text-slate-800">Karier:</span> fullstack, mobile, atau game developer, QA, UI/UX designer.</dd>
+            </div>
+            <div class="grid gap-2 py-5 md:grid-cols-[5rem_minmax(0,1fr)_minmax(0,1fr)] md:gap-6">
+              <dt class="text-2xl font-bold text-royal">TJKT</dt>
+              <dd><p class="font-bold text-slate-900">Teknik Jaringan Komputer dan Telekomunikasi</p><p class="mt-1 text-slate-600">Jaringan, administrasi sistem, dan keamanan jaringan, dengan sertifikasi CNAP dan MCNA serta lab SOC.</p></dd>
+              <dd class="text-sm text-slate-600"><span class="font-bold text-slate-800">Cocok kalau</span> suka utak-atik jaringan dan keamanan siber.<br><span class="font-bold text-slate-800">Karier:</span> IT support, network and security engineer, NOC, SOC.</dd>
+            </div>
+            <div class="grid gap-2 py-5 md:grid-cols-[5rem_minmax(0,1fr)_minmax(0,1fr)] md:gap-6">
+              <dt class="text-2xl font-bold text-royal">DKV</dt>
+              <dd><p class="font-bold text-slate-900">Desain Komunikasi Visual</p><p class="mt-1 text-slate-600">Desain grafis, fotografi, videografi, animasi, branding, dan pemanfaatan AI.</p></dd>
+              <dd class="text-sm text-slate-600"><span class="font-bold text-slate-800">Cocok kalau</span> suka gambar, desain, atau video.<br><span class="font-bold text-slate-800">Karier:</span> periklanan, production house, TV dan radio, industri kreatif, freelancer.</dd>
+            </div>
+          </dl>
         </div>
-        <div>
-          <h3 class="font-bold text-slate-900">Pariwisata</h3>
-          <ul class="mt-4 space-y-3">
-            <li class="rounded-2xl border border-slate-200 p-4"><p class="font-bold text-navy">KLN</p><p class="text-sm font-medium">Kuliner</p><p class="mt-1 text-sm text-slate-600">Tata boga berstandar industri untuk hotel, restoran, bakery, dan katering.</p></li>
-            <li class="rounded-2xl border border-slate-200 p-4"><p class="font-bold text-navy">HTL</p><p class="text-sm font-medium">Perhotelan</p><p class="mt-1 text-sm text-slate-600">Front office, housekeeping, F&amp;B service, plus bahasa Jepang dan Inggris.</p></li>
-          </ul>
+
+        <div class="grid grid-cols-[minmax(0,1fr)] gap-4 border-t-2 border-navy pt-6 lg:grid-cols-[14rem_minmax(0,1fr)] lg:gap-10">
+          <div>
+            <h3 class="text-xl font-bold text-navy">Bisnis Manajemen</h3>
+            <p class="mt-1 text-sm text-slate-600">2 jurusan</p>
+          </div>
+          <dl class="divide-y divide-slate-200">
+            <div class="grid gap-2 py-5 first:pt-0 md:grid-cols-[5rem_minmax(0,1fr)_minmax(0,1fr)] md:gap-6">
+              <dt class="text-2xl font-bold text-royal">PMN</dt>
+              <dd><p class="font-bold text-slate-900">Pemasaran</p><p class="mt-1 text-slate-600">Komunikasi, sales, promosi digital, membuat dan mengedit konten, serta affiliate marketing.</p></dd>
+              <dd class="text-sm text-slate-600"><span class="font-bold text-slate-800">Cocok kalau</span> suka jualan atau bikin konten.<br><span class="font-bold text-slate-800">Karier:</span> digital marketer, host live selling, social media marketing, sales.</dd>
+            </div>
+            <div class="grid gap-2 py-5 md:grid-cols-[5rem_minmax(0,1fr)_minmax(0,1fr)] md:gap-6">
+              <dt class="text-2xl font-bold text-royal">MPLB</dt>
+              <dd><p class="font-bold text-slate-900">Manajemen Perkantoran dan Layanan Bisnis</p><p class="mt-1 text-slate-600">Administrasi perkantoran, layanan bisnis, aplikasi perkantoran digital, dan otomasi.</p></dd>
+              <dd class="text-sm text-slate-600"><span class="font-bold text-slate-800">Cocok kalau</span> rapi dan suka administrasi.<br><span class="font-bold text-slate-800">Karier:</span> office administrator, sekretaris, admin, customer service.</dd>
+            </div>
+          </dl>
+        </div>
+
+        <div class="grid grid-cols-[minmax(0,1fr)] gap-4 border-t-2 border-navy pt-6 lg:grid-cols-[14rem_minmax(0,1fr)] lg:gap-10">
+          <div>
+            <h3 class="text-xl font-bold text-navy">Pariwisata</h3>
+            <p class="mt-1 text-sm text-slate-600">2 jurusan · praktik di hotel dan kafe sekolah</p>
+          </div>
+          <dl class="divide-y divide-slate-200">
+            <div class="grid gap-2 py-5 first:pt-0 md:grid-cols-[5rem_minmax(0,1fr)_minmax(0,1fr)] md:gap-6">
+              <dt class="text-2xl font-bold text-royal">KLN</dt>
+              <dd><p class="font-bold text-slate-900">Kuliner</p><p class="mt-1 text-slate-600">Tata boga berstandar industri.</p></dd>
+              <dd class="text-sm text-slate-600"><span class="font-bold text-slate-800">Cocok kalau</span> suka masak.<br><span class="font-bold text-slate-800">Karier:</span> hotel, restoran, bakery, katering, termasuk di luar negeri, atau buka usaha sendiri.</dd>
+            </div>
+            <div class="grid gap-2 py-5 md:grid-cols-[5rem_minmax(0,1fr)_minmax(0,1fr)] md:gap-6">
+              <dt class="text-2xl font-bold text-royal">HTL</dt>
+              <dd><p class="font-bold text-slate-900">Perhotelan</p><p class="mt-1 text-slate-600">Front office, housekeeping, F&amp;B service, laundry, dan banquet, plus bahasa Jepang dan Inggris.</p></dd>
+              <dd class="text-sm text-slate-600"><span class="font-bold text-slate-800">Cocok kalau</span> suka melayani orang dan belajar bahasa asing.<br><span class="font-bold text-slate-800">Karier:</span> berbagai departemen hotel.</dd>
+            </div>
+          </dl>
         </div>
       </div>
     </section>
 
-    <section id="spmb" class="bg-cloud">
-      <div class="mx-auto max-w-6xl px-4 py-16">
-        <h2 class="text-3xl font-bold text-navy">Alur pendaftaran SPMB 2027–2028</h2>
-        <ol class="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <li class="rounded-2xl bg-white p-5 shadow-sm"><span class="text-sm font-bold text-royal">01</span><p class="mt-2 font-semibold">Daftar online di spmb.smkwikrama.sch.id atau datang langsung ke sekolah</p></li>
-          <li class="rounded-2xl bg-white p-5 shadow-sm"><span class="text-sm font-bold text-royal">02</span><p class="mt-2 font-semibold">Bayar biaya seleksi</p></li>
-          <li class="rounded-2xl bg-white p-5 shadow-sm"><span class="text-sm font-bold text-royal">03</span><p class="mt-2 font-semibold">Isi data diri</p></li>
-          <li class="rounded-2xl bg-white p-5 shadow-sm"><span class="text-sm font-bold text-royal">04</span><p class="mt-2 font-semibold">Isi minat bidang keahlian</p></li>
-          <li class="rounded-2xl bg-white p-5 shadow-sm"><span class="text-sm font-bold text-royal">05</span><p class="mt-2 font-semibold">Isi pernyataan keuangan</p></li>
-          <li class="rounded-2xl bg-white p-5 shadow-sm"><span class="text-sm font-bold text-royal">06</span><p class="mt-2 font-semibold">Ikut wawancara, bawa berkas persyaratan</p></li>
-          <li class="rounded-2xl bg-white p-5 shadow-sm"><span class="text-sm font-bold text-royal">07</span><p class="mt-2 font-semibold">Daftar ulang</p></li>
-          <li class="rounded-2xl bg-white p-5 shadow-sm"><span class="text-sm font-bold text-royal">08</span><p class="mt-2 font-semibold">Selesai</p></li>
+    <!-- Keunggulan: tonggak bertahun di kiri, program dan mitra industri di kanan. -->
+    <section id="keunggulan" class="bg-cloud">
+      <div class="mx-auto max-w-6xl px-4 py-20">
+        <h2 class="wk-h2 max-w-2xl">Kenapa Wikrama?</h2>
+        <div class="mt-10 grid grid-cols-[minmax(0,1fr)] gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-16">
+          <div>
+            <h3 class="font-bold text-navy">Tonggak sekolah</h3>
+            <ol class="mt-4 border-l-2 border-navy/20">
+              <li class="relative pb-7 pl-6">
+                <span aria-hidden="true" class="absolute -left-[7px] top-2 size-3 rounded-full bg-navy"></span>
+                <p class="text-2xl font-bold text-navy">2012</p>
+                <p class="mt-1 text-slate-700">Sekolah Adiwiyata Mandiri tingkat nasional, untuk sekolah yang peduli lingkungan.</p>
+              </li>
+              <li class="relative pb-7 pl-6">
+                <span aria-hidden="true" class="absolute -left-[7px] top-2 size-3 rounded-full bg-navy"></span>
+                <p class="text-2xl font-bold text-navy">2021</p>
+                <p class="mt-1 text-slate-700">Ditetapkan sebagai SMK Pusat Keunggulan oleh Kemendikbudristek, sekaligus sekolah percontohan program SMK PK Cyber Security.</p>
+              </li>
+              <li class="relative pl-6">
+                <span aria-hidden="true" class="absolute -left-[7px] top-2 size-3 rounded-full bg-navy"></span>
+                <p class="text-2xl font-bold text-navy">2025</p>
+                <p class="mt-1 text-slate-700">Laboratorium Security Operation Center (SOC) diresmikan pada bulan September.</p>
+              </li>
+            </ol>
+            <p class="mt-8 text-pretty text-slate-700">Sekolah ini juga pernah dipilih UNESCO sebagai wakil Indonesia untuk film dokumenter tentang perubahan iklim.</p>
+          </div>
+
+          <div class="space-y-8">
+            <div>
+              <h3 class="font-bold text-navy">Belajar lewat praktik</h3>
+              <ul class="mt-3 divide-y divide-slate-300/70 border-y border-slate-300/70">
+                <li class="py-3"><span class="font-bold text-slate-900">Teaching Factory.</span> Siswa belajar lewat proyek dan layanan nyata.</li>
+                <li class="py-3"><span class="font-bold text-slate-900">Hotel dan kafe sekolah.</span> Tempat praktik siswa Perhotelan.</li>
+                <li class="py-3"><span class="font-bold text-slate-900">WYNS.</span> Program kewirausahaan bersama HIPMI Kota Bogor.</li>
+                <li class="py-3"><span class="font-bold text-slate-900">Bursa Kerja Khusus.</span> Info lowongan dan penyaluran kerja untuk lulusan.</li>
+              </ul>
+            </div>
+            <div class="rounded-3xl bg-navy p-6 text-white sm:p-8">
+              <h3 class="font-bold text-gold">Contoh mitra PKL</h3>
+              <dl class="mt-4 grid grid-cols-[minmax(0,1fr)_auto] gap-x-4 gap-y-3 text-[15px]">
+                <dt class="font-bold">Swiss-Belinn Bogor</dt><dd class="text-right text-white/75">Perhotelan</dd>
+                <dt class="font-bold">Shangri-La Jakarta</dt><dd class="text-right text-white/75">Kuliner</dd>
+                <dt class="font-bold">Hotel Amaris Pakuan Bogor</dt><dd class="text-right text-white/75">Kuliner</dd>
+                <dt class="font-bold">Childreams Studio</dt><dd class="text-right text-white/75">DKV</dd>
+              </dl>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SPMB: alur bertahap di kiri, berkas dan gambaran biaya di kanan. -->
+    <section id="spmb" class="mx-auto max-w-6xl px-4 py-20">
+      <div class="max-w-2xl">
+        <h2 class="wk-h2">Alur pendaftaran SPMB <span class="whitespace-nowrap">2027–2028</span></h2>
+        <p class="wk-lead mt-3">Tujuh langkah dari daftar online sampai daftar ulang. Jurusan IT biasanya cepat penuh, jadi lebih aman daftar di gelombang awal.</p>
+      </div>
+
+      <div class="mt-12 grid grid-cols-[minmax(0,1fr)] gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-16">
+        <!-- Garis penghubung antar langkah dipasang per langkah (::after), jadi berhenti di langkah terakhir. -->
+        <ol class="space-y-7">
+          <li class="relative grid grid-cols-[2rem_minmax(0,1fr)] gap-4 after:absolute after:-bottom-7 after:left-[15px] after:top-8 after:w-0.5 after:bg-slate-200 last:after:hidden">
+            <span class="relative grid size-8 place-items-center rounded-full bg-navy text-sm font-bold text-gold">1</span>
+            <div><p class="font-bold text-slate-900">Daftar online</p><p class="mt-1 text-slate-600">Lewat spmb.smkwikrama.sch.id, atau datang langsung ke sekolah.</p></div>
+          </li>
+          <li class="relative grid grid-cols-[2rem_minmax(0,1fr)] gap-4 after:absolute after:-bottom-7 after:left-[15px] after:top-8 after:w-0.5 after:bg-slate-200 last:after:hidden">
+            <span class="relative grid size-8 place-items-center rounded-full bg-navy text-sm font-bold text-gold">2</span>
+            <div><p class="font-bold text-slate-900">Bayar biaya seleksi</p></div>
+          </li>
+          <li class="relative grid grid-cols-[2rem_minmax(0,1fr)] gap-4 after:absolute after:-bottom-7 after:left-[15px] after:top-8 after:w-0.5 after:bg-slate-200 last:after:hidden">
+            <span class="relative grid size-8 place-items-center rounded-full bg-navy text-sm font-bold text-gold">3</span>
+            <div><p class="font-bold text-slate-900">Isi data diri</p><p class="mt-1 text-slate-600">Nama lengkap, NISN, asal sekolah, email, dan nomor HP siswa, ayah, dan ibu.</p></div>
+          </li>
+          <li class="relative grid grid-cols-[2rem_minmax(0,1fr)] gap-4 after:absolute after:-bottom-7 after:left-[15px] after:top-8 after:w-0.5 after:bg-slate-200 last:after:hidden">
+            <span class="relative grid size-8 place-items-center rounded-full bg-navy text-sm font-bold text-gold">4</span>
+            <div><p class="font-bold text-slate-900">Pilih bidang keahlian</p><p class="mt-1 text-slate-600">Isi minat jurusan yang ingin diambil.</p></div>
+          </li>
+          <li class="relative grid grid-cols-[2rem_minmax(0,1fr)] gap-4 after:absolute after:-bottom-7 after:left-[15px] after:top-8 after:w-0.5 after:bg-slate-200 last:after:hidden">
+            <span class="relative grid size-8 place-items-center rounded-full bg-navy text-sm font-bold text-gold">5</span>
+            <div><p class="font-bold text-slate-900">Isi pernyataan keuangan</p></div>
+          </li>
+          <li class="relative grid grid-cols-[2rem_minmax(0,1fr)] gap-4 after:absolute after:-bottom-7 after:left-[15px] after:top-8 after:w-0.5 after:bg-slate-200 last:after:hidden">
+            <span class="relative grid size-8 place-items-center rounded-full bg-navy text-sm font-bold text-gold">6</span>
+            <div><p class="font-bold text-slate-900">Ikut wawancara</p><p class="mt-1 text-slate-600">Bawa berkas persyaratan di samping.</p></div>
+          </li>
+          <li class="relative grid grid-cols-[2rem_minmax(0,1fr)] gap-4 after:absolute after:-bottom-7 after:left-[15px] after:top-8 after:w-0.5 after:bg-slate-200 last:after:hidden">
+            <span class="relative grid size-8 place-items-center rounded-full bg-navy text-sm font-bold text-gold">7</span>
+            <div><p class="font-bold text-slate-900">Daftar ulang</p><p class="mt-1 text-slate-600">Setelah ini, pendaftaran selesai.</p></div>
+          </li>
         </ol>
 
-        <div class="mt-10 grid gap-6 md:grid-cols-2">
-          <div class="rounded-2xl bg-white p-6 shadow-sm">
+        <div class="space-y-6">
+          <div class="rounded-3xl border border-slate-200 p-6 sm:p-8">
             <h3 class="text-lg font-bold text-navy">Berkas yang dibawa saat wawancara</h3>
-            <ul class="mt-4 list-disc space-y-1.5 pl-5 text-slate-700">
-              <li>Legalisir rapor semester 1–4</li>
-              <li>Fotokopi Kartu Keluarga</li>
-              <li>Fotokopi KTP ayah dan ibu</li>
-              <li>Fotokopi akta kelahiran</li>
-              <li>Surat keterangan golongan darah dari puskesmas/klinik</li>
-              <li>Surat keterangan tidak buta warna dari puskesmas/klinik</li>
+            <ul class="mt-3 divide-y divide-slate-200 text-slate-700">
+              <li class="py-2.5">Legalisir rapor semester 1–4</li>
+              <li class="py-2.5">Fotokopi Kartu Keluarga</li>
+              <li class="py-2.5">Fotokopi KTP ayah dan ibu</li>
+              <li class="py-2.5">Fotokopi akta kelahiran</li>
+              <li class="py-2.5">Surat keterangan golongan darah dari puskesmas atau klinik</li>
+              <li class="py-2.5">Surat keterangan tidak buta warna dari puskesmas atau klinik</li>
             </ul>
           </div>
-          <div class="flex flex-col justify-between gap-6 rounded-2xl bg-navy p-6 text-white">
-            <div>
-              <h3 class="text-lg font-bold text-gold">Biaya, beasiswa, dan jadwal</h3>
-              <p class="mt-3 text-white/80">Pendaftaran dibagi beberapa gelombang, dan kuota jurusan IT biasanya paling cepat penuh. Untuk biaya resmi dan info terbaru, tanya langsung ke Asisten SPMB atau CS SPMB.</p>
-            </div>
-            <button type="button" data-open-asisten class="inline-flex min-h-11 w-fit items-center rounded-full bg-gold px-5 font-bold text-navy hover:brightness-95">Tanya Asisten SPMB</button>
+
+          <div class="rounded-3xl bg-navy p-6 text-white sm:p-8">
+            <h3 class="text-lg font-bold text-gold">Biaya dan gelombang</h3>
+            <p class="mt-2 text-pretty text-white/80">Biaya resmi TA 2027–2028 belum tercantum di sini dan berbeda tiap gelombang. Sebagai gambaran, ini biaya pendaftaran tahun ajaran sebelumnya:</p>
+            <table class="mt-4 w-full text-left text-[15px]">
+              <caption class="sr-only">Biaya pendaftaran TA 2025–2026 per gelombang, bukan biaya terbaru</caption>
+              <thead class="text-sm text-white/70">
+                <tr><th scope="col" class="pb-2 font-medium">TA 2025–2026</th><th scope="col" class="pb-2 text-right font-medium">Biaya</th></tr>
+              </thead>
+              <tbody class="divide-y divide-white/15">
+                <tr><th scope="row" class="py-2.5 font-medium">Gelombang 1 <span class="block text-sm font-normal text-white/70">Okt 2024 – Mar 2025</span></th><td class="py-2.5 text-right font-bold tabular-nums">Rp9.500.000</td></tr>
+                <tr><th scope="row" class="py-2.5 font-medium">Gelombang 2 <span class="block text-sm font-normal text-white/70">Apr – Jun 2025</span></th><td class="py-2.5 text-right font-bold tabular-nums">Rp10.500.000</td></tr>
+                <tr><th scope="row" class="py-2.5 font-medium">Gelombang 3 <span class="block text-sm font-normal text-white/70">Jul 2025</span></th><td class="py-2.5 text-right font-bold tabular-nums">Rp12.000.000</td></tr>
+              </tbody>
+            </table>
+            <button type="button" data-ask="Biaya masuk TA 2027-2028 berapa?" class="wk-btn-gold mt-6 min-h-11 px-5 text-sm">Tanya biaya terbaru</button>
           </div>
         </div>
       </div>
     </section>
 
-    <section id="ekskul" class="mx-auto max-w-6xl px-4 py-16">
-      <h2 class="text-3xl font-bold text-navy">Ekstrakurikuler paling diminati</h2>
-      <p class="mt-3 max-w-2xl text-slate-600">Berdasarkan pilihan 1.285 murid kelas X dan XI di Tahun Pelajaran 2026–2027. Selain ekskul umum dan seni budaya, ada klub keahlian sesuai jurusan seperti Python Club, Cyber Security Club, dan Barista.</p>
-      <div class="mt-8 flex flex-wrap gap-3">
-        <span class="rounded-full bg-cloud px-4 py-2 font-semibold text-navy">Bulu Tangkis</span>
-        <span class="rounded-full bg-cloud px-4 py-2 font-semibold text-navy">Futsal</span>
-        <span class="rounded-full bg-cloud px-4 py-2 font-semibold text-navy">Joyful English</span>
-        <span class="rounded-full bg-cloud px-4 py-2 font-semibold text-navy">Basket</span>
-        <span class="rounded-full bg-cloud px-4 py-2 font-semibold text-navy">PMR</span>
-        <span class="rounded-full bg-cloud px-4 py-2 font-semibold text-navy">Seni Musik Modern</span>
-        <span class="rounded-full bg-cloud px-4 py-2 font-semibold text-navy">Seni Suara</span>
-        <span class="rounded-full bg-cloud px-4 py-2 font-semibold text-navy">Seni Teater</span>
+    <!-- Ekskul: grafik batang dari data pemilih asli (TP 2026–2027). Satu warna, satu skala untuk semua
+         kelompok supaya panjang batang bisa dibandingkan. Angka sudah tertulis di setiap baris,
+         jadi tidak perlu tooltip; batangnya hanya hiasan untuk pembaca layar (aria-hidden). -->
+    <section id="ekskul" class="bg-cloud">
+      <div class="mx-auto max-w-6xl px-4 py-20">
+        <div class="max-w-2xl">
+          <h2 class="wk-h2">Ekstrakurikuler paling diminati</h2>
+          <p class="wk-lead mt-3">Dari pilihan 1.285 murid kelas X dan XI di Tahun Pelajaran 2026–2027. Setiap murid memilih 1 ekskul umum dan 1 kegiatan seni budaya, dan murid putri juga memilih 1 kegiatan keputrian.</p>
+        </div>
+
+        <div class="mt-10 grid grid-cols-[minmax(0,1fr)] gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-start lg:gap-16">
+          <div class="rounded-3xl bg-white p-6 sm:p-8">
+            <h3 class="font-bold text-navy">Ekskul umum</h3>
+            <p class="text-sm text-slate-600">5 teratas dari 22 pilihan</p>
+            <ol class="mt-5 space-y-4" data-chart></ol>
+          </div>
+          <div class="space-y-10">
+            <div class="rounded-3xl bg-white p-6 sm:p-8">
+              <h3 class="font-bold text-navy">Seni budaya</h3>
+              <p class="text-sm text-slate-600">3 teratas dari 8 pilihan</p>
+              <ol class="mt-5 space-y-4" data-chart></ol>
+            </div>
+            <div class="rounded-3xl bg-white p-6 sm:p-8">
+              <h3 class="font-bold text-navy">Keputrian</h3>
+              <p class="text-sm text-slate-600">2 teratas, khusus murid putri</p>
+              <ol class="mt-5 space-y-4" data-chart></ol>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-14 grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[14rem_minmax(0,1fr)] lg:gap-10">
+          <div>
+            <h3 class="text-xl font-bold text-navy">Klub sesuai jurusan</h3>
+            <p class="mt-1 text-sm text-slate-600">Ekskul produktif, hari Kamis. AI Club hari Jumat. Jadwal TP 2026–2027, bisa berubah.</p>
+          </div>
+          <dl class="divide-y divide-slate-300/70 border-y border-slate-300/70 text-[15px]">
+            <div class="grid gap-1 py-3 sm:grid-cols-[9rem_minmax(0,1fr)] sm:gap-4"><dt class="font-bold text-navy">PPLG</dt><dd>Flutter, Python, Java, Net, JavaScript, IoT, dan Gamedev Club</dd></div>
+            <div class="grid gap-1 py-3 sm:grid-cols-[9rem_minmax(0,1fr)] sm:gap-4"><dt class="font-bold text-navy">TJKT</dt><dd>Network Cabling, Cyber Security, Linux, Mikrotik, dan Cloud Computing Club</dd></div>
+            <div class="grid gap-1 py-3 sm:grid-cols-[9rem_minmax(0,1fr)] sm:gap-4"><dt class="font-bold text-navy">DKV</dt><dd>Fotografi dan Videografi, Desain Grafis, dan 3D</dd></div>
+            <div class="grid gap-1 py-3 sm:grid-cols-[9rem_minmax(0,1fr)] sm:gap-4"><dt class="font-bold text-navy">PMN</dt><dd>Content Creator Club</dd></div>
+            <div class="grid gap-1 py-3 sm:grid-cols-[9rem_minmax(0,1fr)] sm:gap-4"><dt class="font-bold text-navy">MPLB</dt><dd>Public Speaking</dd></div>
+            <div class="grid gap-1 py-3 sm:grid-cols-[9rem_minmax(0,1fr)] sm:gap-4"><dt class="font-bold text-navy">KLN dan HTL</dt><dd>Bahasa Jepang dan Barista</dd></div>
+            <div class="grid gap-1 py-3 sm:grid-cols-[9rem_minmax(0,1fr)] sm:gap-4"><dt class="font-bold text-navy">Semua jurusan</dt><dd>AI Club, Digital Marketing, English for Tourism, dan Ausbildung (Bahasa Jerman)</dd></div>
+          </dl>
+        </div>
       </div>
     </section>
 
+    <!-- Kontak: pertanyaan contoh untuk Asisten SPMB, lalu kontak resmi CS SPMB. -->
     <section id="kontak" class="bg-navy text-white">
-      <div class="mx-auto grid max-w-6xl gap-10 px-4 py-16 md:grid-cols-2">
+      <div class="mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)] gap-12 px-4 py-20 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-16">
         <div>
-          <h2 class="text-3xl font-bold">Masih ada pertanyaan?</h2>
-          <p class="mt-3 text-white/80">Tanya Asisten SPMB di pojok kanan bawah kapan saja, atau hubungi CS SPMB.</p>
-          <p class="mt-6 text-white/80">Jl. Raya Wangun No. 21, RT.01/RW.06, Kel. Sindangsari, Kec. Bogor Timur, Kota Bogor, Jawa Barat</p>
+          <h2 class="text-balance text-3xl font-bold tracking-tight sm:text-4xl">Masih ada pertanyaan?</h2>
+          <p class="mt-3 text-pretty text-lg text-white/80">Tanya Asisten SPMB kapan saja, atau hubungi CS SPMB.</p>
+          <div class="mt-6 flex flex-wrap gap-2">
+            <button type="button" data-ask="Saya suka main game sama gambar, cocoknya jurusan apa?" class="wk-ask border-white/30 text-white hover:bg-white/10">Suka main game dan gambar, cocok jurusan apa?</button>
+            <button type="button" data-ask="Ekskul basket hari apa?" class="wk-ask border-white/30 text-white hover:bg-white/10">Ekskul basket hari apa?</button>
+            <button type="button" data-ask="Berkas apa yang perlu disiapin?" class="wk-ask border-white/30 text-white hover:bg-white/10">Berkas apa yang perlu disiapin?</button>
+          </div>
+          <p class="mt-10 text-sm font-bold text-gold">Alamat</p>
+          <p class="mt-1 max-w-md text-white/80">Jl. Raya Wangun No. 21, RT.01/RW.06, Kel. Sindangsari, Kec. Bogor Timur, Kota Bogor, Jawa Barat</p>
         </div>
-        <dl class="grid gap-4 sm:grid-cols-2">
-          <div class="rounded-2xl bg-white/5 p-4 ring-1 ring-white/10"><dt class="text-sm text-white/70">Telepon</dt><dd class="mt-1 font-bold">0251-8242411</dd></div>
-          <div class="rounded-2xl bg-white/5 p-4 ring-1 ring-white/10"><dt class="text-sm text-white/70">Email</dt><dd class="mt-1 font-bold break-all">prohumasi@smkwikrama.sch.id</dd></div>
-          <div class="rounded-2xl bg-white/5 p-4 ring-1 ring-white/10"><dt class="text-sm text-white/70">WhatsApp CS 1 &amp; 2</dt><dd class="mt-1 font-bold">0819-0924-2411<br>0815-2584-6789</dd></div>
-          <div class="rounded-2xl bg-white/5 p-4 ring-1 ring-white/10"><dt class="text-sm text-white/70">WhatsApp CS 3 &amp; 4</dt><dd class="mt-1 font-bold">0819-1924-2411<br>0858-9093-7777</dd></div>
+
+        <dl class="divide-y divide-white/15 border-y border-white/15 text-[15px]">
+          <div class="grid gap-1 py-4 sm:grid-cols-[9rem_minmax(0,1fr)] sm:gap-4">
+            <dt class="text-white/70">Telepon</dt>
+            <dd><a href="tel:+622518242411" class="font-bold hover:text-gold">0251-8242411</a></dd>
+          </div>
+          <div class="grid gap-1 py-4 sm:grid-cols-[9rem_minmax(0,1fr)] sm:gap-4">
+            <dt class="text-white/70">WhatsApp CS</dt>
+            <dd class="grid grid-cols-2 gap-x-4 gap-y-1 font-bold">
+              <a href="https://wa.me/6281909242411" target="_blank" rel="noopener" class="inline-flex min-h-8 items-center whitespace-nowrap hover:text-gold">0819-0924-2411</a>
+              <a href="https://wa.me/6281525846789" target="_blank" rel="noopener" class="inline-flex min-h-8 items-center whitespace-nowrap hover:text-gold">0815-2584-6789</a>
+              <a href="https://wa.me/6281919242411" target="_blank" rel="noopener" class="inline-flex min-h-8 items-center whitespace-nowrap hover:text-gold">0819-1924-2411</a>
+              <a href="https://wa.me/6285890937777" target="_blank" rel="noopener" class="inline-flex min-h-8 items-center whitespace-nowrap hover:text-gold">0858-9093-7777</a>
+            </dd>
+          </div>
+          <div class="grid gap-1 py-4 sm:grid-cols-[9rem_minmax(0,1fr)] sm:gap-4">
+            <dt class="text-white/70">Email</dt>
+            <dd><a href="mailto:prohumasi@smkwikrama.sch.id" class="break-all font-bold hover:text-gold">prohumasi@smkwikrama.sch.id</a></dd>
+          </div>
+          <div class="grid gap-1 py-4 sm:grid-cols-[9rem_minmax(0,1fr)] sm:gap-4">
+            <dt class="text-white/70">Website SPMB</dt>
+            <dd><a href="https://spmb.smkwikrama.sch.id" target="_blank" rel="noopener" class="font-bold hover:text-gold">spmb.smkwikrama.sch.id</a></dd>
+          </div>
+          <div class="grid gap-1 py-4 sm:grid-cols-[9rem_minmax(0,1fr)] sm:gap-4">
+            <dt class="text-white/70">Instagram</dt>
+            <dd><a href="https://instagram.com/smkwikrama" target="_blank" rel="noopener" class="font-bold hover:text-gold">@smkwikrama</a></dd>
+          </div>
         </dl>
       </div>
     </section>
@@ -196,8 +451,8 @@
 
   <footer class="bg-slate-950 text-sm text-white/70">
     <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-6">
-      <p>Halaman demo untuk menunjukkan widget AsistenSPMB di website SMK Wikrama Bogor.</p>
-      <p>Situs resmi: smkwikrama.sch.id · Instagram @smkwikrama</p>
+      <p><span class="font-bold text-white">SMK Wikrama Bogor</span> · Yayasan Wikrama Indonesia · NPSN 20220299</p>
+      <p>Halaman demo AsistenSPMB, bukan situs resmi. Situs resmi: <a href="https://smkwikrama.sch.id" target="_blank" rel="noopener" class="font-semibold text-white underline underline-offset-2 hover:text-gold">smkwikrama.sch.id</a></p>
     </div>
   </footer>
 
@@ -205,9 +460,62 @@
   <script src="sekolah/wikrama.js"></script>
   <script src="widget.js" defer></script>
   <script>
-    // Tombol "Tanya Asisten SPMB" di halaman ikut membuka widget.
+    // Data ekskul paling diminati (TP 2026–2027, konteks-wikrama.txt). Satu skala untuk semua kelompok.
+    const EKSKUL = [
+      [['Bulu Tangkis', 226], ['Futsal', 143], ['Joyful English', 131], ['Basket', 126], ['PMR', 99]],
+      [['Seni Musik Modern', 343], ['Seni Suara', 261], ['Seni Teater', 233]],
+      [['Memasak', 233], ['Merajut', 126]],
+    ];
+    const max = Math.max(...EKSKUL.flat().map(([, count]) => count));
+    const format = new Intl.NumberFormat('id-ID');
+    document.querySelectorAll('[data-chart]').forEach((list, i) => {
+      for (const [name, count] of EKSKUL[i]) {
+        const item = document.createElement('li');
+        const row = document.createElement('div');
+        row.className = 'flex items-baseline justify-between gap-4 text-[15px]';
+        const label = document.createElement('span');
+        label.className = 'font-medium text-slate-800';
+        label.textContent = name;
+        const value = document.createElement('span');
+        value.className = 'shrink-0 tabular-nums text-slate-600';
+        value.textContent = `${format.format(count)} murid`;
+        row.append(label, value);
+        // Batang tipis (10px), ujung data membulat 4px, pangkalnya rata di garis dasar.
+        const track = document.createElement('div');
+        track.className = 'mt-1.5 h-2.5';
+        track.setAttribute('aria-hidden', 'true');
+        const bar = document.createElement('div');
+        bar.className = 'h-full rounded-r bg-chart';
+        bar.style.width = `${(count / max) * 100}%`;
+        track.append(bar);
+        item.append(row, track);
+        list.append(item);
+      }
+    });
+
+    // Tombol "Tanya Asisten SPMB" membuka widget; tombol pertanyaan contoh langsung mengirim pertanyaannya.
+    // Kalau API key belum diisi, widget menyimpan pertanyaannya di kolom input dan meminta key dulu.
     document.addEventListener('click', (event) => {
-      if (event.target.closest('[data-open-asisten]')) window.AsistenSPMBWidget?.open();
+      const widget = window.AsistenSPMBWidget;
+      if (!widget) return;
+      const ask = event.target.closest('[data-ask]');
+      if (ask) widget.ask(ask.dataset.ask);
+      else if (event.target.closest('[data-open-asisten]')) widget.open();
+    });
+
+    // Menu HP: tutup setelah tautan diklik, saat klik di luar menu, atau saat Esc ditekan.
+    const menuHp = document.getElementById('menu-hp');
+    menuHp.addEventListener('click', (event) => {
+      if (event.target.closest('a')) menuHp.open = false;
+    });
+    document.addEventListener('click', (event) => {
+      if (menuHp.open && !menuHp.contains(event.target)) menuHp.open = false;
+    });
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && menuHp.open) {
+        menuHp.open = false;
+        menuHp.querySelector('summary').focus();
+      }
     });
   </script>
 </body>
