@@ -101,8 +101,8 @@
 
   <!-- Data sekolah dan widget. Widget di pojok kanan bawah dipakai untuk menguji chatbot dengan isi dashboard terbaru. -->
   <!-- ?v=… memaksa browser mengambil versi terbaru, bukan salinan lama dari cache. Naikkan angkanya setiap kali widget.js atau sekolah/wikrama.js diubah. -->
-  <script src="sekolah/wikrama.js?v=20261119"></script>
-  <script src="widget.js?v=20261119"></script>
+  <script src="sekolah/wikrama.js?v=20261119-2"></script>
+  <script src="widget.js?v=20261119-2"></script>
   <script>
 'use strict';
 
@@ -720,11 +720,27 @@ function renderLook() {
     paintPreview();
   });
 
+  // Suara Sigi saat calon murid menelepon lewat widget.
+  const voiceSelect = make('select', 'field');
+  voiceSelect.id = 'look-voice';
+  for (const voice of api.data.voices) {
+    const option = make('option', '', `${voice.name} (${voice.gender})`);
+    option.value = voice.id;
+    voiceSelect.append(option);
+  }
+  voiceSelect.value = school.voice;
+  voiceSelect.addEventListener('change', () => {
+    school.voice = voiceSelect.value;
+    persist();
+  });
+  const voiceHint = make('p', 'mt-1.5 text-xs text-muted', 'Dipakai saat calon murid menelepon Sigi. Suara Bahasa Indonesia dari Deepgram, masih Early Access. Coba bandingkan suaranya di playground.');
+
   const resetLook = button('Kembalikan tampilan bawaan', 'btn', () => {
     const base = api.data.defaults();
     school.schoolName = base.schoolName;
     school.colors = base.colors;
     school.greeting = base.greeting;
+    school.voice = base.voice;
     school.suggestions = base.suggestions;
     persist({ now: true });
     renderSidebar();
@@ -736,6 +752,7 @@ function renderLook() {
     colorRow('look-primary', 'primary'),
     colorRow('look-accent', 'accent'),
     field('Sapaan pembuka', greeting),
+    field('Suara telepon', voiceSelect, voiceHint),
     suggestionField,
     resetLook,
   );
