@@ -28,8 +28,8 @@
 
   function defaults() {
     const pages = config.pages
-      ? config.pages.map((page, i) => ({ id: `p${i + 1}`, icon: page.icon || '📄', title: page.title, body: page.body.trim(), updatedAt: null }))
-      : [{ id: 'p1', icon: '📄', title: 'Info sekolah', body: config.context.trim(), updatedAt: null }];
+      ? config.pages.map((page, i) => ({ id: `p${i + 1}`, title: page.title, body: page.body.trim(), updatedAt: null }))
+      : [{ id: 'p1', title: 'Info sekolah', body: config.context.trim(), updatedAt: null }];
     const schoolName = config.schoolName || 'Sekolah';
     return {
       schoolName,
@@ -201,7 +201,6 @@
     .title { font-size: 15px; font-weight: 700; }
     .subtitle { display: flex; align-items: center; gap: 6px; font-size: 12px; opacity: 0.85; }
     .subtitle span:last-child { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-    .dot { width: 8px; height: 8px; flex-shrink: 0; border-radius: 999px; background: #4ade80; }
     .icon-btn { width: 44px; height: 44px; flex-shrink: 0; display: grid; place-items: center; border: 0; border-radius: 10px; background: transparent; color: inherit; }
     .icon-btn:hover { background: rgb(255 255 255 / 0.14); }
     .icon-btn:disabled { opacity: 0.4; background: transparent; }
@@ -266,7 +265,7 @@
           <span class="avatar">${ICONS.bot}</span>
           <div class="header-text">
             <p class="title" id="asisten-title">Asisten SPMB</p>
-            <p class="subtitle"><span class="dot"></span><span data-ref="school"></span></p>
+            <p class="subtitle"><span data-ref="school"></span></p>
           </div>
           <button class="icon-btn" type="button" aria-label="Mulai percakapan baru" title="Mulai percakapan baru" data-ref="reset">${ICONS.reset}</button>
           <button class="icon-btn" type="button" aria-label="Tutup Asisten SPMB" title="Tutup" data-ref="close">${ICONS.close}</button>
@@ -306,7 +305,7 @@
     root.style.setProperty('--on-primary', school.colors.onPrimary);
     root.style.setProperty('--accent', school.colors.accent);
     root.style.setProperty('--on-accent', school.colors.onAccent);
-    ref.school.textContent = `${school.schoolName} · online`;
+    ref.school.textContent = school.schoolName;
     ref.panel.setAttribute('aria-label', `Asisten SPMB ${school.schoolName}`);
   }
   applySchool();

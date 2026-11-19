@@ -203,6 +203,19 @@
     .filter((el) => el.matches('a[target="_blank"]') && !/noopener|noreferrer/.test(el.rel))
     .map(describe);
 
+  /* Emoji di teks yang terlihat (salah satu ciri "AI slop", lihat SKILL.md). Placeholder input ikut dicek. */
+
+  // Emoji_Presentation: emoji berwarna (🎓, 📄). Pictographic + FE0F: simbol yang dipaksa jadi emoji (☎️, ⚠️).
+  // Simbol teks biasa seperti ©, ↗, dan ← tidak dihitung.
+  const EMOJI = /\p{Emoji_Presentation}|\p{Extended_Pictographic}\uFE0F/u;
+  const emojiText = [];
+  for (const el of all) {
+    if (el.closest('svg, script, style') || !isVisible(el)) continue;
+    const own = [...el.childNodes].filter((n) => n.nodeType === Node.TEXT_NODE).map((n) => n.textContent).join('');
+    const text = `${own} ${el.getAttribute('placeholder') || ''}`;
+    if (EMOJI.test(text)) emojiText.push(`${describe(el)} → "${text.trim().replace(/\s+/g, ' ').slice(0, 50)}"`);
+  }
+
   /* Heading: satu h1, urutan tidak loncat. */
 
   // Heading khusus pembaca layar (sr-only, 1x1 piksel) tetap dihitung, karena memang dibaca pembaca layar.
@@ -233,6 +246,7 @@
     unnamedControls,
     imagesWithoutAlt,
     blankWithoutNoopener,
+    emojiText: emojiText.slice(0, LIMIT),
     headings: headings.map((level) => `h${level}`).join(' '),
     headingIssues,
     checked: { elements: all.length, textElements, interactive: interactive.length },

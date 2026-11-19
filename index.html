@@ -10,8 +10,10 @@
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.1.11"></script>
   <style type="text/tailwindcss">
-    /* Gaya catatan (Notion-like), sama dengan dashboard: putih bersih, teks hitam, kartu abu muda,
-       ikon emoji. Warna brand AsistenSPMB (teal dan stabilo limau) dipakai sebagai aksen saja. */
+    /* Gaya catatan (Notion-like), sama dengan dashboard: putih bersih, teks hitam, kartu abu muda.
+       Tanpa emoji, label kecil di atas judul, kata yang distabilo, atau animasi berulang
+       (daftar lengkapnya di skill ui-design-review, bagian "Gaya AI slop").
+       Warna brand AsistenSPMB (teal) dipakai sebagai aksen saja. */
     @theme {
       --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
       --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -39,29 +41,20 @@
       .btn-dark { @apply bg-ink text-white hover:bg-black; }
       .btn-light { @apply bg-soft text-ink hover:bg-hover; }
       .btn-line { @apply border border-line bg-white text-ink hover:bg-soft; }
-      .eyebrow { @apply text-sm font-semibold text-brand; }
       .h2 { @apply text-3xl font-bold tracking-tight text-ink sm:text-[2.6rem] sm:leading-[1.15]; }
       .lead { @apply text-lg leading-relaxed text-muted; }
       .card { @apply rounded-xl bg-soft p-6; }
-      /* Stabilo limau. Margin negatif menetralkan padding, supaya tidak terlihat ada spasi sebelum tanda baca. */
-      .mark { @apply -mx-1 rounded bg-lime/70 px-1 [box-decoration-break:clone]; }
     }
     /* Pola batik kawung, digambar sendiri sebagai ubin SVG 56 piksel.
-       kawung-bg: latar bagian bawah halaman, hanya terlihat di ruang kosong kiri-kanan (memudar ke arah konten,
-       dan tidak tampil sama sekali di layar sempit). kawung-accent: versi teal di sudut kartu ajakan akhir. */
+       kawung-bg: latar bagian bawah halaman, hanya terlihat di ruang kosong kiri-kanan. Polanya sudah habis memudar
+       2rem sebelum tepi kolom konten (max-w-6xl = 36rem dari tengah), jadi tidak pernah menyentuh atau masuk ke kartu,
+       dan tidak tampil sama sekali di layar sempit. */
     .kawung-bg {
       background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56' viewBox='0 0 56 56'%3E%3Cg fill='none' stroke='%2337352f' stroke-opacity='0.1' stroke-width='1'%3E%3Cellipse cx='34.72' cy='34.72' rx='9.5' ry='5.2' transform='rotate(45 34.72 34.72)'/%3E%3Cellipse cx='21.28' cy='34.72' rx='9.5' ry='5.2' transform='rotate(135 21.28 34.72)'/%3E%3Cellipse cx='21.28' cy='21.28' rx='9.5' ry='5.2' transform='rotate(225 21.28 21.28)'/%3E%3Cellipse cx='34.72' cy='21.28' rx='9.5' ry='5.2' transform='rotate(315 34.72 21.28)'/%3E%3Cellipse cx='6.72' cy='6.72' rx='9.5' ry='5.2' transform='rotate(45 6.72 6.72)'/%3E%3Cellipse cx='-6.72' cy='6.72' rx='9.5' ry='5.2' transform='rotate(135 -6.72 6.72)'/%3E%3Cellipse cx='-6.72' cy='-6.72' rx='9.5' ry='5.2' transform='rotate(225 -6.72 -6.72)'/%3E%3Cellipse cx='6.72' cy='-6.72' rx='9.5' ry='5.2' transform='rotate(315 6.72 -6.72)'/%3E%3Cellipse cx='62.72' cy='6.72' rx='9.5' ry='5.2' transform='rotate(45 62.72 6.72)'/%3E%3Cellipse cx='49.28' cy='6.72' rx='9.5' ry='5.2' transform='rotate(135 49.28 6.72)'/%3E%3Cellipse cx='49.28' cy='-6.72' rx='9.5' ry='5.2' transform='rotate(225 49.28 -6.72)'/%3E%3Cellipse cx='62.72' cy='-6.72' rx='9.5' ry='5.2' transform='rotate(315 62.72 -6.72)'/%3E%3Cellipse cx='6.72' cy='62.72' rx='9.5' ry='5.2' transform='rotate(45 6.72 62.72)'/%3E%3Cellipse cx='-6.72' cy='62.72' rx='9.5' ry='5.2' transform='rotate(135 -6.72 62.72)'/%3E%3Cellipse cx='-6.72' cy='49.28' rx='9.5' ry='5.2' transform='rotate(225 -6.72 49.28)'/%3E%3Cellipse cx='6.72' cy='49.28' rx='9.5' ry='5.2' transform='rotate(315 6.72 49.28)'/%3E%3Cellipse cx='62.72' cy='62.72' rx='9.5' ry='5.2' transform='rotate(45 62.72 62.72)'/%3E%3Cellipse cx='49.28' cy='62.72' rx='9.5' ry='5.2' transform='rotate(135 49.28 62.72)'/%3E%3Cellipse cx='49.28' cy='49.28' rx='9.5' ry='5.2' transform='rotate(225 49.28 49.28)'/%3E%3Cellipse cx='62.72' cy='49.28' rx='9.5' ry='5.2' transform='rotate(315 62.72 49.28)'/%3E%3C/g%3E%3Cg fill='%2337352f' fill-opacity='0.1'%3E%3Ccircle cx='28' cy='28' r='1.6'/%3E%3Ccircle cx='34.72' cy='34.72' r='1.1'/%3E%3Ccircle cx='21.28' cy='34.72' r='1.1'/%3E%3Ccircle cx='21.28' cy='21.28' r='1.1'/%3E%3Ccircle cx='34.72' cy='21.28' r='1.1'/%3E%3Ccircle cx='0' cy='0' r='1.6'/%3E%3Ccircle cx='6.72' cy='6.72' r='1.1'/%3E%3Ccircle cx='-6.72' cy='6.72' r='1.1'/%3E%3Ccircle cx='-6.72' cy='-6.72' r='1.1'/%3E%3Ccircle cx='6.72' cy='-6.72' r='1.1'/%3E%3Ccircle cx='56' cy='0' r='1.6'/%3E%3Ccircle cx='62.72' cy='6.72' r='1.1'/%3E%3Ccircle cx='49.28' cy='6.72' r='1.1'/%3E%3Ccircle cx='49.28' cy='-6.72' r='1.1'/%3E%3Ccircle cx='62.72' cy='-6.72' r='1.1'/%3E%3Ccircle cx='0' cy='56' r='1.6'/%3E%3Ccircle cx='6.72' cy='62.72' r='1.1'/%3E%3Ccircle cx='-6.72' cy='62.72' r='1.1'/%3E%3Ccircle cx='-6.72' cy='49.28' r='1.1'/%3E%3Ccircle cx='6.72' cy='49.28' r='1.1'/%3E%3Ccircle cx='56' cy='56' r='1.6'/%3E%3Ccircle cx='62.72' cy='62.72' r='1.1'/%3E%3Ccircle cx='49.28' cy='62.72' r='1.1'/%3E%3Ccircle cx='49.28' cy='49.28' r='1.1'/%3E%3Ccircle cx='62.72' cy='49.28' r='1.1'/%3E%3C/g%3E%3C/svg%3E");
       background-size: 56px 56px;
       background-position: center top;
-      -webkit-mask-image: linear-gradient(to right, #000, transparent calc(50% - 31rem), transparent calc(50% + 31rem), #000);
-      mask-image: linear-gradient(to right, #000, transparent calc(50% - 31rem), transparent calc(50% + 31rem), #000);
-    }
-    .kawung-accent {
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56' viewBox='0 0 56 56'%3E%3Cg fill='none' stroke='%230f766e' stroke-opacity='0.22' stroke-width='1'%3E%3Cellipse cx='34.72' cy='34.72' rx='9.5' ry='5.2' transform='rotate(45 34.72 34.72)'/%3E%3Cellipse cx='21.28' cy='34.72' rx='9.5' ry='5.2' transform='rotate(135 21.28 34.72)'/%3E%3Cellipse cx='21.28' cy='21.28' rx='9.5' ry='5.2' transform='rotate(225 21.28 21.28)'/%3E%3Cellipse cx='34.72' cy='21.28' rx='9.5' ry='5.2' transform='rotate(315 34.72 21.28)'/%3E%3Cellipse cx='6.72' cy='6.72' rx='9.5' ry='5.2' transform='rotate(45 6.72 6.72)'/%3E%3Cellipse cx='-6.72' cy='6.72' rx='9.5' ry='5.2' transform='rotate(135 -6.72 6.72)'/%3E%3Cellipse cx='-6.72' cy='-6.72' rx='9.5' ry='5.2' transform='rotate(225 -6.72 -6.72)'/%3E%3Cellipse cx='6.72' cy='-6.72' rx='9.5' ry='5.2' transform='rotate(315 6.72 -6.72)'/%3E%3Cellipse cx='62.72' cy='6.72' rx='9.5' ry='5.2' transform='rotate(45 62.72 6.72)'/%3E%3Cellipse cx='49.28' cy='6.72' rx='9.5' ry='5.2' transform='rotate(135 49.28 6.72)'/%3E%3Cellipse cx='49.28' cy='-6.72' rx='9.5' ry='5.2' transform='rotate(225 49.28 -6.72)'/%3E%3Cellipse cx='62.72' cy='-6.72' rx='9.5' ry='5.2' transform='rotate(315 62.72 -6.72)'/%3E%3Cellipse cx='6.72' cy='62.72' rx='9.5' ry='5.2' transform='rotate(45 6.72 62.72)'/%3E%3Cellipse cx='-6.72' cy='62.72' rx='9.5' ry='5.2' transform='rotate(135 -6.72 62.72)'/%3E%3Cellipse cx='-6.72' cy='49.28' rx='9.5' ry='5.2' transform='rotate(225 -6.72 49.28)'/%3E%3Cellipse cx='6.72' cy='49.28' rx='9.5' ry='5.2' transform='rotate(315 6.72 49.28)'/%3E%3Cellipse cx='62.72' cy='62.72' rx='9.5' ry='5.2' transform='rotate(45 62.72 62.72)'/%3E%3Cellipse cx='49.28' cy='62.72' rx='9.5' ry='5.2' transform='rotate(135 49.28 62.72)'/%3E%3Cellipse cx='49.28' cy='49.28' rx='9.5' ry='5.2' transform='rotate(225 49.28 49.28)'/%3E%3Cellipse cx='62.72' cy='49.28' rx='9.5' ry='5.2' transform='rotate(315 62.72 49.28)'/%3E%3C/g%3E%3Cg fill='%230f766e' fill-opacity='0.22'%3E%3Ccircle cx='28' cy='28' r='1.6'/%3E%3Ccircle cx='34.72' cy='34.72' r='1.1'/%3E%3Ccircle cx='21.28' cy='34.72' r='1.1'/%3E%3Ccircle cx='21.28' cy='21.28' r='1.1'/%3E%3Ccircle cx='34.72' cy='21.28' r='1.1'/%3E%3Ccircle cx='0' cy='0' r='1.6'/%3E%3Ccircle cx='6.72' cy='6.72' r='1.1'/%3E%3Ccircle cx='-6.72' cy='6.72' r='1.1'/%3E%3Ccircle cx='-6.72' cy='-6.72' r='1.1'/%3E%3Ccircle cx='6.72' cy='-6.72' r='1.1'/%3E%3Ccircle cx='56' cy='0' r='1.6'/%3E%3Ccircle cx='62.72' cy='6.72' r='1.1'/%3E%3Ccircle cx='49.28' cy='6.72' r='1.1'/%3E%3Ccircle cx='49.28' cy='-6.72' r='1.1'/%3E%3Ccircle cx='62.72' cy='-6.72' r='1.1'/%3E%3Ccircle cx='0' cy='56' r='1.6'/%3E%3Ccircle cx='6.72' cy='62.72' r='1.1'/%3E%3Ccircle cx='-6.72' cy='62.72' r='1.1'/%3E%3Ccircle cx='-6.72' cy='49.28' r='1.1'/%3E%3Ccircle cx='6.72' cy='49.28' r='1.1'/%3E%3Ccircle cx='56' cy='56' r='1.6'/%3E%3Ccircle cx='62.72' cy='62.72' r='1.1'/%3E%3Ccircle cx='49.28' cy='62.72' r='1.1'/%3E%3Ccircle cx='49.28' cy='49.28' r='1.1'/%3E%3Ccircle cx='62.72' cy='49.28' r='1.1'/%3E%3C/g%3E%3C/svg%3E");
-      background-size: 56px 56px;
-      background-position: center;
-      -webkit-mask-image: radial-gradient(ellipse at 100% 100%, #000, transparent 55%), radial-gradient(ellipse at 0 0, #000, transparent 40%);
-      mask-image: radial-gradient(ellipse at 100% 100%, #000, transparent 55%), radial-gradient(ellipse at 0 0, #000, transparent 40%);
+      -webkit-mask-image: linear-gradient(to right, #000 calc(50% - 46rem), transparent calc(50% - 38rem), transparent calc(50% + 38rem), #000 calc(50% + 46rem));
+      mask-image: linear-gradient(to right, #000 calc(50% - 46rem), transparent calc(50% - 38rem), transparent calc(50% + 38rem), #000 calc(50% + 46rem));
     }
   </style>
 </head>
@@ -95,57 +88,51 @@
       <canvas id="hero-globe" aria-hidden="true"
         class="pointer-events-none absolute inset-x-0 top-0 h-[40rem] w-full [mask-image:linear-gradient(to_bottom,#000_80%,transparent)] sm:h-[46rem]"></canvas>
       <div class="relative mx-auto max-w-6xl px-4 pt-16 text-center sm:pt-24">
-      <p class="inline-flex items-center gap-2 rounded-full border border-line px-3 py-1 text-sm font-medium text-body">
-        <span aria-hidden="true">🎓</span>Chatbot SPMB untuk website sekolah
-      </p>
       <!-- Teks hero diberi "halo" putih tipis (text-shadow) supaya tetap tajam di atas garis peta latar. -->
-      <h1 class="mx-auto mt-6 max-w-4xl [text-shadow:0_0_14px_#fff,0_0_6px_#fff,0_0_2px_#fff] text-[2.6rem] font-extrabold leading-[1.08] tracking-tight text-ink sm:text-6xl lg:text-7xl">
-        Jawab calon murid <span class="mark">kapan saja</span>, dari data sekolahmu sendiri.
+      <h1 class="mx-auto max-w-4xl [text-shadow:0_0_14px_#fff,0_0_6px_#fff,0_0_2px_#fff] text-[2.6rem] font-extrabold leading-[1.08] tracking-tight text-ink sm:text-6xl lg:text-7xl">
+        Jawab calon murid kapan saja, dari data sekolahmu sendiri.
       </h1>
-      <p class="lead mx-auto mt-6 max-w-2xl [text-shadow:0_0_14px_#fff,0_0_6px_#fff,0_0_2px_#fff]">AsistenSPMB menjawab pertanyaan soal pendaftaran, jurusan, dan berkas langsung di website sekolah. Kalau infonya tidak ada, ia jujur bilang belum tahu dan mengarahkan ke CS sekolah.</p>
+      <p class="lead mx-auto mt-6 max-w-2xl [text-shadow:0_0_14px_#fff,0_0_6px_#fff,0_0_2px_#fff]">AsistenSPMB adalah chatbot SPMB untuk website sekolah. Ia menjawab pertanyaan soal pendaftaran, jurusan, dan berkas. Kalau infonya tidak ada, ia bilang belum tahu dan memberi nomor CS sekolah.</p>
       <div class="mt-8 flex flex-wrap justify-center gap-3">
-        <a href="demo-wikrama.html" class="btn btn-dark">Coba demo SMK Wikrama →</a>
+        <a href="demo-wikrama.html" class="btn btn-dark">Coba demo SMK Wikrama</a>
         <a href="dashboard.html" class="btn btn-light">Buka dashboard</a>
       </div>
       <p class="mt-4 text-sm text-muted [text-shadow:0_0_14px_#fff,0_0_6px_#fff,0_0_2px_#fff]">Rp300 ribu per bulan per sekolah, dibayar tahunan.</p>
-      <p class="mt-6 inline-flex items-center gap-2 rounded-full bg-white/85 px-3 py-1.5 text-sm font-medium text-body ring-1 ring-line backdrop-blur"><span aria-hidden="true">📍</span>Dimulai dari SMK Wikrama Bogor</p>
 
       <!-- Gambar produk (statis): dashboard sekolah dengan widget chat di atasnya -->
       <figure class="mx-auto mt-16 max-w-5xl text-left">
         <div class="relative">
         <div class="overflow-hidden rounded-xl border border-line bg-white shadow-[0_24px_60px_-20px_rgba(15,15,15,0.25)]">
           <div class="flex items-center gap-2 border-b border-line px-4 py-2.5">
-            <span class="size-3 rounded-full bg-[#ff5f57]"></span><span class="size-3 rounded-full bg-[#febc2e]"></span><span class="size-3 rounded-full bg-[#28c840]"></span>
-            <span class="ml-3 truncate text-xs text-muted">SMK Wikrama Bogor / Info sekolah / 📝 Info SPMB</span>
+            <span class="truncate text-xs text-muted">SMK Wikrama Bogor / Info sekolah / Info SPMB</span>
           </div>
           <div class="grid grid-cols-[minmax(0,1fr)] sm:grid-cols-[13rem_minmax(0,1fr)]" aria-hidden="true">
             <div class="hidden border-r border-line bg-[#f7f7f5] p-3 text-[13px] text-body sm:block">
               <p class="flex items-center gap-2 px-1.5 py-1 font-semibold"><span class="grid size-5 place-items-center rounded bg-wk-navy text-[10px] text-white">S</span>SMK Wikrama Bogor</p>
               <p class="mt-4 px-1.5 text-[11px] font-semibold text-muted">Sekolah</p>
-              <p class="px-1.5 py-1">🏫 Info sekolah</p>
+              <p class="px-1.5 py-1">Info sekolah</p>
               <div class="ml-2 border-l border-line pl-1.5">
-                <p class="py-1">🏫 Profil sekolah</p>
-                <p class="rounded bg-hover px-1 py-1 font-semibold">📝 Info SPMB</p>
-                <p class="py-1">🎓 Jurusan</p>
-                <p class="py-1">⚽ Ekstrakurikuler</p>
-                <p class="py-1">☎️ Kontak SPMB</p>
+                <p class="py-1">Profil sekolah</p>
+                <p class="rounded bg-hover px-1 py-1 font-semibold">Info SPMB</p>
+                <p class="py-1">Jurusan</p>
+                <p class="py-1">Ekstrakurikuler</p>
+                <p class="py-1">Kontak SPMB</p>
               </div>
-              <p class="px-1.5 py-1">📄 Dokumen PDF</p>
+              <p class="px-1.5 py-1">Dokumen PDF</p>
               <p class="mt-4 px-1.5 text-[11px] font-semibold text-muted">Chatbot</p>
-              <p class="px-1.5 py-1">💬 Uji chatbot</p>
-              <p class="px-1.5 py-1">🎨 Tampilan widget</p>
-              <p class="px-1.5 py-1">🧩 Pasang di website</p>
+              <p class="px-1.5 py-1">Uji chatbot</p>
+              <p class="px-1.5 py-1">Tampilan widget</p>
+              <p class="px-1.5 py-1">Pasang di website</p>
             </div>
             <div class="p-6 pb-28 text-body sm:p-10 sm:pb-56 md:min-h-[27rem] md:pb-10 md:pr-[23rem]">
-              <p class="text-5xl leading-none">📝</p>
-              <p class="mt-4 text-3xl font-bold tracking-tight text-ink">Info SPMB</p>
-              <p class="mt-1 text-xs text-muted">1.654 karakter · diubah hari ini</p>
+              <p class="text-3xl font-bold tracking-tight text-ink">Info SPMB</p>
+              <p class="mt-1 text-xs text-muted">1.739 karakter · diubah hari ini</p>
               <div class="mt-6 space-y-1.5 text-[15px] leading-relaxed">
                 <p>Periode yang sedang dibuka: SPMB Tahun Ajaran 2027–2028</p>
                 <p class="pt-3 font-semibold text-ink">A. Alur Pendaftaran</p>
                 <p>1. Daftar online di spmb.smkwikrama.sch.id</p>
                 <p>2. Bayar biaya seleksi</p>
-                <p>3. Isi data diri<span class="ml-0.5 inline-block h-4 w-px translate-y-0.5 animate-pulse bg-body"></span></p>
+                <p>3. Isi data diri</p>
               </div>
             </div>
           </div>
@@ -160,7 +147,7 @@
             </span>
             <div>
               <p class="font-bold">Asisten SPMB</p>
-              <p class="flex items-center gap-1.5 text-xs text-white/85"><span class="size-2 rounded-full bg-green-400"></span>SMK Wikrama Bogor · online</p>
+              <p class="text-xs text-white/85">SMK Wikrama Bogor</p>
             </div>
           </div>
           <div class="space-y-2.5 bg-slate-50 p-4 leading-relaxed">
@@ -177,79 +164,73 @@
     <div class="relative isolate">
       <div aria-hidden="true" class="kawung-bg pointer-events-none absolute inset-0 -z-10"></div>
 
-    <!-- Untuk siapa -->
+    <!-- Untuk siapa: teks rata kiri di bawah satu garis, tanpa ikon. -->
     <section aria-labelledby="untuk-siapa-title" class="mx-auto max-w-6xl px-4 pt-24">
-      <h2 id="untuk-siapa-title" class="text-center text-sm font-semibold text-muted">Dibuat untuk musim SPMB</h2>
-      <div class="mt-8 grid gap-8 text-center md:grid-cols-3">
+      <h2 id="untuk-siapa-title" class="text-sm font-semibold text-muted">Dibuat untuk musim SPMB</h2>
+      <dl class="mt-4 grid gap-x-10 gap-y-6 border-t border-line pt-6 md:grid-cols-3">
         <div>
-          <p class="text-3xl" aria-hidden="true">🏫</p>
-          <p class="mt-3 text-lg font-bold text-ink">Sekolah swasta</p>
-          <p class="mt-1 text-muted">SMK dan SMA yang menerima banyak pertanyaan setiap kali pendaftaran dibuka.</p>
+          <dt class="text-lg font-bold text-ink">Sekolah swasta</dt>
+          <dd class="mt-1 text-muted">SMK dan SMA yang menerima banyak pertanyaan setiap kali pendaftaran dibuka.</dd>
         </div>
         <div>
-          <p class="text-3xl" aria-hidden="true">🧑‍💼</p>
-          <p class="mt-3 text-lg font-bold text-ink">Panitia dan CS SPMB</p>
-          <p class="mt-1 text-muted">Lebih sedikit pertanyaan berulang, lebih banyak waktu untuk calon murid yang butuh bantuan langsung.</p>
+          <dt class="text-lg font-bold text-ink">Panitia dan CS SPMB</dt>
+          <dd class="mt-1 text-muted">Pertanyaan yang sama tidak perlu dibalas satu per satu, jadi ada waktu untuk calon murid yang butuh bantuan langsung.</dd>
         </div>
         <div>
-          <p class="text-3xl" aria-hidden="true">👨‍👩‍👧</p>
-          <p class="mt-3 text-lg font-bold text-ink">Calon murid dan orang tua</p>
-          <p class="mt-1 text-muted">Jawaban cepat dengan bahasa yang santai, kapan pun mereka membuka website sekolah.</p>
+          <dt class="text-lg font-bold text-ink">Calon murid dan orang tua</dt>
+          <dd class="mt-1 text-muted">Jawaban langsung dengan bahasa yang santai, kapan pun mereka membuka website sekolah.</dd>
         </div>
-      </div>
+      </dl>
     </section>
 
-    <!-- Masalah -->
+    <!-- Masalah: judul di kiri, daftar masalah di kanan (bukan kartu). -->
     <section aria-labelledby="masalah-title" class="mx-auto max-w-6xl px-4 pt-28">
-      <p class="eyebrow">Musim SPMB</p>
-      <h2 id="masalah-title" class="h2 mt-2 max-w-2xl">Pertanyaan yang sama datang terus, dari pagi sampai malam.</h2>
-      <div class="mt-10 grid gap-4 md:grid-cols-3">
-        <div class="card">
-          <p class="text-2xl" aria-hidden="true">😮‍💨</p>
-          <p class="mt-3 font-bold text-ink">CS kewalahan</p>
-          <p class="mt-2 text-muted">"Cara daftarnya gimana?", "berkasnya apa aja?", dan "jurusannya apa aja?" dijawab berulang-ulang setiap hari.</p>
-        </div>
-        <div class="card">
-          <p class="text-2xl" aria-hidden="true">🌙</p>
-          <p class="mt-3 font-bold text-ink">Orang tua bertanya di luar jam kerja</p>
-          <p class="mt-2 text-muted">Banyak orang tua baru sempat mencari info sekolah malam hari, saat CS sudah tidak membalas.</p>
-        </div>
-        <div class="card">
-          <p class="text-2xl" aria-hidden="true">🧩</p>
-          <p class="mt-3 font-bold text-ink">Info tersebar di mana-mana</p>
-          <p class="mt-2 text-muted">Alur pendaftaran ada di brosur, syarat ada di PDF, kontak ada di media sosial. Calon murid harus mencari sendiri.</p>
-        </div>
+      <div class="grid grid-cols-[minmax(0,1fr)] gap-10 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+        <h2 id="masalah-title" class="h2 max-w-xl">Pertanyaan yang sama datang terus, dari pagi sampai malam.</h2>
+        <dl class="divide-y divide-line border-y border-line">
+          <div class="py-5">
+            <dt class="font-bold text-ink">CS kewalahan</dt>
+            <dd class="mt-1 text-muted">"Cara daftarnya gimana?", "berkasnya apa aja?", dan "jurusannya apa aja?" dijawab berulang-ulang setiap hari.</dd>
+          </div>
+          <div class="py-5">
+            <dt class="font-bold text-ink">Orang tua bertanya di luar jam kerja</dt>
+            <dd class="mt-1 text-muted">Orang tua yang bekerja sering baru sempat mencari info sekolah malam hari, saat CS sudah tidak membalas.</dd>
+          </div>
+          <div class="py-5">
+            <dt class="font-bold text-ink">Info tersebar di mana-mana</dt>
+            <dd class="mt-1 text-muted">Alur pendaftaran ada di brosur, syarat ada di PDF, kontak ada di media sosial. Calon murid harus mencari sendiri.</dd>
+          </div>
+        </dl>
       </div>
     </section>
 
     <!-- Sebelum vs sesudah -->
-    <section aria-labelledby="banding-title" class="mx-auto max-w-6xl px-4 pt-28">
-      <p class="eyebrow">Perbandingan</p>
-      <h2 id="banding-title" class="h2 mt-2 max-w-2xl">Dari balas chat satu per satu, ke asisten yang siap kapan saja.</h2>
+    <section aria-labelledby="banding-title" class="mx-auto max-w-6xl px-4 pt-24">
+      <h2 id="banding-title" class="h2 max-w-2xl">Yang berubah setelah ada AsistenSPMB.</h2>
       <div class="mt-10 overflow-hidden rounded-xl border border-line">
         <div class="hidden grid-cols-[13rem_minmax(0,1fr)_minmax(0,1fr)] border-b border-line bg-soft text-sm font-semibold md:grid">
           <span class="p-4"></span>
           <span class="p-4 text-muted">Tanpa AsistenSPMB</span>
-          <span class="p-4 text-ink">✨ Dengan AsistenSPMB</span>
+          <span class="p-4 text-ink">Dengan AsistenSPMB</span>
         </div>
         <dl class="divide-y divide-line">
           <div class="grid gap-2 p-5 md:grid-cols-[13rem_minmax(0,1fr)_minmax(0,1fr)] md:gap-0 md:p-0">
-            <dt class="font-semibold text-ink md:p-4">⏰ Jam layanan</dt>
+            <dt class="font-semibold text-ink md:p-4">Jam layanan</dt>
             <dd class="text-muted md:p-4"><span class="font-semibold md:hidden">Tanpa: </span>Mengikuti jam kerja CS</dd>
             <dd class="font-medium text-ink md:p-4"><span class="font-semibold text-brand md:hidden">Dengan: </span>Kapan saja website sekolah dibuka</dd>
           </div>
           <div class="grid gap-2 p-5 md:grid-cols-[13rem_minmax(0,1fr)_minmax(0,1fr)] md:gap-0 md:p-0">
-            <dt class="font-semibold text-ink md:p-4">🔁 Pertanyaan berulang</dt>
+            <dt class="font-semibold text-ink md:p-4">Pertanyaan berulang</dt>
             <dd class="text-muted md:p-4"><span class="font-semibold md:hidden">Tanpa: </span>Dibalas satu per satu oleh CS</dd>
             <dd class="font-medium text-ink md:p-4"><span class="font-semibold text-brand md:hidden">Dengan: </span>Dijawab langsung dari info sekolah</dd>
           </div>
           <div class="grid gap-2 p-5 md:grid-cols-[13rem_minmax(0,1fr)_minmax(0,1fr)] md:gap-0 md:p-0">
-            <dt class="font-semibold text-ink md:p-4">❓ Info yang belum ada</dt>
+            <dt class="font-semibold text-ink md:p-4">Info yang belum ada</dt>
             <dd class="text-muted md:p-4"><span class="font-semibold md:hidden">Tanpa: </span>Calon murid menunggu balasan</dd>
             <dd class="font-medium text-ink md:p-4"><span class="font-semibold text-brand md:hidden">Dengan: </span>Langsung diberi nomor CS SPMB yang tepat</dd>
           </div>
           <div class="grid gap-2 p-5 md:grid-cols-[13rem_minmax(0,1fr)_minmax(0,1fr)] md:gap-0 md:p-0">
-            <dt class="font-semibold text-ink md:p-4">✏️ Memperbarui info</dt>
+            <dt class="font-semibold text-ink md:p-4">Memperbarui info</dt>
             <dd class="text-muted md:p-4"><span class="font-semibold md:hidden">Tanpa: </span>Ubah brosur, lalu sebar ulang ke mana-mana</dd>
             <dd class="font-medium text-ink md:p-4"><span class="font-semibold text-brand md:hidden">Dengan: </span>Edit halaman di dashboard, asisten langsung memakai info baru</dd>
           </div>
@@ -257,41 +238,37 @@
       </div>
     </section>
 
-    <!-- Fitur -->
-    <section id="fitur" aria-labelledby="fitur-title" class="mx-auto max-w-6xl scroll-mt-20 px-4 pt-28">
-      <p class="eyebrow">Fitur</p>
-      <h2 id="fitur-title" class="h2 mt-2 max-w-2xl">Satu asisten yang paham sekolahmu.</h2>
-      <div class="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <div class="card">
-          <p class="text-2xl" aria-hidden="true">📚</p>
-          <h3 class="mt-3 font-bold text-ink">Jawab dari data sekolah</h3>
-          <p class="mt-2 text-muted">Info sekolah dalam bentuk teks atau PDF brosur jadi bahan jawaban. Bukan jawaban umum dari internet.</p>
-        </div>
-        <div class="card">
-          <p class="text-2xl" aria-hidden="true">🛡️</p>
-          <h3 class="mt-3 font-bold text-ink">Tidak mengarang</h3>
-          <p class="mt-2 text-muted">Kalau biaya, beasiswa, atau jadwal tidak ada di data, asisten bilang belum tahu dan memberi nomor CS sekolah.</p>
-        </div>
-        <div class="card">
-          <p class="text-2xl" aria-hidden="true">🧩</p>
-          <h3 class="mt-3 font-bold text-ink">Pasang dengan dua baris kode</h3>
-          <p class="mt-2 text-muted">Tempel di website sekolah, lalu tombol chat muncul di pojok kanan bawah. Gaya website sekolah tidak terganggu.</p>
-        </div>
-        <div class="card">
-          <p class="text-2xl" aria-hidden="true">🎨</p>
-          <h3 class="mt-3 font-bold text-ink">Tampil dengan identitas sekolah</h3>
-          <p class="mt-2 text-muted">Nama dan warna widget mengikuti sekolah. Di demo, widget memakai navy dan kuning emas SMK Wikrama.</p>
-        </div>
-        <div class="card">
-          <p class="text-2xl" aria-hidden="true">📱</p>
-          <h3 class="mt-3 font-bold text-ink">Nyaman di HP</h3>
-          <p class="mt-2 text-muted">Kebanyakan calon murid membuka website dari HP. Di layar kecil, chat tampil penuh layar.</p>
-        </div>
-        <div class="card">
-          <p class="text-2xl" aria-hidden="true">🔒</p>
-          <h3 class="mt-3 font-bold text-ink">Aman untuk calon murid</h3>
-          <p class="mt-2 text-muted">Asisten tidak meminta NIK, NISN, atau password lewat chat, dan mengarahkan pendaftaran ke situs resmi sekolah.</p>
-        </div>
+    <!-- Fitur: fitur utama dibuat besar dengan contoh jawaban asli dari data demo, sisanya daftar biasa. -->
+    <section id="fitur" aria-labelledby="fitur-title" class="mx-auto max-w-6xl scroll-mt-20 px-4 pt-32">
+      <h2 id="fitur-title" class="h2 max-w-2xl">Satu asisten yang paham sekolahmu.</h2>
+      <div class="mt-10 grid grid-cols-[minmax(0,1fr)] gap-10 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)] lg:items-start">
+        <figure class="rounded-xl bg-soft p-6 sm:p-10">
+          <h3 class="text-xl font-bold text-ink sm:text-2xl">Menjawab dari data sekolah</h3>
+          <p class="mt-3 leading-relaxed text-muted sm:text-lg">Info sekolah dalam bentuk teks atau PDF brosur jadi satu-satunya bahan jawaban. Kalau biaya, beasiswa, atau jadwal tidak ada di data, asisten bilang belum tahu dan memberi nomor CS sekolah.</p>
+          <div class="mt-8 space-y-2.5 text-[15px] leading-relaxed">
+            <p class="ml-auto w-fit max-w-[85%] rounded-2xl rounded-br-md bg-ink px-3.5 py-2 text-white">Berkas apa yang perlu disiapin?</p>
+            <p class="w-fit max-w-[92%] rounded-2xl rounded-bl-md border border-line bg-white px-3.5 py-2 text-body">Dibawa saat wawancara ya, Kak: legalisir rapor semester 1–4, fotokopi KK, fotokopi KTP ayah dan ibu, fotokopi akta kelahiran, serta surat keterangan golongan darah dan tidak buta warna dari puskesmas atau klinik.</p>
+          </div>
+          <figcaption class="mt-4 text-sm text-muted">Contoh jawaban dari data SPMB SMK Wikrama Bogor di demo.</figcaption>
+        </figure>
+        <dl class="divide-y divide-line border-y border-line">
+          <div class="py-5">
+            <dt class="font-bold text-ink">Pasang dengan dua baris kode</dt>
+            <dd class="mt-1 text-muted">Tempel di website sekolah, lalu tombol chat muncul di pojok kanan bawah. Gaya website sekolah tidak terganggu.</dd>
+          </div>
+          <div class="py-5">
+            <dt class="font-bold text-ink">Nama dan warna sekolah</dt>
+            <dd class="mt-1 text-muted">Widget memakai nama dan warna sekolah. Di demo, widget memakai navy dan kuning emas SMK Wikrama.</dd>
+          </div>
+          <div class="py-5">
+            <dt class="font-bold text-ink">Bisa diuji sebelum dipasang</dt>
+            <dd class="mt-1 text-muted">Kirim pertanyaan contoh dari dashboard dan lihat jawabannya, sebelum widget tampil di website.</dd>
+          </div>
+          <div class="py-5">
+            <dt class="font-bold text-ink">Nyaman di HP</dt>
+            <dd class="mt-1 text-muted">Di layar HP, chat tampil penuh layar.</dd>
+          </div>
+        </dl>
       </div>
     </section>
 
@@ -299,33 +276,31 @@
     <section id="dashboard" aria-labelledby="dashboard-title" class="mx-auto max-w-6xl scroll-mt-20 px-4 pt-28">
       <div class="grid grid-cols-[minmax(0,1fr)] gap-12 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] lg:items-center">
         <div>
-          <p class="eyebrow">Dashboard sekolah</p>
-          <h2 id="dashboard-title" class="h2 mt-2">Info sekolah ditulis <span class="mark">seperti catatan</span>.</h2>
+          <h2 id="dashboard-title" class="h2">Info sekolah ditulis seperti catatan.</h2>
           <p class="lead mt-4">Admin sekolah cukup mengetik. Tidak perlu paham AI atau kode.</p>
-          <ul class="mt-8 space-y-4">
-            <li class="flex gap-3"><span class="text-xl" aria-hidden="true">📝</span><span><strong class="text-ink">Satu halaman untuk satu topik.</strong> Alur pendaftaran, jurusan, ekskul, dan kontak tersusun rapi di sidebar.</span></li>
-            <li class="flex gap-3"><span class="text-xl" aria-hidden="true">📄</span><span><strong class="text-ink">Unggah PDF brosur.</strong> Teksnya ikut jadi bahan jawaban.</span></li>
-            <li class="flex gap-3"><span class="text-xl" aria-hidden="true">🎨</span><span><strong class="text-ink">Atur tampilan widget.</strong> Nama, warna, sapaan, dan contoh pertanyaan, dengan pratinjau langsung.</span></li>
-            <li class="flex gap-3"><span class="text-xl" aria-hidden="true">⚡</span><span><strong class="text-ink">Langsung dipakai.</strong> Setelah disimpan, asisten menjawab dengan info terbaru.</span></li>
+          <ul class="mt-8 divide-y divide-line border-y border-line">
+            <li class="py-3">Tiap topik punya halaman sendiri, misalnya alur pendaftaran, jurusan, ekskul, dan kontak.</li>
+            <li class="py-3">PDF brosur bisa diunggah, dan teksnya ikut jadi bahan jawaban.</li>
+            <li class="py-3">Nama, warna, sapaan, dan contoh pertanyaan widget diatur dengan pratinjau langsung.</li>
+            <li class="py-3">Setelah disimpan, asisten langsung menjawab dengan info terbaru.</li>
           </ul>
-          <a href="dashboard.html" class="btn btn-dark mt-8">Buka dashboard demo →</a>
+          <a href="dashboard.html" class="btn btn-dark mt-8">Buka dashboard demo</a>
         </div>
 
         <!-- Pratinjau tabel Info sekolah (statis) -->
         <figure>
           <div class="rounded-xl border border-line bg-white p-6 shadow-[0_24px_60px_-24px_rgba(15,15,15,0.2)] sm:p-8" aria-hidden="true">
-            <p class="text-4xl leading-none">🏫</p>
-            <p class="mt-3 text-2xl font-bold tracking-tight text-ink">Info sekolah</p>
+            <p class="text-2xl font-bold tracking-tight text-ink">Info sekolah</p>
             <p class="mt-1 text-xs text-muted">10 halaman · 11.689 dari 60.000 karakter</p>
             <div class="mt-5 overflow-hidden rounded-lg border border-line text-sm">
               <div class="grid grid-cols-[minmax(0,1fr)_5rem] gap-3 border-b border-line bg-[#f7f7f5] px-3 py-2 text-xs font-semibold text-muted sm:grid-cols-[minmax(0,1fr)_5rem_7rem]">
                 <span>Halaman</span><span class="text-right">Karakter</span><span class="hidden sm:block">Diubah</span>
               </div>
-              <div class="grid grid-cols-[minmax(0,1fr)_5rem] gap-3 border-b border-line px-3 py-2 sm:grid-cols-[minmax(0,1fr)_5rem_7rem]"><span class="truncate">🏫 Profil sekolah</span><span class="text-right text-muted">1.327</span><span class="hidden text-muted sm:block">Bawaan</span></div>
-              <div class="grid grid-cols-[minmax(0,1fr)_5rem] gap-3 border-b border-line bg-[#f7f7f5] px-3 py-2 sm:grid-cols-[minmax(0,1fr)_5rem_7rem]"><span class="truncate font-semibold text-ink">📝 Info SPMB</span><span class="text-right text-muted">1.739</span><span class="hidden text-muted sm:block">Hari ini</span></div>
-              <div class="grid grid-cols-[minmax(0,1fr)_5rem] gap-3 border-b border-line px-3 py-2 sm:grid-cols-[minmax(0,1fr)_5rem_7rem]"><span class="truncate">🎓 Jurusan</span><span class="text-right text-muted">2.403</span><span class="hidden text-muted sm:block">Bawaan</span></div>
-              <div class="grid grid-cols-[minmax(0,1fr)_5rem] gap-3 border-b border-line px-3 py-2 sm:grid-cols-[minmax(0,1fr)_5rem_7rem]"><span class="truncate">⚽ Ekstrakurikuler</span><span class="text-right text-muted">2.922</span><span class="hidden text-muted sm:block">Bawaan</span></div>
-              <div class="grid grid-cols-[minmax(0,1fr)_5rem] gap-3 border-b border-line px-3 py-2 sm:grid-cols-[minmax(0,1fr)_5rem_7rem]"><span class="truncate">☎️ Kontak SPMB</span><span class="text-right text-muted">355</span><span class="hidden text-muted sm:block">Bawaan</span></div>
+              <div class="grid grid-cols-[minmax(0,1fr)_5rem] gap-3 border-b border-line px-3 py-2 sm:grid-cols-[minmax(0,1fr)_5rem_7rem]"><span class="truncate">Profil sekolah</span><span class="text-right text-muted">1.327</span><span class="hidden text-muted sm:block">Bawaan</span></div>
+              <div class="grid grid-cols-[minmax(0,1fr)_5rem] gap-3 border-b border-line bg-[#f7f7f5] px-3 py-2 sm:grid-cols-[minmax(0,1fr)_5rem_7rem]"><span class="truncate font-semibold text-ink">Info SPMB</span><span class="text-right text-muted">1.739</span><span class="hidden text-muted sm:block">Hari ini</span></div>
+              <div class="grid grid-cols-[minmax(0,1fr)_5rem] gap-3 border-b border-line px-3 py-2 sm:grid-cols-[minmax(0,1fr)_5rem_7rem]"><span class="truncate">Jurusan</span><span class="text-right text-muted">2.403</span><span class="hidden text-muted sm:block">Bawaan</span></div>
+              <div class="grid grid-cols-[minmax(0,1fr)_5rem] gap-3 border-b border-line px-3 py-2 sm:grid-cols-[minmax(0,1fr)_5rem_7rem]"><span class="truncate">Ekstrakurikuler</span><span class="text-right text-muted">2.922</span><span class="hidden text-muted sm:block">Bawaan</span></div>
+              <div class="grid grid-cols-[minmax(0,1fr)_5rem] gap-3 border-b border-line px-3 py-2 sm:grid-cols-[minmax(0,1fr)_5rem_7rem]"><span class="truncate">Kontak SPMB</span><span class="text-right text-muted">355</span><span class="hidden text-muted sm:block">Bawaan</span></div>
               <div class="px-3 py-2 text-muted">+ Halaman baru</div>
             </div>
           </div>
@@ -338,19 +313,18 @@
     <section id="cara-kerja" aria-labelledby="cara-kerja-title" class="mx-auto max-w-6xl scroll-mt-20 px-4 pt-28">
       <div class="grid grid-cols-[minmax(0,1fr)] gap-12 lg:grid-cols-2 lg:items-center">
         <div>
-          <p class="eyebrow">Cara kerja</p>
-          <h2 id="cara-kerja-title" class="h2 mt-2">Siap dalam tiga langkah.</h2>
-          <ol class="mt-8 space-y-6">
-            <li class="flex gap-4">
-              <span class="grid size-9 shrink-0 place-items-center rounded-full bg-ink text-sm font-bold text-white">1</span>
+          <h2 id="cara-kerja-title" class="h2">Siap dalam tiga langkah.</h2>
+          <ol class="mt-8 divide-y divide-line border-y border-line">
+            <li class="grid grid-cols-[2rem_minmax(0,1fr)] py-5">
+              <span class="font-bold tabular-nums text-muted">1.</span>
               <div><p class="font-bold text-ink">Isi info sekolah di dashboard</p><p class="mt-1 text-muted">Alur pendaftaran, syarat berkas, jurusan, dan kontak CS, ditulis per halaman. Boleh juga unggah PDF brosur.</p></div>
             </li>
-            <li class="flex gap-4">
-              <span class="grid size-9 shrink-0 place-items-center rounded-full bg-ink text-sm font-bold text-white">2</span>
+            <li class="grid grid-cols-[2rem_minmax(0,1fr)] py-5">
+              <span class="font-bold tabular-nums text-muted">2.</span>
               <div><p class="font-bold text-ink">Atur tampilan dan uji jawabannya</p><p class="mt-1 text-muted">Nama dan warna disesuaikan dengan sekolah. Coba tanya langsung di dashboard sebelum dipasang.</p></div>
             </li>
-            <li class="flex gap-4">
-              <span class="grid size-9 shrink-0 place-items-center rounded-full bg-ink text-sm font-bold text-white">3</span>
+            <li class="grid grid-cols-[2rem_minmax(0,1fr)] py-5">
+              <span class="font-bold tabular-nums text-muted">3.</span>
               <div><p class="font-bold text-ink">Tempel di website sekolah</p><p class="mt-1 text-muted">Dua baris kode, dan tombol Asisten SPMB langsung muncul.</p></div>
             </li>
           </ol>
@@ -358,7 +332,6 @@
         <div>
           <div class="overflow-hidden rounded-xl border border-line bg-soft">
             <div class="flex items-center gap-2 border-b border-line px-4 py-2.5">
-              <span class="text-sm" aria-hidden="true">🧩</span>
               <span class="font-mono text-xs text-muted">website-sekolah.html</span>
             </div>
             <pre class="overflow-x-auto p-5 font-mono text-[13px] leading-relaxed text-ink"><code><span class="text-muted">&lt;!-- Tempel sebelum &lt;/body&gt; --&gt;</span>
@@ -374,93 +347,78 @@
     <section aria-labelledby="demo-title" class="mx-auto max-w-6xl px-4 pt-28">
       <div class="grid grid-cols-[minmax(0,1fr)] items-center gap-8 rounded-2xl border border-line p-8 sm:p-12 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
         <div>
-          <p class="inline-flex items-center gap-2 rounded-full bg-wk-navy px-3 py-1 text-xs font-semibold text-wk-gold"><span aria-hidden="true">🎓</span>Demo langsung</p>
-          <h2 id="demo-title" class="h2 mt-4">Lihat AsistenSPMB di website SMK Wikrama Bogor.</h2>
+          <h2 id="demo-title" class="h2">Lihat AsistenSPMB di website SMK Wikrama Bogor.</h2>
           <p class="lead mt-4">Halaman demo dengan data SPMB 2027–2028 SMK Wikrama Bogor. Klik tombol chat di pojok kanan bawah, lalu tanya soal pendaftaran, jurusan, atau ekskul.</p>
         </div>
         <div class="flex flex-col gap-3 sm:flex-row lg:flex-col">
-          <a href="demo-wikrama.html" class="btn btn-dark">Buka demo SMK Wikrama →</a>
+          <a href="demo-wikrama.html" class="btn btn-dark">Buka demo SMK Wikrama</a>
           <a href="dashboard.html" class="btn btn-light">Buka dashboard</a>
         </div>
       </div>
     </section>
 
     <!-- Keamanan dan privasi -->
-    <section aria-labelledby="privasi-title" class="mx-auto max-w-6xl px-4 pt-28">
-      <p class="eyebrow">Keamanan dan privasi</p>
-      <h2 id="privasi-title" class="h2 mt-2 max-w-2xl">Dibuat untuk percakapan dengan anak di bawah umur.</h2>
-      <div class="mt-10 grid gap-4 sm:grid-cols-2">
-        <div class="card">
-          <p class="text-2xl" aria-hidden="true">🙅</p>
-          <p class="mt-3 font-bold text-ink">Tidak meminta data pribadi</p>
-          <p class="mt-2 text-muted">Asisten tidak meminta NIK, NISN, nomor KK, password, atau nomor rekening. Pendaftaran tetap lewat situs resmi sekolah.</p>
+    <section aria-labelledby="privasi-title" class="mx-auto max-w-6xl px-4 pt-32">
+      <h2 id="privasi-title" class="h2 max-w-2xl">Dibuat untuk percakapan dengan anak di bawah umur.</h2>
+      <dl class="mt-10 grid gap-x-12 gap-y-8 sm:grid-cols-2">
+        <div class="border-t border-line pt-5">
+          <dt class="font-bold text-ink">Tidak meminta data pribadi</dt>
+          <dd class="mt-2 text-muted">Asisten tidak meminta NIK, NISN, nomor KK, password, atau nomor rekening. Pendaftaran tetap lewat situs resmi sekolah.</dd>
         </div>
-        <div class="card">
-          <p class="text-2xl" aria-hidden="true">🏫</p>
-          <p class="mt-3 font-bold text-ink">Data milik sekolah</p>
-          <p class="mt-2 text-muted">Sekolah yang menulis dan menyetujui semua info yang dipakai asisten, dan bisa mengubahnya kapan saja.</p>
+        <div class="border-t border-line pt-5">
+          <dt class="font-bold text-ink">Data milik sekolah</dt>
+          <dd class="mt-2 text-muted">Sekolah yang menulis dan menyetujui semua info yang dipakai asisten, dan bisa mengubahnya kapan saja.</dd>
         </div>
-        <div class="card">
-          <p class="text-2xl" aria-hidden="true">📌</p>
-          <p class="mt-3 font-bold text-ink">Hanya dari info sekolah</p>
-          <p class="mt-2 text-muted">Asisten tidak mengarang biaya, kuota, jadwal, atau beasiswa. Yang tidak ada di data diarahkan ke CS SPMB.</p>
+        <div class="border-t border-line pt-5">
+          <dt class="font-bold text-ink">Hanya dari info sekolah</dt>
+          <dd class="mt-2 text-muted">Asisten tidak mengarang biaya, kuota, jadwal, atau beasiswa. Yang tidak ada di data diarahkan ke CS SPMB.</dd>
         </div>
-        <div class="card">
-          <p class="text-2xl" aria-hidden="true">🔑</p>
-          <p class="mt-3 font-bold text-ink">Kunci AI di server <span class="ml-1 rounded-full bg-mint px-2 py-0.5 align-middle text-xs font-semibold text-brand-dark">versi produksi</span></p>
-          <p class="mt-2 text-muted">Di versi produksi, kunci AI dan data sekolah disimpan di server, bukan di website sekolah atau browser pengunjung.</p>
+        <div class="border-t border-line pt-5">
+          <dt class="font-bold text-ink">Kunci AI di server <span class="ml-1 rounded-full bg-mint px-2 py-0.5 align-middle text-xs font-semibold text-brand-dark">versi produksi</span></dt>
+          <dd class="mt-2 text-muted">Di versi produksi, kunci AI dan data sekolah disimpan di server, bukan di website sekolah atau browser pengunjung.</dd>
         </div>
-      </div>
+      </dl>
     </section>
 
     <!-- Cerita: peta titik Nusantara. Titik-titiknya dihitung sekali dari data peta asli (world-atlas, Indonesia),
          lalu disimpan statis di sini, jadi tidak ada beban tambahan saat halaman dibuka. -->
     <section aria-labelledby="cerita-title" class="mx-auto max-w-6xl px-4 pt-28">
       <div class="rounded-2xl border border-line bg-white px-6 pb-10 pt-16 text-center sm:px-12 sm:pt-20">
-        <p class="eyebrow">Cerita di balik AsistenSPMB</p>
-        <h2 id="cerita-title" class="h2 mt-2">Berawal dari Wikrama.</h2>
-        <p class="lead mx-auto mt-6 max-w-3xl">AsistenSPMB dikembangkan oleh alumni SMK Wikrama Bogor, bekerja sama dengan sekolahnya sendiri. Demo pertamanya memakai data SPMB SMK Wikrama Bogor, jadi yang kamu coba adalah kebutuhan sekolah yang nyata.</p>
+        <h2 id="cerita-title" class="h2">Berawal dari Wikrama.</h2>
+        <p class="lead mx-auto mt-6 max-w-3xl">AsistenSPMB dikembangkan oleh alumni SMK Wikrama Bogor, bekerja sama dengan sekolahnya sendiri. Demo pertamanya memakai data SPMB SMK Wikrama Bogor yang sebenarnya.</p>
         <figure class="mx-auto mt-12 max-w-4xl">
           <div class="relative">
             <svg viewBox="0 0 960 380" role="img" aria-labelledby="peta-title" class="h-auto w-full">
               <title id="peta-title">Peta Indonesia dari titik-titik, dengan penanda di Bogor, Jawa Barat</title>
               <path d="M13.5 22.5h0M13.5 31.5h0M22.5 31.5h0M31.5 31.5h0M40.5 31.5h0M49.5 31.5h0M58.5 31.5h0M22.5 40.5h0M31.5 40.5h0M40.5 40.5h0M49.5 40.5h0M58.5 40.5h0M31.5 49.5h0M40.5 49.5h0M49.5 49.5h0M58.5 49.5h0M67.5 49.5h0M436.5 49.5h0M445.5 49.5h0M454.5 49.5h0M40.5 58.5h0M49.5 58.5h0M58.5 58.5h0M67.5 58.5h0M76.5 58.5h0M274.5 58.5h0M436.5 58.5h0M445.5 58.5h0M454.5 58.5h0M463.5 58.5h0M49.5 67.5h0M58.5 67.5h0M67.5 67.5h0M76.5 67.5h0M85.5 67.5h0M94.5 67.5h0M436.5 67.5h0M445.5 67.5h0M454.5 67.5h0M463.5 67.5h0M634.5 67.5h0M58.5 76.5h0M67.5 76.5h0M76.5 76.5h0M85.5 76.5h0M94.5 76.5h0M103.5 76.5h0M427.5 76.5h0M436.5 76.5h0M445.5 76.5h0M454.5 76.5h0M463.5 76.5h0M31.5 85.5h0M67.5 85.5h0M76.5 85.5h0M85.5 85.5h0M94.5 85.5h0M103.5 85.5h0M112.5 85.5h0M427.5 85.5h0M436.5 85.5h0M445.5 85.5h0M454.5 85.5h0M463.5 85.5h0M472.5 85.5h0M76.5 94.5h0M85.5 94.5h0M94.5 94.5h0M103.5 94.5h0M112.5 94.5h0M121.5 94.5h0M130.5 94.5h0M418.5 94.5h0M427.5 94.5h0M436.5 94.5h0M445.5 94.5h0M454.5 94.5h0M463.5 94.5h0M472.5 94.5h0M85.5 103.5h0M94.5 103.5h0M103.5 103.5h0M112.5 103.5h0M121.5 103.5h0M130.5 103.5h0M139.5 103.5h0M301.5 103.5h0M409.5 103.5h0M418.5 103.5h0M427.5 103.5h0M436.5 103.5h0M445.5 103.5h0M454.5 103.5h0M463.5 103.5h0M472.5 103.5h0M679.5 103.5h0M58.5 112.5h0M85.5 112.5h0M94.5 112.5h0M103.5 112.5h0M112.5 112.5h0M121.5 112.5h0M130.5 112.5h0M139.5 112.5h0M148.5 112.5h0M157.5 112.5h0M301.5 112.5h0M310.5 112.5h0M364.5 112.5h0M373.5 112.5h0M382.5 112.5h0M391.5 112.5h0M400.5 112.5h0M409.5 112.5h0M418.5 112.5h0M427.5 112.5h0M436.5 112.5h0M445.5 112.5h0M454.5 112.5h0M463.5 112.5h0M472.5 112.5h0M481.5 112.5h0M490.5 112.5h0M544.5 112.5h0M616.5 112.5h0M679.5 112.5h0M688.5 112.5h0M697.5 112.5h0M94.5 121.5h0M103.5 121.5h0M112.5 121.5h0M121.5 121.5h0M130.5 121.5h0M139.5 121.5h0M148.5 121.5h0M157.5 121.5h0M166.5 121.5h0M292.5 121.5h0M301.5 121.5h0M310.5 121.5h0M319.5 121.5h0M328.5 121.5h0M337.5 121.5h0M346.5 121.5h0M355.5 121.5h0M364.5 121.5h0M373.5 121.5h0M382.5 121.5h0M391.5 121.5h0M400.5 121.5h0M409.5 121.5h0M418.5 121.5h0M427.5 121.5h0M436.5 121.5h0M445.5 121.5h0M454.5 121.5h0M463.5 121.5h0M472.5 121.5h0M526.5 121.5h0M535.5 121.5h0M544.5 121.5h0M553.5 121.5h0M562.5 121.5h0M571.5 121.5h0M580.5 121.5h0M589.5 121.5h0M598.5 121.5h0M607.5 121.5h0M679.5 121.5h0M688.5 121.5h0M94.5 130.5h0M103.5 130.5h0M112.5 130.5h0M121.5 130.5h0M130.5 130.5h0M139.5 130.5h0M148.5 130.5h0M157.5 130.5h0M166.5 130.5h0M175.5 130.5h0M292.5 130.5h0M301.5 130.5h0M310.5 130.5h0M319.5 130.5h0M328.5 130.5h0M337.5 130.5h0M346.5 130.5h0M355.5 130.5h0M364.5 130.5h0M373.5 130.5h0M382.5 130.5h0M391.5 130.5h0M400.5 130.5h0M409.5 130.5h0M418.5 130.5h0M427.5 130.5h0M436.5 130.5h0M445.5 130.5h0M454.5 130.5h0M463.5 130.5h0M517.5 130.5h0M589.5 130.5h0M598.5 130.5h0M679.5 130.5h0M697.5 130.5h0M103.5 139.5h0M112.5 139.5h0M121.5 139.5h0M130.5 139.5h0M139.5 139.5h0M148.5 139.5h0M157.5 139.5h0M166.5 139.5h0M175.5 139.5h0M202.5 139.5h0M301.5 139.5h0M310.5 139.5h0M319.5 139.5h0M328.5 139.5h0M337.5 139.5h0M346.5 139.5h0M355.5 139.5h0M364.5 139.5h0M373.5 139.5h0M382.5 139.5h0M391.5 139.5h0M400.5 139.5h0M409.5 139.5h0M418.5 139.5h0M427.5 139.5h0M436.5 139.5h0M445.5 139.5h0M454.5 139.5h0M463.5 139.5h0M517.5 139.5h0M679.5 139.5h0M742.5 139.5h0M76.5 148.5h0M112.5 148.5h0M121.5 148.5h0M130.5 148.5h0M139.5 148.5h0M148.5 148.5h0M157.5 148.5h0M166.5 148.5h0M175.5 148.5h0M301.5 148.5h0M310.5 148.5h0M319.5 148.5h0M328.5 148.5h0M337.5 148.5h0M346.5 148.5h0M355.5 148.5h0M364.5 148.5h0M373.5 148.5h0M382.5 148.5h0M391.5 148.5h0M400.5 148.5h0M409.5 148.5h0M418.5 148.5h0M427.5 148.5h0M436.5 148.5h0M445.5 148.5h0M454.5 148.5h0M463.5 148.5h0M517.5 148.5h0M553.5 148.5h0M670.5 148.5h0M769.5 148.5h0M778.5 148.5h0M787.5 148.5h0M85.5 157.5h0M121.5 157.5h0M130.5 157.5h0M139.5 157.5h0M148.5 157.5h0M157.5 157.5h0M166.5 157.5h0M175.5 157.5h0M184.5 157.5h0M310.5 157.5h0M319.5 157.5h0M328.5 157.5h0M337.5 157.5h0M346.5 157.5h0M355.5 157.5h0M364.5 157.5h0M373.5 157.5h0M382.5 157.5h0M391.5 157.5h0M400.5 157.5h0M409.5 157.5h0M418.5 157.5h0M427.5 157.5h0M436.5 157.5h0M445.5 157.5h0M454.5 157.5h0M517.5 157.5h0M526.5 157.5h0M553.5 157.5h0M562.5 157.5h0M571.5 157.5h0M742.5 157.5h0M751.5 157.5h0M760.5 157.5h0M769.5 157.5h0M778.5 157.5h0M787.5 157.5h0M796.5 157.5h0M805.5 157.5h0M85.5 166.5h0M121.5 166.5h0M130.5 166.5h0M139.5 166.5h0M148.5 166.5h0M157.5 166.5h0M166.5 166.5h0M175.5 166.5h0M184.5 166.5h0M193.5 166.5h0M319.5 166.5h0M328.5 166.5h0M337.5 166.5h0M346.5 166.5h0M355.5 166.5h0M364.5 166.5h0M373.5 166.5h0M382.5 166.5h0M391.5 166.5h0M400.5 166.5h0M409.5 166.5h0M418.5 166.5h0M427.5 166.5h0M436.5 166.5h0M445.5 166.5h0M508.5 166.5h0M517.5 166.5h0M526.5 166.5h0M535.5 166.5h0M544.5 166.5h0M553.5 166.5h0M562.5 166.5h0M580.5 166.5h0M589.5 166.5h0M751.5 166.5h0M760.5 166.5h0M769.5 166.5h0M778.5 166.5h0M787.5 166.5h0M796.5 166.5h0M805.5 166.5h0M130.5 175.5h0M139.5 175.5h0M148.5 175.5h0M157.5 175.5h0M166.5 175.5h0M175.5 175.5h0M184.5 175.5h0M193.5 175.5h0M220.5 175.5h0M229.5 175.5h0M319.5 175.5h0M328.5 175.5h0M337.5 175.5h0M346.5 175.5h0M355.5 175.5h0M364.5 175.5h0M373.5 175.5h0M382.5 175.5h0M391.5 175.5h0M400.5 175.5h0M409.5 175.5h0M418.5 175.5h0M427.5 175.5h0M436.5 175.5h0M445.5 175.5h0M508.5 175.5h0M517.5 175.5h0M526.5 175.5h0M535.5 175.5h0M544.5 175.5h0M553.5 175.5h0M616.5 175.5h0M625.5 175.5h0M634.5 175.5h0M643.5 175.5h0M724.5 175.5h0M769.5 175.5h0M778.5 175.5h0M787.5 175.5h0M796.5 175.5h0M805.5 175.5h0M850.5 175.5h0M859.5 175.5h0M877.5 175.5h0M886.5 175.5h0M895.5 175.5h0M103.5 184.5h0M130.5 184.5h0M139.5 184.5h0M148.5 184.5h0M157.5 184.5h0M166.5 184.5h0M175.5 184.5h0M184.5 184.5h0M193.5 184.5h0M202.5 184.5h0M229.5 184.5h0M319.5 184.5h0M328.5 184.5h0M337.5 184.5h0M346.5 184.5h0M355.5 184.5h0M364.5 184.5h0M373.5 184.5h0M382.5 184.5h0M391.5 184.5h0M400.5 184.5h0M409.5 184.5h0M418.5 184.5h0M427.5 184.5h0M436.5 184.5h0M445.5 184.5h0M508.5 184.5h0M517.5 184.5h0M526.5 184.5h0M535.5 184.5h0M544.5 184.5h0M553.5 184.5h0M805.5 184.5h0M859.5 184.5h0M868.5 184.5h0M877.5 184.5h0M886.5 184.5h0M895.5 184.5h0M904.5 184.5h0M913.5 184.5h0M112.5 193.5h0M139.5 193.5h0M148.5 193.5h0M157.5 193.5h0M166.5 193.5h0M175.5 193.5h0M184.5 193.5h0M193.5 193.5h0M202.5 193.5h0M211.5 193.5h0M220.5 193.5h0M238.5 193.5h0M265.5 193.5h0M274.5 193.5h0M319.5 193.5h0M328.5 193.5h0M337.5 193.5h0M346.5 193.5h0M355.5 193.5h0M364.5 193.5h0M373.5 193.5h0M382.5 193.5h0M391.5 193.5h0M400.5 193.5h0M409.5 193.5h0M418.5 193.5h0M427.5 193.5h0M436.5 193.5h0M499.5 193.5h0M508.5 193.5h0M517.5 193.5h0M526.5 193.5h0M544.5 193.5h0M553.5 193.5h0M787.5 193.5h0M796.5 193.5h0M805.5 193.5h0M814.5 193.5h0M850.5 193.5h0M859.5 193.5h0M868.5 193.5h0M877.5 193.5h0M886.5 193.5h0M895.5 193.5h0M904.5 193.5h0M913.5 193.5h0M922.5 193.5h0M931.5 193.5h0M940.5 193.5h0M949.5 193.5h0M148.5 202.5h0M157.5 202.5h0M166.5 202.5h0M175.5 202.5h0M184.5 202.5h0M193.5 202.5h0M202.5 202.5h0M211.5 202.5h0M220.5 202.5h0M229.5 202.5h0M265.5 202.5h0M274.5 202.5h0M355.5 202.5h0M364.5 202.5h0M373.5 202.5h0M382.5 202.5h0M391.5 202.5h0M400.5 202.5h0M409.5 202.5h0M418.5 202.5h0M427.5 202.5h0M436.5 202.5h0M499.5 202.5h0M508.5 202.5h0M517.5 202.5h0M544.5 202.5h0M553.5 202.5h0M562.5 202.5h0M643.5 202.5h0M652.5 202.5h0M661.5 202.5h0M688.5 202.5h0M697.5 202.5h0M706.5 202.5h0M715.5 202.5h0M724.5 202.5h0M733.5 202.5h0M778.5 202.5h0M787.5 202.5h0M796.5 202.5h0M805.5 202.5h0M814.5 202.5h0M823.5 202.5h0M841.5 202.5h0M850.5 202.5h0M859.5 202.5h0M868.5 202.5h0M877.5 202.5h0M886.5 202.5h0M895.5 202.5h0M904.5 202.5h0M913.5 202.5h0M922.5 202.5h0M931.5 202.5h0M940.5 202.5h0M949.5 202.5h0M157.5 211.5h0M166.5 211.5h0M175.5 211.5h0M184.5 211.5h0M193.5 211.5h0M202.5 211.5h0M211.5 211.5h0M220.5 211.5h0M409.5 211.5h0M418.5 211.5h0M427.5 211.5h0M517.5 211.5h0M526.5 211.5h0M544.5 211.5h0M553.5 211.5h0M562.5 211.5h0M652.5 211.5h0M661.5 211.5h0M688.5 211.5h0M697.5 211.5h0M733.5 211.5h0M787.5 211.5h0M796.5 211.5h0M805.5 211.5h0M814.5 211.5h0M823.5 211.5h0M832.5 211.5h0M841.5 211.5h0M850.5 211.5h0M859.5 211.5h0M868.5 211.5h0M877.5 211.5h0M886.5 211.5h0M895.5 211.5h0M904.5 211.5h0M913.5 211.5h0M922.5 211.5h0M931.5 211.5h0M940.5 211.5h0M949.5 211.5h0M166.5 220.5h0M175.5 220.5h0M184.5 220.5h0M193.5 220.5h0M202.5 220.5h0M211.5 220.5h0M220.5 220.5h0M409.5 220.5h0M517.5 220.5h0M526.5 220.5h0M553.5 220.5h0M562.5 220.5h0M571.5 220.5h0M787.5 220.5h0M823.5 220.5h0M832.5 220.5h0M841.5 220.5h0M850.5 220.5h0M859.5 220.5h0M868.5 220.5h0M877.5 220.5h0M886.5 220.5h0M895.5 220.5h0M904.5 220.5h0M913.5 220.5h0M922.5 220.5h0M931.5 220.5h0M940.5 220.5h0M949.5 220.5h0M175.5 229.5h0M184.5 229.5h0M193.5 229.5h0M202.5 229.5h0M211.5 229.5h0M220.5 229.5h0M517.5 229.5h0M526.5 229.5h0M553.5 229.5h0M562.5 229.5h0M580.5 229.5h0M832.5 229.5h0M841.5 229.5h0M850.5 229.5h0M859.5 229.5h0M868.5 229.5h0M877.5 229.5h0M886.5 229.5h0M895.5 229.5h0M904.5 229.5h0M913.5 229.5h0M922.5 229.5h0M931.5 229.5h0M940.5 229.5h0M949.5 229.5h0M184.5 238.5h0M193.5 238.5h0M202.5 238.5h0M211.5 238.5h0M220.5 238.5h0M517.5 238.5h0M571.5 238.5h0M580.5 238.5h0M868.5 238.5h0M877.5 238.5h0M886.5 238.5h0M895.5 238.5h0M904.5 238.5h0M913.5 238.5h0M922.5 238.5h0M931.5 238.5h0M940.5 238.5h0M949.5 238.5h0M193.5 247.5h0M202.5 247.5h0M211.5 247.5h0M220.5 247.5h0M508.5 247.5h0M517.5 247.5h0M526.5 247.5h0M571.5 247.5h0M580.5 247.5h0M886.5 247.5h0M895.5 247.5h0M904.5 247.5h0M913.5 247.5h0M922.5 247.5h0M931.5 247.5h0M940.5 247.5h0M949.5 247.5h0M202.5 256.5h0M814.5 256.5h0M895.5 256.5h0M904.5 256.5h0M913.5 256.5h0M922.5 256.5h0M931.5 256.5h0M940.5 256.5h0M949.5 256.5h0M229.5 265.5h0M238.5 265.5h0M247.5 265.5h0M256.5 265.5h0M814.5 265.5h0M904.5 265.5h0M913.5 265.5h0M922.5 265.5h0M931.5 265.5h0M940.5 265.5h0M949.5 265.5h0M229.5 274.5h0M238.5 274.5h0M247.5 274.5h0M256.5 274.5h0M265.5 274.5h0M274.5 274.5h0M283.5 274.5h0M328.5 274.5h0M814.5 274.5h0M904.5 274.5h0M913.5 274.5h0M922.5 274.5h0M931.5 274.5h0M940.5 274.5h0M247.5 283.5h0M256.5 283.5h0M265.5 283.5h0M274.5 283.5h0M283.5 283.5h0M292.5 283.5h0M301.5 283.5h0M310.5 283.5h0M319.5 283.5h0M328.5 283.5h0M337.5 283.5h0M346.5 283.5h0M355.5 283.5h0M364.5 283.5h0M373.5 283.5h0M382.5 283.5h0M391.5 283.5h0M904.5 283.5h0M913.5 283.5h0M922.5 283.5h0M931.5 283.5h0M940.5 283.5h0M949.5 283.5h0M265.5 292.5h0M274.5 292.5h0M283.5 292.5h0M292.5 292.5h0M301.5 292.5h0M310.5 292.5h0M319.5 292.5h0M328.5 292.5h0M337.5 292.5h0M346.5 292.5h0M355.5 292.5h0M364.5 292.5h0M751.5 292.5h0M895.5 292.5h0M904.5 292.5h0M913.5 292.5h0M922.5 292.5h0M931.5 292.5h0M940.5 292.5h0M949.5 292.5h0M319.5 301.5h0M328.5 301.5h0M337.5 301.5h0M346.5 301.5h0M355.5 301.5h0M364.5 301.5h0M373.5 301.5h0M382.5 301.5h0M391.5 301.5h0M400.5 301.5h0M751.5 301.5h0M886.5 301.5h0M895.5 301.5h0M904.5 301.5h0M913.5 301.5h0M922.5 301.5h0M931.5 301.5h0M940.5 301.5h0M949.5 301.5h0M364.5 310.5h0M391.5 310.5h0M400.5 310.5h0M409.5 310.5h0M418.5 310.5h0M427.5 310.5h0M445.5 310.5h0M481.5 310.5h0M490.5 310.5h0M526.5 310.5h0M535.5 310.5h0M616.5 310.5h0M886.5 310.5h0M895.5 310.5h0M904.5 310.5h0M940.5 310.5h0M949.5 310.5h0M436.5 319.5h0M445.5 319.5h0M454.5 319.5h0M463.5 319.5h0M472.5 319.5h0M481.5 319.5h0M490.5 319.5h0M517.5 319.5h0M526.5 319.5h0M535.5 319.5h0M544.5 319.5h0M553.5 319.5h0M949.5 319.5h0M616.5 328.5h0M499.5 337.5h0M508.5 337.5h0M517.5 337.5h0M526.5 337.5h0M598.5 337.5h0M607.5 337.5h0M616.5 337.5h0M526.5 346.5h0M535.5 346.5h0M598.5 346.5h0M607.5 346.5h0" fill="none" stroke="#37352f" stroke-opacity="0.22" stroke-width="5" stroke-linecap="round" class="max-sm:[stroke-width:7]"/>
             </svg>
-            <!-- Penanda dan label Bogor berupa HTML (bukan bagian SVG), supaya ukurannya tetap terbaca di layar kecil.
+            <!-- Penanda (diam, tidak berdenyut) dan label Bogor berupa HTML (bukan bagian SVG), supaya ukurannya tetap terbaca di layar kecil.
                  Label ditaruh di bawah penanda, di atas laut, jadi tidak menutupi daratan. -->
-            <span aria-hidden="true" class="absolute size-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-brand ring-[3px] ring-white" style="left:25.82%;top:72.03%">
-              <span class="absolute inset-0 rounded-full bg-brand animate-ping motion-reduce:animate-none"></span>
-            </span>
-            <span class="absolute whitespace-nowrap rounded-full bg-ink px-3 py-1 text-xs font-semibold text-white shadow-sm sm:text-sm" style="left:calc(25.82% - 16px);top:calc(72.03% + 14px)">📍 SMK Wikrama Bogor</span>
+            <span aria-hidden="true" class="absolute size-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-brand ring-[3px] ring-white" style="left:25.82%;top:72.03%"></span>
+            <span class="absolute whitespace-nowrap rounded-full bg-ink px-3 py-1 text-xs font-semibold text-white shadow-sm sm:text-sm" style="left:calc(25.82% - 16px);top:calc(72.03% + 14px)">SMK Wikrama Bogor</span>
           </div>
           <figcaption class="mt-4 text-sm text-muted">Setiap titik adalah daratan Indonesia. Titik hijau: Bogor, tempat AsistenSPMB dimulai.</figcaption>
         </figure>
       </div>
     </section>
 
-    <!-- Harga -->
-    <section id="harga" aria-labelledby="harga-title" class="mx-auto max-w-6xl scroll-mt-20 px-4 pt-28">
-      <div class="text-center">
-        <p class="eyebrow">Harga</p>
-        <h2 id="harga-title" class="h2 mt-2">Satu paket, semua sudah termasuk.</h2>
-      </div>
-      <div class="mx-auto mt-10 max-w-md rounded-2xl border border-line bg-white p-8 shadow-[0_24px_60px_-24px_rgba(15,15,15,0.2)] sm:p-10">
-        <div class="flex items-center justify-between gap-4">
-          <h3 class="text-lg font-bold text-ink">🏫 Paket Sekolah</h3>
-          <span class="rounded-full bg-soft px-3 py-1 text-xs font-semibold text-body">per sekolah</span>
-        </div>
+    <!-- Harga: satu paket, jadi satu kartu. Isinya daftar biasa, tanpa centang di setiap baris. -->
+    <section id="harga" aria-labelledby="harga-title" class="mx-auto max-w-6xl scroll-mt-20 px-4 pt-32">
+      <h2 id="harga-title" class="h2 text-center">Satu paket, semua sudah termasuk.</h2>
+      <div class="mx-auto mt-10 max-w-md rounded-xl border border-line bg-white p-8 sm:p-10">
+        <h3 class="text-lg font-bold text-ink">Paket Sekolah</h3>
         <p class="mt-6 flex items-baseline gap-2">
           <span class="text-5xl font-extrabold tracking-tight text-ink">Rp300rb</span>
           <span class="text-muted">/bulan</span>
         </p>
-        <p class="mt-2 text-muted">Dibayar tahunan <strong class="text-ink">Rp3.600.000</strong> per tahun.</p>
-        <ul class="mt-8 space-y-3">
-          <li class="flex gap-3"><span class="text-brand" aria-hidden="true">✓</span>Chatbot SPMB untuk satu sekolah</li>
-          <li class="flex gap-3"><span class="text-brand" aria-hidden="true">✓</span>Jawaban dari info sekolah, teks dan PDF</li>
-          <li class="flex gap-3"><span class="text-brand" aria-hidden="true">✓</span>Dashboard untuk mengedit info sekolah</li>
-          <li class="flex gap-3"><span class="text-brand" aria-hidden="true">✓</span>Widget siap tempel di website sekolah</li>
-          <li class="flex gap-3"><span class="text-brand" aria-hidden="true">✓</span>Nama dan warna sesuai identitas sekolah</li>
-          <li class="flex gap-3"><span class="text-brand" aria-hidden="true">✓</span>Bantuan pemasangan</li>
+        <p class="mt-2 text-muted">Per sekolah, dibayar tahunan <strong class="text-ink">Rp3.600.000</strong>.</p>
+        <ul class="mt-8 divide-y divide-line border-y border-line">
+          <li class="py-2.5">Chatbot SPMB untuk satu sekolah</li>
+          <li class="py-2.5">Jawaban dari info sekolah, teks dan PDF</li>
+          <li class="py-2.5">Dashboard untuk mengedit info sekolah</li>
+          <li class="py-2.5">Widget siap tempel di website sekolah</li>
+          <li class="py-2.5">Nama dan warna sesuai identitas sekolah</li>
+          <li class="py-2.5">Bantuan pemasangan</li>
         </ul>
         <div class="mt-8 flex flex-col gap-3">
           <a href="demo-wikrama.html" class="btn btn-dark">Coba demo dulu</a>
@@ -469,32 +427,29 @@
       </div>
     </section>
 
-    <!-- Rencana pengembangan -->
+    <!-- Rencana pengembangan: baris, dengan status di sisi kanan. -->
     <section aria-labelledby="rencana-title" class="mx-auto max-w-6xl px-4 pt-28">
       <div class="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p class="eyebrow">Rencana pengembangan</p>
-          <h2 id="rencana-title" class="h2 mt-2">Yang sedang kami siapkan.</h2>
-        </div>
+        <h2 id="rencana-title" class="h2">Yang sedang kami siapkan.</h2>
         <p class="max-w-sm text-sm text-muted">Fitur di bawah belum tersedia di demo. Urutannya bisa berubah sesuai kebutuhan sekolah.</p>
       </div>
-      <div class="mt-10 grid gap-4 md:grid-cols-3">
-        <div class="rounded-xl border border-dashed border-line p-6">
-          <span class="rounded-full bg-mint px-2.5 py-1 text-xs font-semibold text-brand-dark">Segera hadir</span>
-          <p class="mt-4 font-bold text-ink">📊 Ringkasan percakapan</p>
-          <p class="mt-2 text-muted">Pertanyaan paling populer dan pertanyaan yang belum terjawab, supaya sekolah tahu info apa yang perlu ditambah.</p>
+      <dl class="mt-10 divide-y divide-line border-y border-line">
+        <div class="grid gap-1 py-5 md:grid-cols-[17rem_minmax(0,1fr)_7rem] md:gap-8">
+          <dt class="font-bold text-ink">Ringkasan percakapan</dt>
+          <dd class="text-sm font-semibold text-brand-dark md:order-last md:text-right">Segera hadir</dd>
+          <dd class="text-muted">Pertanyaan paling populer dan pertanyaan yang belum terjawab, supaya sekolah tahu info apa yang perlu ditambah.</dd>
         </div>
-        <div class="rounded-xl border border-dashed border-line p-6">
-          <span class="rounded-full bg-mint px-2.5 py-1 text-xs font-semibold text-brand-dark">Segera hadir</span>
-          <p class="mt-4 font-bold text-ink">☁️ Dashboard online untuk tim sekolah</p>
-          <p class="mt-2 text-muted">Data tersimpan di server, jadi tim SPMB bisa mengedit dari mana saja dan perubahan langsung tampil di website.</p>
+        <div class="grid gap-1 py-5 md:grid-cols-[17rem_minmax(0,1fr)_7rem] md:gap-8">
+          <dt class="font-bold text-ink">Dashboard online untuk tim sekolah</dt>
+          <dd class="text-sm font-semibold text-brand-dark md:order-last md:text-right">Segera hadir</dd>
+          <dd class="text-muted">Data tersimpan di server, jadi tim SPMB bisa mengedit dari mana saja dan perubahan langsung tampil di website.</dd>
         </div>
-        <div class="rounded-xl border border-dashed border-line p-6">
-          <span class="rounded-full bg-soft px-2.5 py-1 text-xs font-semibold text-body">Rencana</span>
-          <p class="mt-4 font-bold text-ink">💬 Integrasi WhatsApp</p>
-          <p class="mt-2 text-muted">Asisten yang sama menjawab di WhatsApp sekolah, dengan info yang sama dari dashboard.</p>
+        <div class="grid gap-1 py-5 md:grid-cols-[17rem_minmax(0,1fr)_7rem] md:gap-8">
+          <dt class="font-bold text-ink">Integrasi WhatsApp</dt>
+          <dd class="text-sm font-semibold text-muted md:order-last md:text-right">Rencana</dd>
+          <dd class="text-muted">Asisten yang sama menjawab di WhatsApp sekolah, dengan info yang sama dari dashboard.</dd>
         </div>
-      </div>
+      </dl>
     </section>
 
     <!-- FAQ -->
@@ -534,13 +489,11 @@
 
     <!-- Ajakan akhir -->
     <section class="px-4 py-28">
-      <div class="relative isolate mx-auto max-w-6xl overflow-hidden rounded-2xl bg-soft px-8 py-16 text-center">
-        <div aria-hidden="true" class="kawung-accent pointer-events-none absolute inset-0 -z-10"></div>
-        <p class="text-4xl" aria-hidden="true">💬</p>
-        <h2 class="h2 mx-auto mt-4 max-w-2xl">Biarkan calon murid bertanya <span class="mark">kapan saja</span>.</h2>
-        <p class="lead mx-auto mt-4 max-w-xl">Coba demonya, lalu bayangkan tombol yang sama di website sekolahmu.</p>
+      <div class="mx-auto max-w-6xl rounded-xl bg-soft px-8 py-16 text-center">
+        <h2 class="h2 mx-auto max-w-2xl">Coba tanya asistennya langsung.</h2>
+        <p class="lead mx-auto mt-4 max-w-xl">Lalu bayangkan tombol yang sama di website sekolahmu.</p>
         <div class="mt-8 flex flex-wrap justify-center gap-3">
-          <a href="demo-wikrama.html" class="btn btn-dark">Coba demo SMK Wikrama →</a>
+          <a href="demo-wikrama.html" class="btn btn-dark">Coba demo SMK Wikrama</a>
           <a href="dashboard.html" class="btn btn-line">Buka dashboard</a>
         </div>
       </div>
@@ -587,8 +540,9 @@
     const INDONESIA_CENTER = [118, -2.5]; // [bujur, lintang]
     const BOGOR = [106.79, -6.59];
     const START_CENTER = [20, 12]; // mulai dari Afrika, lalu berputar ke timur
-    const INTRO_MS = 5400; // satu gerakan utuh: berputar sambil perlahan mendekat ke Indonesia
-    const FADE_MS = 600; // peralihan halus ke gambar akhir yang tajam
+    // Total gerakan (putar + crossfade) di bawah 5 detik, jadi tidak perlu tombol jeda (WCAG 2.2.2).
+    const INTRO_MS = 4400; // satu gerakan utuh: berputar sambil perlahan mendekat ke Indonesia
+    const FADE_MS = 500; // peralihan halus ke gambar akhir yang tajam
     // Selama animasi kanvas digambar dengan resolusi lebih rendah supaya tetap mulus di layar Retina.
     // Gambar akhirnya dibuat tajam, lalu disambung dengan crossfade (tanpa "loncat").
     const ANIM_DPR = Math.min(window.devicePixelRatio || 1, 1.25);
@@ -615,9 +569,7 @@
     let finished = false;
     let finishRun = 0;
     let markerShown = false;
-    let base = null; // gambar akhir tanpa titik Bogor, supaya denyutnya tidak menggambar ulang seluruh peta
-    let pulseFrame = 0;
-    let visible = true;
+    let base = null; // gambar akhir tanpa titik Bogor, dipakai saat crossfade
 
     async function loadAtlas(name) {
       const response = await fetch(`${ATLAS}/${name}.json`);
@@ -726,19 +678,13 @@
       shape({ type: 'Sphere' }, null, COLORS.outline, 1);
     }
 
-    // Titik Bogor. pulse 0..1 menggambar lingkaran yang membesar dan memudar.
-    function drawMarker(pulse = 0, alpha = 1) {
+    // Titik Bogor. Diam setelah animasi selesai (tidak berdenyut terus-menerus).
+    function drawMarker(alpha = 1) {
       const point = projection(BOGOR);
       if (!point) return;
       const [x, y] = point;
       ctx.save();
       ctx.globalAlpha = alpha;
-      if (pulse > 0) {
-        ctx.beginPath();
-        ctx.arc(x, y, 6 + pulse * 22, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(15, 118, 110, ${0.3 * (1 - pulse)})`;
-        ctx.fill();
-      }
       ctx.beginPath();
       ctx.arc(x, y, 6, 0, Math.PI * 2);
       ctx.fillStyle = COLORS.marker;
@@ -791,7 +737,6 @@
     async function finish() {
       const run = ++finishRun;
       finished = true;
-      cancelAnimationFrame(pulseFrame);
       const previous = size.w > 0 ? snapshot() : null;
       resize(FINAL_DPR);
       const map = detail || coarse;
@@ -807,7 +752,7 @@
           clear();
           paint(base);
           paint(previous, 1 - eased);
-          drawMarker(0, wasShown ? 1 : eased);
+          drawMarker(wasShown ? 1 : eased);
         });
         if (run !== finishRun) return;
       }
@@ -816,20 +761,6 @@
       paint(base);
       drawMarker();
       markerShown = true;
-      if (!reduceMotion) startPulse();
-    }
-
-    function startPulse() {
-      cancelAnimationFrame(pulseFrame);
-      const loop = (now) => {
-        if (visible && base) {
-          clear();
-          paint(base);
-          drawMarker((now % 1800) / 1800);
-        }
-        pulseFrame = requestAnimationFrame(loop);
-      };
-      pulseFrame = requestAnimationFrame(loop);
     }
 
     async function start() {
@@ -843,7 +774,7 @@
         .catch((error) => console.warn(error));
 
       if (reduceMotion) {
-        // Pengguna yang mematikan animasi langsung melihat Indonesia, tanpa putaran dan denyut.
+        // Pengguna yang mematikan animasi langsung melihat Indonesia, tanpa putaran.
         await detailReady;
         finish();
         return;
@@ -853,10 +784,6 @@
       await animate(INTRO_MS, (progress) => draw(coarse, viewAt(progress)));
       await finish();
     }
-
-    new IntersectionObserver(([entry]) => {
-      visible = entry.isIntersecting;
-    }).observe(canvas);
 
     let resizeTimer = null;
     window.addEventListener('resize', () => {

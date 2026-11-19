@@ -10,7 +10,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.1.11"></script>
   <style type="text/tailwindcss">
     /* Dashboard bergaya catatan (Notion-like): netral, putih bersih, sidebar abu muda.
-       Aksen memakai warna brand AsistenSPMB (teal). */
+       Aksen memakai warna brand AsistenSPMB (teal). Menu dan halaman cukup teks, tanpa emoji. */
     @theme {
       --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
       --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -64,16 +64,16 @@
 
       <nav class="flex-1 overflow-y-auto px-2 pb-4 text-sm" aria-label="Menu dashboard">
         <p class="nav-label">Sekolah</p>
-        <a href="#/info" data-nav="info" class="nav-item"><span class="w-5 shrink-0 text-center" aria-hidden="true">🏫</span>Info sekolah</a>
+        <a href="#/info" data-nav="info" class="nav-item">Info sekolah</a>
         <ul id="nav-pages" class="ml-3 border-l border-line pl-1" aria-label="Halaman info sekolah"></ul>
         <button id="btn-add-page" type="button" class="nav-item text-muted"><span class="w-5 shrink-0 text-center" aria-hidden="true">+</span>Tambah halaman</button>
-        <a href="#/dokumen" data-nav="dokumen" class="nav-item"><span class="w-5 shrink-0 text-center" aria-hidden="true">📄</span>Dokumen PDF</a>
+        <a href="#/dokumen" data-nav="dokumen" class="nav-item">Dokumen PDF</a>
 
         <p class="nav-label">Chatbot</p>
-        <a href="#/uji" data-nav="uji" class="nav-item"><span class="w-5 shrink-0 text-center" aria-hidden="true">💬</span>Uji chatbot</a>
-        <a href="#/tampilan" data-nav="tampilan" class="nav-item"><span class="w-5 shrink-0 text-center" aria-hidden="true">🎨</span>Tampilan widget</a>
-        <a href="#/pasang" data-nav="pasang" class="nav-item"><span class="w-5 shrink-0 text-center" aria-hidden="true">🧩</span>Pasang di website</a>
-        <a href="#/percakapan" data-nav="percakapan" class="nav-item"><span class="w-5 shrink-0 text-center" aria-hidden="true">📊</span>Percakapan<span class="chip ml-auto bg-mint text-brand-dark">Segera</span></a>
+        <a href="#/uji" data-nav="uji" class="nav-item">Uji chatbot</a>
+        <a href="#/tampilan" data-nav="tampilan" class="nav-item">Tampilan widget</a>
+        <a href="#/pasang" data-nav="pasang" class="nav-item">Pasang di website</a>
+        <a href="#/percakapan" data-nav="percakapan" class="nav-item">Percakapan<span class="chip ml-auto bg-mint text-brand-dark">Segera</span></a>
       </nav>
 
       <div class="space-y-2 border-t border-line p-4 text-xs text-muted">
@@ -107,7 +107,9 @@
 
 const PDFJS_URL = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs';
 const PDFJS_WORKER_URL = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs';
-const EMOJI = ['📄', '🏫', '📝', '🎓', '⚽', '☎️', '💬', '🛡️', '🤖', '❓', '🗨️', '💰', '📅', '🏆', '🧪', '🍳', '🏨', '💻', '🎨', '📣', '🚌', '🕌', '🩺', '📚'];
+// Ikon SVG yang sama dengan widget, untuk pratinjau di halaman Tampilan widget. String tetap, bukan data pengguna.
+const ICON_BOT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="size-[18px]"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>';
+const ICON_SEND = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="size-[18px]"><path d="M3.714 3.048a.498.498 0 0 0-.683.627l2.843 7.627a2 2 0 0 1 0 1.396l-2.842 7.627a.498.498 0 0 0 .682.627l18-8.5a.5.5 0 0 0 0-.904z"/><path d="M6 12h16"/></svg>';
 
 const api = window.AsistenSPMBWidget;
 const el = {
@@ -207,17 +209,17 @@ function shell() {
   return wrap;
 }
 
-function pageHeader(icon, title, description) {
+function pageHeader(title, description) {
   const box = make('div');
-  box.append(make('div', 'text-5xl leading-none', icon), make('h1', 'mt-4 text-3xl font-bold tracking-tight sm:text-4xl', title));
+  box.append(make('h1', 'text-3xl font-bold tracking-tight sm:text-4xl', title));
   if (description) box.append(make('p', 'mt-3 max-w-2xl leading-relaxed text-muted', description));
   return box;
 }
 
-function callout(icon, content, extraClass = '') {
+function callout(content, extraClass = '') {
   const box = make('div', `callout ${extraClass}`);
   const body = typeof content === 'string' ? make('p', '', content) : content;
-  box.append(make('span', 'text-lg leading-6', icon), body);
+  box.append(body);
   return box;
 }
 
@@ -246,7 +248,7 @@ function renderSidebar() {
     const item = make('li');
     const link = make('a', 'nav-item');
     link.href = `#/halaman/${page.id}`;
-    link.append(make('span', 'w-5 shrink-0 text-center', page.icon), make('span', 'truncate', page.title.trim() || 'Tanpa judul'));
+    link.append(make('span', 'truncate', page.title.trim() || 'Tanpa judul'));
     if (current.view === 'halaman' && current.id === page.id) link.setAttribute('aria-current', 'page');
     item.append(link);
     return item;
@@ -291,7 +293,7 @@ function syncSidebarMode() {
 function renderInfo() {
   setBreadcrumb([{ label: school.schoolName, href: '#/info' }, { label: 'Info sekolah' }]);
   const wrap = shell();
-  wrap.append(pageHeader('🏫', 'Info sekolah', 'Setiap halaman di bawah jadi bahan jawaban Asisten SPMB. Perubahan langsung dipakai chatbot, di dashboard ini dan di halaman demo sekolah.'));
+  wrap.append(pageHeader('Info sekolah', 'Setiap halaman di bawah jadi bahan jawaban Asisten SPMB. Perubahan langsung dipakai chatbot, di dashboard ini dan di halaman demo sekolah.'));
 
   const contextLength = api.data.compileContext(school).length;
   const tokens = Math.ceil(api.data.systemPrompt(school).length / 4);
@@ -304,7 +306,7 @@ function renderInfo() {
   );
   wrap.append(stats);
   if (contextLength > api.data.maxContextChars) {
-    wrap.append(callout('⚠️', 'Info sekolah melebihi batas 60.000 karakter, jadi bagian akhirnya akan dipotong. Ringkas halaman yang panjang atau hapus PDF yang tidak perlu.', 'mt-4 bg-amber-50 text-amber-900'));
+    wrap.append(callout('Info sekolah melebihi batas 60.000 karakter, jadi bagian akhirnya akan dipotong. Ringkas halaman yang panjang atau hapus PDF yang tidak perlu.', 'mt-4 bg-amber-50 text-amber-900'));
   }
 
   const table = make('div', 'mt-8 overflow-hidden rounded-lg border border-line');
@@ -317,7 +319,7 @@ function renderInfo() {
     const row = make('a', `${cols} min-h-11 border-b border-line px-3 py-2 last:border-b-0 hover:bg-hover`);
     row.href = `#/halaman/${page.id}`;
     const name = make('span', 'flex min-w-0 items-center gap-2 font-medium');
-    name.append(make('span', 'w-5 shrink-0 text-center', page.icon), make('span', 'truncate', page.title.trim() || 'Tanpa judul'));
+    name.append(make('span', 'truncate', page.title.trim() || 'Tanpa judul'));
     row.append(
       name,
       make('span', 'text-right text-sm tabular-nums text-muted', numberFormat.format(page.body.length)),
@@ -328,7 +330,7 @@ function renderInfo() {
   table.append(button('+ Halaman baru', 'flex min-h-11 w-full items-center px-3 text-left text-sm text-muted hover:bg-hover', addPage));
   wrap.append(table);
 
-  wrap.append(callout('💡', 'Tulis seperti menjelaskan ke CS baru: singkat, jelas, dan pakai poin-poin. Info yang tidak ada di halaman mana pun akan dijawab "belum tersedia", lalu calon murid diarahkan ke CS SPMB.', 'mt-8'));
+  wrap.append(callout('Tulis seperti menjelaskan ke CS baru: singkat, jelas, dan pakai poin-poin. Info yang tidak ada di halaman mana pun akan dijawab "belum tersedia", lalu calon murid diarahkan ke CS SPMB.', 'mt-8'));
 }
 
 /* Halaman: editor satu halaman */
@@ -338,7 +340,7 @@ function renderPage(id) {
   if (!page) {
     setBreadcrumb([{ label: school.schoolName, href: '#/info' }, { label: 'Halaman tidak ditemukan' }]);
     const wrap = shell();
-    wrap.append(pageHeader('🔍', 'Halaman tidak ditemukan', 'Mungkin halaman ini sudah dihapus.'));
+    wrap.append(pageHeader('Halaman tidak ditemukan', 'Mungkin halaman ini sudah dihapus.'));
     const back = make('a', 'btn mt-6', '← Kembali ke Info sekolah');
     back.href = '#/info';
     wrap.append(back);
@@ -348,48 +350,14 @@ function renderPage(id) {
   const crumb = () => setBreadcrumb([
     { label: school.schoolName, href: '#/info' },
     { label: 'Info sekolah', href: '#/info' },
-    { label: `${page.icon} ${page.title.trim() || 'Tanpa judul'}` },
+    { label: page.title.trim() || 'Tanpa judul' },
   ]);
   crumb();
   const wrap = shell();
 
-  // Ikon halaman + pilihan emoji
-  const iconBox = make('div', 'relative inline-block');
-  const iconButton = button(page.icon, 'rounded-lg p-1 text-6xl leading-none hover:bg-hover', () => {
-    picker.hidden = !picker.hidden;
-    iconButton.setAttribute('aria-expanded', String(!picker.hidden));
-  });
-  iconButton.setAttribute('aria-label', 'Ganti ikon halaman');
-  iconButton.setAttribute('aria-expanded', 'false');
-  const picker = make('div', 'absolute left-0 top-full z-10 mt-2 grid w-72 grid-cols-6 gap-1 rounded-lg border border-line bg-white p-2 shadow-lg');
-  picker.hidden = true;
-  for (const emoji of EMOJI) {
-    const option = button(emoji, 'grid size-11 place-items-center rounded-md text-2xl hover:bg-hover', () => {
-      page.icon = emoji;
-      page.updatedAt = Date.now();
-      iconButton.textContent = emoji;
-      picker.hidden = true;
-      iconButton.setAttribute('aria-expanded', 'false');
-      persist();
-      renderSidebar();
-      crumb();
-      iconButton.focus();
-    });
-    option.setAttribute('aria-label', `Pakai ikon ${emoji}`);
-    picker.append(option);
-  }
-  picker.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape') {
-      picker.hidden = true;
-      iconButton.setAttribute('aria-expanded', 'false');
-      iconButton.focus();
-    }
-  });
-  iconBox.append(iconButton, picker);
-
   // Judul yang terlihat berupa kolom isian, jadi pembaca layar diberi h1 tersembunyi dengan teks yang sama.
   const heading = make('h1', 'sr-only', page.title.trim() || 'Tanpa judul');
-  const title = make('input', 'mt-4 w-full rounded-md border-0 bg-transparent text-3xl font-bold tracking-tight text-ink placeholder:text-muted focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand/40 sm:text-4xl');
+  const title = make('input', 'w-full rounded-md border-0 bg-transparent text-3xl font-bold tracking-tight text-ink placeholder:text-muted focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand/40 sm:text-4xl');
   title.value = page.title;
   title.placeholder = 'Tanpa judul';
   title.setAttribute('aria-label', 'Judul halaman');
@@ -430,7 +398,7 @@ function renderPage(id) {
 
   const actions = make('div', 'mt-10 flex flex-wrap gap-2 border-t border-line pt-6');
   actions.append(
-    button('💬 Coba tanya di chatbot', 'btn', () => api.open()),
+    button('Coba tanya di chatbot', 'btn', () => api.open()),
     button('Hapus halaman', 'btn btn-danger', () => {
       const name = page.title.trim() || 'Tanpa judul';
       if (!window.confirm(`Hapus halaman "${name}"? Isinya tidak akan dipakai chatbot lagi.`)) return;
@@ -440,7 +408,7 @@ function renderPage(id) {
     }),
   );
 
-  wrap.append(heading, iconBox, title, meta, body, actions);
+  wrap.append(heading, title, meta, body, actions);
   autoresize(body);
   if (focusTitleOnOpen) {
     focusTitleOnOpen = false;
@@ -452,7 +420,7 @@ function renderPage(id) {
 let focusTitleOnOpen = false;
 
 function addPage() {
-  const page = { id: newId('p'), icon: '📄', title: '', body: '', updatedAt: Date.now() };
+  const page = { id: newId('p'), title: '', body: '', updatedAt: Date.now() };
   school.pages.push(page);
   persist({ now: true });
   focusTitleOnOpen = true;
@@ -495,11 +463,11 @@ async function extractPdfText(file) {
 function renderDocuments(statusMessage, statusTone) {
   setBreadcrumb([{ label: school.schoolName, href: '#/info' }, { label: 'Dokumen PDF' }]);
   const wrap = shell();
-  wrap.append(pageHeader('📄', 'Dokumen PDF', 'Unggah brosur atau info SPMB dalam bentuk PDF. Teksnya dibaca di browser dan ikut jadi bahan jawaban.'));
+  wrap.append(pageHeader('Dokumen PDF', 'Unggah brosur atau info SPMB dalam bentuk PDF. Teksnya dibaca di browser dan ikut jadi bahan jawaban.'));
 
   const drop = make('label', 'mt-8 flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-line px-6 py-10 text-center hover:bg-side');
   drop.htmlFor = 'pdf-input';
-  drop.append(make('span', 'text-3xl', '⬆️'), make('span', 'font-semibold', 'Pilih file PDF'), make('span', 'text-sm text-muted', 'Bisa beberapa sekaligus. PDF hasil scan (berupa gambar) tidak bisa dibaca.'));
+  drop.append(make('span', 'font-semibold', 'Pilih file PDF'), make('span', 'text-sm text-muted', 'Bisa beberapa sekaligus. PDF hasil scan (berupa gambar) tidak bisa dibaca.'));
   const input = make('input', 'sr-only');
   input.id = 'pdf-input';
   input.type = 'file';
@@ -531,7 +499,7 @@ function renderDocuments(statusMessage, statusTone) {
       renderDocuments(`${doc.name} dihapus dari info sekolah.`);
     });
     remove.setAttribute('aria-label', `Hapus dokumen ${doc.name}`);
-    item.append(make('span', 'text-xl', '📄'), info, remove);
+    item.append(make('span', 'chip shrink-0 bg-callout text-muted', 'PDF'), info, remove);
     list.append(item);
   }
   wrap.append(list);
@@ -595,7 +563,7 @@ async function handlePdfFiles(fileList) {
 function renderTest() {
   setBreadcrumb([{ label: school.schoolName, href: '#/info' }, { label: 'Uji chatbot' }]);
   const wrap = shell();
-  wrap.append(pageHeader('💬', 'Uji chatbot', 'Chatbot di pojok kanan bawah sama persis dengan yang dilihat calon murid, dan selalu memakai isi dashboard terbaru.'));
+  wrap.append(pageHeader('Uji chatbot', 'Chatbot di pojok kanan bawah sama persis dengan yang dilihat calon murid, dan selalu memakai isi dashboard terbaru.'));
 
   const actions = make('div', 'mt-8 flex flex-wrap gap-2');
   actions.append(button('Buka chatbot', 'btn btn-primary', () => api.open()));
@@ -608,7 +576,7 @@ function renderTest() {
   for (const question of questions) list.append(button(question, 'btn', () => api.ask(question)));
   wrap.append(list);
 
-  wrap.append(callout('🔑', 'Mode demo: chatbot meminta API key Netra di kotak kuning. Key hanya disimpan di tab ini dan hilang saat halaman dimuat ulang.', 'mt-8'));
+  wrap.append(callout('Mode demo: chatbot meminta API key Netra di kotak kuning. Key hanya disimpan di tab ini dan hilang saat halaman dimuat ulang.', 'mt-8'));
 
   const prompt = api.data.systemPrompt(school);
   const details = make('details', 'mt-8 rounded-lg border border-line');
@@ -650,7 +618,7 @@ function renderLook() {
   setBreadcrumb([{ label: school.schoolName, href: '#/info' }, { label: 'Tampilan widget' }]);
   const wrap = shell();
   wrap.classList.replace('max-w-3xl', 'max-w-5xl');
-  wrap.append(pageHeader('🎨', 'Tampilan widget', 'Nama, warna, sapaan, dan contoh pertanyaan yang dilihat calon murid.'));
+  wrap.append(pageHeader('Tampilan widget', 'Nama, warna, sapaan, dan contoh pertanyaan yang dilihat calon murid.'));
 
   const layout = make('div', 'mt-8 grid grid-cols-[minmax(0,1fr)] gap-10 lg:grid-cols-[minmax(0,1fr)_20rem]');
   const form = make('div', 'space-y-6');
@@ -773,7 +741,8 @@ function renderLook() {
   // Pratinjau statis widget. Untuk mencoba yang asli, buka chatbot di pojok kanan bawah.
   const card = make('div', 'overflow-hidden rounded-2xl border border-line shadow-lg lg:sticky lg:top-6');
   const head = make('div', 'flex items-center gap-3 px-4 py-3');
-  const avatar = make('span', 'grid size-9 shrink-0 place-items-center rounded-full text-sm', '🤖');
+  const avatar = make('span', 'grid size-9 shrink-0 place-items-center rounded-full');
+  avatar.innerHTML = ICON_BOT;
   const headText = make('div', 'min-w-0');
   const headTitle = make('p', 'text-sm font-bold', 'Asisten SPMB');
   const headSub = make('p', 'truncate text-xs opacity-85');
@@ -785,7 +754,8 @@ function renderLook() {
   bodyBox.append(bubble, chips);
   const foot = make('div', 'flex items-center gap-2 border-t border-slate-200 bg-white p-3');
   const fakeInput = make('span', 'flex-1 rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-500', 'Tulis pertanyaan...');
-  const sendDot = make('span', 'grid size-9 place-items-center rounded-xl text-sm font-bold', '➤');
+  const sendDot = make('span', 'grid size-9 place-items-center rounded-xl');
+  sendDot.innerHTML = ICON_SEND;
   foot.append(fakeInput, sendDot);
   card.append(head, bodyBox, foot);
 
@@ -796,7 +766,7 @@ function renderLook() {
     avatar.style.color = school.colors.onAccent;
     sendDot.style.background = school.colors.accent;
     sendDot.style.color = school.colors.onAccent;
-    headSub.textContent = `${school.schoolName} · online`;
+    headSub.textContent = school.schoolName;
     bubble.textContent = school.greeting;
     chips.replaceChildren(...school.suggestions.filter((q) => q.trim()).map((question) => {
       const chip = make('span', 'rounded-full border bg-white px-3 py-1.5 text-xs font-semibold', question);
@@ -817,7 +787,7 @@ function renderLook() {
 function renderInstall() {
   setBreadcrumb([{ label: school.schoolName, href: '#/info' }, { label: 'Pasang di website' }]);
   const wrap = shell();
-  wrap.append(pageHeader('🧩', 'Pasang di website', 'Tempel dua baris ini sebelum tag </body> di website sekolah. Tombol Asisten SPMB langsung muncul di pojok kanan bawah.'));
+  wrap.append(pageHeader('Pasang di website', 'Tempel dua baris ini sebelum tag </body> di website sekolah. Tombol Asisten SPMB langsung muncul di pojok kanan bawah.'));
 
   // "<\/script>" ditulis dengan garis miring ter-escape: kalau tidak, browser mengira tag <script> dashboard ini selesai di sini.
   const code = '<script src="sekolah/wikrama.js"><\/script>\n<script src="widget.js" defer><\/script>';
@@ -845,7 +815,7 @@ function renderInstall() {
   );
   wrap.append(steps);
 
-  wrap.append(callout('ℹ️', 'Di versi demo, isi dashboard tersimpan di browser ini, jadi perubahannya hanya terlihat di laptop ini. Versi produksi akan menyimpan data dan kunci AI di server, supaya langsung tampil di website sekolah dan API key tidak ada di browser.', 'mt-8'));
+  wrap.append(callout('Di versi demo, isi dashboard tersimpan di browser ini, jadi perubahannya hanya terlihat di laptop ini. Versi produksi akan menyimpan data dan kunci AI di server, supaya langsung tampil di website sekolah dan API key tidak ada di browser.', 'mt-8'));
 }
 
 /* Halaman: Percakapan (belum tersedia) */
@@ -853,11 +823,11 @@ function renderInstall() {
 function renderConversations() {
   setBreadcrumb([{ label: school.schoolName, href: '#/info' }, { label: 'Percakapan' }]);
   const wrap = shell();
-  const title = pageHeader('📊', 'Percakapan', 'Ringkasan pertanyaan calon murid untuk panitia SPMB.');
+  const title = pageHeader('Percakapan', 'Ringkasan pertanyaan calon murid untuk panitia SPMB.');
   title.querySelector('h1').append(make('span', 'chip ml-3 align-middle bg-mint text-brand-dark', 'Segera hadir'));
   wrap.append(title);
 
-  wrap.append(callout('🚧', 'Belum ada data di sini, karena versi demo belum menyimpan percakapan. Fitur ini butuh server, dan akan dibuat setelah versi produksi.', 'mt-8'));
+  wrap.append(callout('Belum ada data di sini, karena versi demo belum menyimpan percakapan. Fitur ini butuh server, dan akan dibuat setelah versi produksi.', 'mt-8'));
 
   const plans = [
     ['Pertanyaan populer', 'Pertanyaan yang paling sering ditanyakan, supaya sekolah tahu info apa yang paling dicari.'],
