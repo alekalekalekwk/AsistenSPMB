@@ -138,7 +138,7 @@
     .panel { position: fixed; right: 20px; bottom: 92px; z-index: 2147483000; width: 384px; max-width: calc(100vw - 40px); height: min(640px, calc(100vh - 120px)); display: flex; flex-direction: column; overflow: hidden; background: #fff; border: 1px solid #e2e8f0; border-radius: 20px; box-shadow: 0 24px 60px rgb(15 23 42 / 0.28); }
     .panel[hidden] { display: none; }
 
-    .header { display: flex; align-items: center; gap: 12px; padding: 14px 12px 14px 16px; background: var(--primary); color: var(--on-primary); }
+    .header { display: flex; align-items: center; gap: 8px; padding: 10px 8px 10px 16px; background: var(--primary); color: var(--on-primary); }
     .avatar { width: 40px; height: 40px; flex-shrink: 0; display: grid; place-items: center; border-radius: 999px; background: var(--accent); color: var(--on-accent); }
     .avatar svg { width: 20px; height: 20px; }
     .header-text { flex: 1; min-width: 0; }
@@ -146,18 +146,18 @@
     .subtitle { display: flex; align-items: center; gap: 6px; font-size: 12px; opacity: 0.85; }
     .subtitle span:last-child { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
     .dot { width: 8px; height: 8px; flex-shrink: 0; border-radius: 999px; background: #4ade80; }
-    .icon-btn { width: 36px; height: 36px; flex-shrink: 0; display: grid; place-items: center; border: 0; border-radius: 10px; background: transparent; color: inherit; }
+    .icon-btn { width: 44px; height: 44px; flex-shrink: 0; display: grid; place-items: center; border: 0; border-radius: 10px; background: transparent; color: inherit; }
     .icon-btn:hover { background: rgb(255 255 255 / 0.14); }
     .icon-btn:disabled { opacity: 0.4; background: transparent; }
     .icon-btn svg { width: 18px; height: 18px; }
 
     .demo { padding: 10px 14px; background: #fffbeb; border-bottom: 1px solid #fde68a; color: #78350f; font-size: 12px; }
     .demo form { display: flex; gap: 8px; margin-top: 8px; }
-    .demo input { flex: 1; min-width: 0; height: 38px; padding: 0 10px; border: 1px solid #fcd34d; border-radius: 10px; background: #fff; font-size: 13px; }
+    .demo input { flex: 1; min-width: 0; height: 44px; padding: 0 10px; border: 1px solid #fcd34d; border-radius: 10px; background: #fff; font-size: 13px; }
     .demo input:focus { outline: 2px solid #b45309; outline-offset: 0; }
-    .demo button[type="submit"] { height: 38px; padding: 0 14px; border: 0; border-radius: 10px; background: #78350f; color: #fff; font-size: 13px; font-weight: 600; }
+    .demo button[type="submit"] { height: 44px; padding: 0 14px; border: 0; border-radius: 10px; background: #78350f; color: #fff; font-size: 13px; font-weight: 600; }
     .demo-ready { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-    .link-btn { padding: 4px 0; border: 0; background: none; color: #78350f; font-size: 12px; font-weight: 700; text-decoration: underline; }
+    .link-btn { min-height: 32px; padding: 4px; border: 0; background: none; color: #78350f; font-size: 12px; font-weight: 700; text-decoration: underline; }
 
     .messages { flex: 1; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; padding: 16px; background: #f8fafc; }
     .row { display: flex; align-items: flex-end; gap: 8px; }
@@ -168,7 +168,7 @@
     .row.user .bubble { border-bottom-right-radius: 6px; background: var(--primary); color: var(--on-primary); }
     .row.bot .bubble { border: 1px solid #e2e8f0; border-bottom-left-radius: 6px; background: #fff; }
     .chips { display: flex; flex-wrap: wrap; gap: 8px; padding-left: 36px; }
-    .chip { min-height: 36px; padding: 6px 14px; border: 1px solid var(--primary); border-radius: 999px; background: #fff; color: var(--primary); font-size: 13px; font-weight: 600; }
+    .chip { min-height: 44px; padding: 6px 14px; border: 1px solid var(--primary); border-radius: 999px; background: #fff; color: var(--primary); font-size: 13px; font-weight: 600; }
     .chip:hover { background: color-mix(in srgb, var(--primary) 8%, #fff); }
     .typing { display: inline-flex; align-items: center; gap: 4px; height: 21px; }
     .typing span { width: 6px; height: 6px; border-radius: 999px; background: #94a3b8; animation: asisten-bounce 1s infinite ease-in-out; }
