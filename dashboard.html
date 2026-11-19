@@ -3,14 +3,14 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Dashboard AsistenSPMB</title>
+  <title>Dashboard Sigi</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.1.11"></script>
   <style type="text/tailwindcss">
     /* Dashboard bergaya catatan (Notion-like): netral, putih bersih, sidebar abu muda.
-       Aksen memakai warna brand AsistenSPMB (teal). Menu dan halaman cukup teks, tanpa emoji. */
+       Aksen memakai warna brand Sigi (teal). Menu dan halaman cukup teks, tanpa emoji. */
     @theme {
       --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
       --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -54,7 +54,7 @@
           <span id="school-avatar" class="grid size-7 shrink-0 place-items-center rounded-md text-sm font-bold" aria-hidden="true"></span>
           <div class="min-w-0">
             <p id="school-name" class="truncate text-sm font-semibold"></p>
-            <p class="text-xs text-muted">AsistenSPMB · mode demo</p>
+            <p class="text-xs text-muted">Sigi · mode demo</p>
           </div>
         </div>
         <button id="btn-close-sidebar" type="button" aria-label="Tutup navigasi" class="grid size-11 place-items-center rounded-md text-muted hover:bg-hover lg:hidden">
@@ -112,7 +112,7 @@ const ICON_BOT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" str
 const ICON_MIC = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="size-[18px]"><rect x="9" y="2.5" width="6" height="12" rx="3"/><path d="M5 11.5a7 7 0 0 0 14 0M12 18.5V22M8 22h8"/></svg>';
 const ICON_SEND = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="size-[18px]"><path d="M3.714 3.048a.498.498 0 0 0-.683.627l2.843 7.627a2 2 0 0 1 0 1.396l-2.842 7.627a.498.498 0 0 0 .682.627l18-8.5a.5.5 0 0 0 0-.904z"/><path d="M6 12h16"/></svg>';
 
-const api = window.AsistenSPMBWidget;
+const api = window.SigiWidget;
 const el = {
   sidebar: document.getElementById('sidebar'),
   backdrop: document.getElementById('sidebar-backdrop'),
@@ -129,8 +129,8 @@ const el = {
 };
 
 if (!api) {
-  el.view.textContent = 'Widget AsistenSPMB gagal dimuat. Pastikan file sekolah/wikrama.js dan widget.js ada.';
-  throw new Error('AsistenSPMBWidget tidak ditemukan');
+  el.view.textContent = 'Widget Sigi gagal dimuat. Pastikan file sekolah/wikrama.js dan widget.js ada.';
+  throw new Error('SigiWidget tidak ditemukan');
 }
 
 // Data sekolah yang sedang diedit. Disimpan ke browser (localStorage) lewat widget, supaya chatbot ikut memakainya.
@@ -234,7 +234,7 @@ function setBreadcrumb(items) {
     if (item.href) node.href = item.href;
     el.breadcrumb.append(node);
   });
-  document.title = `${items[items.length - 1].label} · Dashboard AsistenSPMB`;
+  document.title = `${items[items.length - 1].label} · Dashboard Sigi`;
 }
 
 /* Sidebar */
@@ -815,7 +815,7 @@ function renderInstall() {
   steps.append(
     make('li', '', 'Baris pertama berisi nama, warna, dan info bawaan sekolah.'),
     make('li', '', 'Baris kedua memunculkan tombol chat. Gaya website sekolah tidak terganggu karena widget berjalan terpisah (Shadow DOM).'),
-    make('li', '', 'Tombol lain di website juga bisa membuka chat dengan window.AsistenSPMBWidget.open().'),
+    make('li', '', 'Tombol lain di website juga bisa membuka chat dengan window.SigiWidget.open().'),
   );
   wrap.append(steps);
 

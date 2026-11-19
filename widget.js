@@ -1,5 +1,5 @@
 /*
- * Widget AsistenSPMB (versi demo)
+ * Widget Sigi (versi demo)
  *
  * Cara pasang di website sekolah, cukup dua baris sebelum </body>:
  *   <script src="sekolah/wikrama.js"></script>  -> nama, warna, dan info sekolah
@@ -11,9 +11,10 @@
 (() => {
   'use strict';
 
-  const config = window.AsistenSPMB;
+  // window.Sigi: data sekolah. Nama lama window.AsistenSPMB tetap diterima supaya pemasangan lama tidak rusak.
+  const config = window.Sigi || window.AsistenSPMB;
   if (!config || !(config.pages || config.context)) {
-    console.warn('AsistenSPMB: data sekolah belum dimuat. Pasang file sekolah/*.js sebelum widget.js.');
+    console.warn('Sigi: data sekolah belum dimuat. Pasang file sekolah/*.js sebelum widget.js.');
     return;
   }
 
@@ -29,7 +30,7 @@
   /* Data sekolah. Bawaannya dari sekolah/*.js; kalau sekolah sudah mengedit lewat dashboard,
      versi dashboard (disimpan di localStorage browser ini, mode demo) yang dipakai. */
 
-  const STORAGE_KEY = `asistenspmb:sekolah:${config.id || 'default'}`;
+  const STORAGE_KEY = `sigi:sekolah:${config.id || 'default'}`;
 
   function defaults() {
     const pages = config.pages
@@ -160,11 +161,11 @@
 
   /* Font dan gaya. Widget hidup di Shadow DOM, jadi CSS website sekolah tidak bisa merusaknya. */
 
-  if (!document.querySelector('link[data-asisten-spmb-font]')) {
+  if (!document.querySelector('link[data-sigi-font]')) {
     const font = document.createElement('link');
     font.rel = 'stylesheet';
     font.href = 'https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap';
-    font.dataset.asistenSpmbFont = '';
+    font.dataset.sigiFont = '';
     document.head.append(font);
   }
 
@@ -313,13 +314,13 @@
           <button class="mic" type="button" aria-label="Rekam suara" data-ref="mic"><span class="icon-mic">${ICONS.mic}</span><span class="icon-stop">${ICONS.stop}</span></button>
           <button class="send" type="submit" aria-label="Kirim pertanyaan" data-ref="send">${ICONS.send}</button>
         </form>
-        <p class="footer">Jawaban dibuat AI dari info sekolah · Didukung <a data-ref="powered" target="_blank" rel="noopener">AsistenSPMB</a></p>
+        <p class="footer">Jawaban dibuat AI dari info sekolah · Didukung <a data-ref="powered" target="_blank" rel="noopener">Sigi</a></p>
       </section>
     </div>
   `;
 
   const host = document.createElement('div');
-  host.id = 'asisten-spmb-widget';
+  host.id = 'sigi-widget';
   const shadow = host.attachShadow({ mode: 'open' });
   const style = document.createElement('style');
   style.textContent = STYLE;
@@ -979,7 +980,7 @@
   renderMessages();
 
   // Supaya tombol di halaman sekolah (misalnya "Tanya Asisten SPMB") dan dashboard bisa memakai widget.
-  window.AsistenSPMBWidget = {
+  window.SigiWidget = {
     open: () => setOpen(true),
     close: () => setOpen(false),
     ask: (question) => {
@@ -990,4 +991,5 @@
     // Dipakai dashboard untuk membaca dan menyimpan data sekolah.
     data: { key: STORAGE_KEY, defaults, load, save, reset, compileContext, systemPrompt: buildSystemPrompt, maxContextChars: MAX_CONTEXT_CHARS },
   };
+  window.AsistenSPMBWidget = window.SigiWidget; // nama lama, tetap bisa dipakai
 })();

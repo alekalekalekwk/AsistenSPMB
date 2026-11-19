@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>AsistenSPMB · Chatbot SPMB untuk sekolah</title>
-  <meta name="description" content="AsistenSPMB menjawab pertanyaan calon murid dan orang tua di website sekolah, langsung dari data sekolah sendiri.">
+  <title>Sigi · Chatbot SPMB untuk sekolah</title>
+  <meta name="description" content="Sigi menjawab pertanyaan calon murid dan orang tua di website sekolah, langsung dari data sekolah sendiri.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -13,7 +13,7 @@
     /* Gaya catatan (Notion-like), sama dengan dashboard: putih bersih, teks hitam, kartu abu muda.
        Tanpa emoji, label kecil di atas judul, kata yang distabilo, atau animasi berulang
        (daftar lengkapnya di skill ui-design-review, bagian "Gaya AI slop").
-       Warna brand AsistenSPMB (teal) dipakai sebagai aksen saja. */
+       Warna brand Sigi (teal) dipakai sebagai aksen saja. */
     @theme {
       --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
       --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -63,11 +63,11 @@
 <body class="bg-white font-sans text-body antialiased">
   <header class="sticky top-0 z-40 border-b border-line bg-white/90 backdrop-blur">
     <div class="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4">
-      <a href="#" class="flex items-center gap-2 text-ink" aria-label="AsistenSPMB, ke atas halaman">
+      <a href="#" class="flex items-center gap-2 text-ink" aria-label="Sigi, ke atas halaman">
         <span class="grid size-8 place-items-center rounded-lg bg-brand text-white">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="size-[18px]"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="m8.5 10 2.5 2.5 4.5-4.5"/></svg>
         </span>
-        <span class="text-[17px] tracking-tight">Asisten<span class="font-extrabold">SPMB</span></span>
+        <span class="text-[19px] font-extrabold tracking-tight">Sigi</span>
       </a>
       <nav aria-label="Menu utama" class="hidden items-center gap-1 text-[15px] md:flex">
         <a href="#fitur" class="rounded-md px-3 py-2 hover:bg-soft">Fitur</a>
@@ -109,7 +109,7 @@
       <h1 class="mx-auto max-w-4xl text-balance [text-shadow:0_0_14px_#fff,0_0_6px_#fff,0_0_2px_#fff] text-[2.25rem] font-extrabold leading-[1.08] tracking-tight text-ink sm:text-6xl lg:text-7xl">
         Jawab calon murid kapan saja, dari data sekolahmu sendiri.
       </h1>
-      <p class="lead mx-auto mt-5 max-w-2xl text-balance max-sm:text-base sm:mt-6 [text-shadow:0_0_14px_#fff,0_0_6px_#fff,0_0_2px_#fff]">AsistenSPMB adalah chatbot SPMB untuk website sekolah. Ia menjawab soal pendaftaran, jurusan, dan berkas, dan memberi nomor CS sekolah kalau infonya belum ada.</p>
+      <p class="lead mx-auto mt-5 max-w-2xl text-balance max-sm:text-base sm:mt-6 [text-shadow:0_0_14px_#fff,0_0_6px_#fff,0_0_2px_#fff]">Sigi adalah chatbot SPMB untuk website sekolah. Ia menjawab soal pendaftaran, jurusan, dan berkas, dan memberi nomor CS sekolah kalau infonya belum ada.</p>
       <div class="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
         <a href="demo-wikrama.html" class="btn btn-primary">Coba demo SMK Wikrama</a>
         <a href="dashboard.html" class="btn btn-light">Buka dashboard</a>
@@ -228,12 +228,12 @@
 
     <!-- Sebelum vs sesudah -->
     <section aria-labelledby="banding-title" class="mx-auto max-w-6xl px-4 pt-24">
-      <h2 id="banding-title" class="h2 max-w-2xl">Yang berubah setelah ada AsistenSPMB.</h2>
+      <h2 id="banding-title" class="h2 max-w-2xl">Yang berubah setelah ada Sigi.</h2>
       <div class="mt-10 overflow-hidden rounded-xl border border-line">
         <div class="hidden grid-cols-[13rem_minmax(0,1fr)_minmax(0,1fr)] border-b border-line bg-soft text-sm font-semibold md:grid">
           <span class="p-4"></span>
-          <span class="p-4 text-muted">Tanpa AsistenSPMB</span>
-          <span class="p-4 text-ink">Dengan AsistenSPMB</span>
+          <span class="p-4 text-muted">Tanpa Sigi</span>
+          <span class="p-4 text-ink">Dengan Sigi</span>
         </div>
         <dl class="divide-y divide-line">
           <div class="grid gap-2 p-5 md:grid-cols-[13rem_minmax(0,1fr)_minmax(0,1fr)] md:gap-0 md:p-0">
@@ -374,7 +374,7 @@
     <section aria-labelledby="demo-title" class="mx-auto max-w-6xl px-4 pt-28">
       <div class="grid grid-cols-[minmax(0,1fr)] items-center gap-8 rounded-2xl border border-line p-8 sm:p-12 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
         <div>
-          <h2 id="demo-title" class="h2">Lihat AsistenSPMB di website SMK Wikrama Bogor.</h2>
+          <h2 id="demo-title" class="h2">Lihat Sigi di website SMK Wikrama Bogor.</h2>
           <p class="lead mt-4">Halaman demo dengan data SPMB 2027–2028 SMK Wikrama Bogor. Klik tombol chat di pojok kanan bawah, lalu tanya soal pendaftaran, jurusan, atau ekskul.</p>
         </div>
         <div class="flex flex-col gap-3 sm:flex-row lg:flex-col">
@@ -412,7 +412,7 @@
     <section aria-labelledby="cerita-title" class="mx-auto max-w-6xl px-4 pt-28">
       <div class="rounded-2xl border border-line bg-white px-6 pb-10 pt-16 text-center sm:px-12 sm:pt-20">
         <h2 id="cerita-title" class="h2">Berawal dari Wikrama.</h2>
-        <p class="lead mx-auto mt-6 max-w-3xl text-balance">AsistenSPMB dikembangkan oleh alumni SMK Wikrama Bogor, bekerja sama dengan sekolahnya sendiri. Demo pertamanya memakai data SPMB SMK Wikrama Bogor yang sebenarnya.</p>
+        <p class="lead mx-auto mt-6 max-w-3xl text-balance">Sigi dikembangkan oleh alumni SMK Wikrama Bogor, bekerja sama dengan sekolahnya sendiri. Demo pertamanya memakai data SPMB SMK Wikrama Bogor yang sebenarnya.</p>
         <figure class="mx-auto mt-12 max-w-4xl">
           <div class="relative">
             <svg viewBox="0 0 960 380" role="img" aria-labelledby="peta-title" class="h-auto w-full">
@@ -424,7 +424,7 @@
             <span aria-hidden="true" class="absolute size-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-brand ring-[3px] ring-white" style="left:25.82%;top:72.03%"></span>
             <span class="absolute whitespace-nowrap rounded-full bg-ink px-3 py-1 text-xs font-semibold text-white shadow-sm sm:text-sm" style="left:calc(25.82% - 16px);top:calc(72.03% + 14px)">SMK Wikrama Bogor</span>
           </div>
-          <figcaption class="mt-4 text-sm text-muted">Setiap titik adalah daratan Indonesia. Titik hijau: Bogor, tempat AsistenSPMB dimulai.</figcaption>
+          <figcaption class="mt-4 text-sm text-muted">Setiap titik adalah daratan Indonesia. Titik hijau: Bogor, tempat Sigi dimulai.</figcaption>
         </figure>
       </div>
     </section>
@@ -484,8 +484,8 @@
       <h2 id="faq-title" class="h2 text-center">Pertanyaan yang sering muncul</h2>
       <div class="mt-10 divide-y divide-line border-y border-line">
         <details class="group">
-          <summary class="flex cursor-pointer list-none items-center justify-between gap-4 py-5 font-semibold text-ink">Apakah AsistenSPMB bisa salah jawab?<span class="text-xl text-muted transition group-open:rotate-45" aria-hidden="true">+</span></summary>
-          <p class="-mt-2 pb-5 text-muted">AsistenSPMB hanya menjawab dari info yang diberikan sekolah. Kalau infonya tidak ada, ia bilang belum punya informasinya dan memberi nomor CS SPMB. Karena jawaban dibuat AI, sekolah tetap perlu memastikan data yang diberikan sudah benar dan terbaru.</p>
+          <summary class="flex cursor-pointer list-none items-center justify-between gap-4 py-5 font-semibold text-ink">Apakah Sigi bisa salah jawab?<span class="text-xl text-muted transition group-open:rotate-45" aria-hidden="true">+</span></summary>
+          <p class="-mt-2 pb-5 text-muted">Sigi hanya menjawab dari info yang diberikan sekolah. Kalau infonya tidak ada, ia bilang belum punya informasinya dan memberi nomor CS SPMB. Karena jawaban dibuat AI, sekolah tetap perlu memastikan data yang diberikan sudah benar dan terbaru.</p>
         </details>
         <details class="group">
           <summary class="flex cursor-pointer list-none items-center justify-between gap-4 py-5 font-semibold text-ink">Data apa yang perlu disiapkan sekolah?<span class="text-xl text-muted transition group-open:rotate-45" aria-hidden="true">+</span></summary>
@@ -530,7 +530,7 @@
 
   <footer class="border-t border-line">
     <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-8 text-sm text-muted">
-      <p>© 2026 AsistenSPMB</p>
+      <p>© 2026 Sigi</p>
       <nav aria-label="Tautan footer" class="flex flex-wrap gap-x-5 gap-y-2">
         <a href="demo-wikrama.html" class="hover:text-ink">Demo SMK Wikrama</a>
         <a href="dashboard.html" class="hover:text-ink">Dashboard</a>
@@ -556,12 +556,12 @@
       }
     });
 
-    // Isi nomor WhatsApp AsistenSPMB (format 62..., tanpa + dan spasi) supaya tombol "Hubungi kami" muncul.
+    // Isi nomor WhatsApp Sigi (format 62..., tanpa + dan spasi) supaya tombol "Hubungi kami" muncul.
     const KONTAK_WHATSAPP = '';
 
     if (KONTAK_WHATSAPP) {
       const link = document.getElementById('cta-whatsapp');
-      link.href = `https://wa.me/${KONTAK_WHATSAPP}?text=${encodeURIComponent('Halo, saya tertarik dengan AsistenSPMB untuk sekolah kami.')}`;
+      link.href = `https://wa.me/${KONTAK_WHATSAPP}?text=${encodeURIComponent('Halo, saya tertarik dengan Sigi untuk sekolah kami.')}`;
       link.hidden = false;
     }
   </script>
