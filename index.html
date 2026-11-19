@@ -56,7 +56,7 @@
         </div>
       </div>
       <span class="hidden rounded-xl bg-white/10 px-4 py-2 text-sm font-semibold ring-1 ring-white/15 md:inline-block">Simulasi CS</span>
-      <p class="meta hidden justify-self-end text-white/70 sm:block">Tingkat 1 · konteks teks</p>
+      <p class="meta hidden justify-self-end text-white/70 sm:block">Tingkat 2 · teks + PDF</p>
     </header>
 
     <main id="app-main" class="grid flex-1 grid-cols-[minmax(0,1fr)] lg:min-h-0 lg:grid-cols-[26rem_minmax(0,1fr)] lg:grid-rows-[minmax(0,1fr)] xl:grid-cols-[28rem_minmax(0,1fr)]">
@@ -353,6 +353,18 @@ Oh iya, jurusan IT biasanya cepat penuh, jadi lebih aman daftar di gelombang awa
             </div>
           </div>
 
+          <div id="pdf-group" class="rounded-xl border border-slate-200 bg-paper p-4">
+            <div class="flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="size-5 text-navy"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
+              <label for="pdf-input" class="field-label">Dokumen PDF</label>
+            </div>
+            <p id="pdf-hint" class="hint mt-1">Teks PDF dibaca di browser kamu lalu ikut dikirim sebagai konteks. PDF hasil scan (berupa gambar) tidak bisa dibaca.</p>
+            <input id="pdf-input" type="file" accept="application/pdf,.pdf" multiple aria-describedby="pdf-hint"
+              class="mt-3 block w-full min-w-0 text-sm text-slate-600 file:mr-3 file:min-h-11 file:cursor-pointer file:rounded-xl file:border file:border-navy file:bg-white file:px-4 file:text-sm file:font-semibold file:text-navy hover:file:bg-navy/5 disabled:opacity-60">
+            <p id="pdf-status" role="status" aria-live="polite" class="mt-2 text-sm empty:hidden"></p>
+            <ul id="pdf-list" class="mt-3 space-y-2 empty:hidden"></ul>
+          </div>
+
           <div id="context-status" class="flex gap-3 rounded-xl border p-4"></div>
         </div>
 
@@ -417,6 +429,7 @@ Oh iya, jurusan IT biasanya cepat penuh, jadi lebih aman daftar di gelombang awa
   <template id="icon-sent"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 7 17l-5-5"/><path d="m22 10-7.5 7.5L13 16"/></svg></template>
   <template id="icon-copy"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg></template>
   <template id="icon-ok"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg></template>
+  <template id="icon-file"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg></template>
   <template id="icon-alert"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg></template>
 
   <script>
@@ -428,12 +441,17 @@ const DEFAULT_MODEL = 'deepseek/deepseek-v4.1-flash';
 // Sekitar 15 ribu token. Konteks yang lebih panjang dipotong agar permintaan tidak ditolak.
 const MAX_CONTEXT_CHARS = 60000;
 
+// pdf.js dari Mozilla, dimuat dari cdnjs hanya saat PDF pertama dipilih.
+const PDFJS_URL = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs';
+const PDFJS_WORKER_URL = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs';
+
 // Contoh pertanyaan di layar kosong. Diklik hanya mengisi kolom input, belum mengirim.
 const SAMPLE_QUESTIONS = ['Cara daftarnya gimana?', 'Ada beasiswa nggak?', 'Jurusan apa aja yang ada?'];
 
 // Semua data aplikasi ada di sini. Tampilan selalu digambar ulang dari state ini.
 const state = {
-  history: [], // { role: 'user' | 'assistant', content, time, latencyMs?, tokens? }
+  documents: [], // { name, size, pages, text }
+  history: [], // { role: 'user' | 'assistant', content, time, latencyMs?, tokens?, source? }
   isSending: false,
   error: '',
   connection: 'idle', // hasil permintaan terakhir ke Netra: 'idle' | 'ok' | 'error'
@@ -451,6 +469,9 @@ const el = {
   contextTokens: document.getElementById('context-tokens'),
   contextStatus: document.getElementById('context-status'),
   resetContext: document.getElementById('btn-reset-context'),
+  pdfInput: document.getElementById('pdf-input'),
+  pdfStatus: document.getElementById('pdf-status'),
+  pdfList: document.getElementById('pdf-list'),
   connectionDot: document.getElementById('connection-dot'),
   connectionText: document.getElementById('connection-text'),
   chatMessages: document.getElementById('chat-messages'),
@@ -464,9 +485,23 @@ const el = {
 
 /* Konteks dan system prompt */
 
+// Tingkat 2: setelah catatan teks, teks setiap PDF ditambahkan dengan label nama filenya.
 function buildContext() {
+  const parts = [];
   const text = el.contextText.value.trim();
-  return text ? `[Catatan teks]\n${text}` : '';
+  if (text) parts.push(`[Catatan teks]\n${text}`);
+  for (const doc of state.documents) {
+    parts.push(`[Dokumen: ${doc.name}]\n${doc.text}`);
+  }
+  return parts.join('\n\n');
+}
+
+// Label sumber konteks di samping nama Asisten Wikrama, misalnya "konteks teks + 2 PDF".
+function describeSources() {
+  const parts = [];
+  if (el.contextText.value.trim()) parts.push('konteks teks');
+  if (state.documents.length > 0) parts.push(`${state.documents.length} PDF`);
+  return parts.join(' + ') || 'tanpa konteks';
 }
 
 function buildSystemPrompt() {
@@ -555,7 +590,9 @@ function icon(name, className) {
 
 function renderContextInfo() {
   const chars = el.contextText.value.trim().length;
-  const isTooLong = buildContext().length > MAX_CONTEXT_CHARS;
+  const total = buildContext().length;
+  const docCount = state.documents.length;
+  const limit = numberFormat.format(MAX_CONTEXT_CHARS);
 
   el.contextChars.textContent = `${numberFormat.format(chars)} karakter`;
   el.contextTokens.textContent = `≈${numberFormat.format(Math.ceil(buildSystemPrompt().length / 4))} token`;
@@ -564,23 +601,156 @@ function renderContextInfo() {
   let tone = 'border-emerald-200 bg-emerald-50 text-emerald-900';
   let iconName = 'ok';
   let title = 'Konteks aktif';
-  let body = 'Asisten siap menjawab calon murid berdasarkan info di atas.';
-  if (!chars) {
+  let body = `Total ${numberFormat.format(total)} dari ${limit} karakter${docCount > 0 ? `, termasuk ${docCount} PDF` : ''}. Asisten siap menjawab calon murid berdasarkan info ini.`;
+  if (total === 0) {
     tone = 'border-amber-200 bg-amber-50 text-amber-900';
     iconName = 'alert';
     title = 'Konteks kosong';
-    body = 'Asisten belum punya info sekolah, jadi akan menyarankan menghubungi CS SPMB.';
-  } else if (isTooLong) {
+    body = 'Asisten belum punya info sekolah. Isi Konteks teks atau unggah PDF dulu.';
+  } else if (total > MAX_CONTEXT_CHARS) {
     tone = 'border-amber-200 bg-amber-50 text-amber-900';
     iconName = 'alert';
     title = 'Konteks terlalu panjang';
-    body = `Hanya ${numberFormat.format(MAX_CONTEXT_CHARS)} karakter pertama yang dikirim ke model.`;
+    body = `Total ${numberFormat.format(total)} karakter, melebihi batas ${limit}. Bagian akhir akan dipotong. Hapus PDF yang tidak perlu agar semua info terbaca.`;
   }
 
   const text = make('div', 'text-sm');
   text.append(make('p', 'font-semibold', title), make('p', 'mt-0.5 leading-relaxed', body));
   el.contextStatus.className = `flex gap-3 rounded-xl border p-4 ${tone}`;
   el.contextStatus.replaceChildren(icon(iconName, 'mt-0.5 size-5 shrink-0'), text);
+}
+
+/* Dokumen PDF (Tingkat 2) */
+
+let pdfjsPromise = null;
+
+// pdf.js baru diunduh saat pertama kali ada PDF, jadi halaman awal tetap ringan.
+function loadPdfJs() {
+  if (!pdfjsPromise) {
+    pdfjsPromise = import(PDFJS_URL)
+      .then((pdfjsLib) => {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_URL;
+        return pdfjsLib;
+      })
+      .catch((error) => {
+        pdfjsPromise = null; // supaya bisa dicoba lagi setelah internet kembali
+        throw error;
+      });
+  }
+  return pdfjsPromise;
+}
+
+async function extractPdfText(file) {
+  const pdfjsLib = await loadPdfJs();
+  const data = new Uint8Array(await file.arrayBuffer());
+  const pdf = await pdfjsLib.getDocument({ data }).promise;
+  const pageCount = pdf.numPages;
+  const pageTexts = [];
+
+  for (let pageNumber = 1; pageNumber <= pageCount; pageNumber++) {
+    const page = await pdf.getPage(pageNumber);
+    const content = await page.getTextContent();
+    // hasEOL menandai akhir baris di PDF, jadi baris asli tetap terjaga.
+    const text = content.items.map((item) => item.str + (item.hasEOL ? '\n' : ' ')).join('');
+    pageTexts.push(text.trim());
+  }
+
+  await pdf.destroy();
+  const text = pageTexts.join('\n\n').replace(/[ \t]+/g, ' ').trim();
+  return { pages: pageCount, text };
+}
+
+const PDF_STATUS_TONE = { info: 'text-slate-600', success: 'text-emerald-700', error: 'text-red-700' };
+
+function setPdfStatus(message, tone = 'info') {
+  el.pdfStatus.className = `mt-2 text-sm empty:hidden ${PDF_STATUS_TONE[tone]}`;
+  el.pdfStatus.textContent = message;
+}
+
+async function handlePdfFiles(fileList) {
+  const files = Array.from(fileList);
+  if (files.length === 0) return;
+
+  el.pdfInput.disabled = true;
+  setPdfStatus(`Membaca ${files.length} PDF...`);
+
+  try {
+    await loadPdfJs();
+  } catch (error) {
+    console.error(error);
+    el.pdfInput.disabled = false;
+    el.pdfInput.value = '';
+    setPdfStatus('Pembaca PDF gagal dimuat. Periksa koneksi internet, lalu pilih file lagi.', 'error');
+    return;
+  }
+
+  const failed = [];
+  let added = 0;
+
+  for (const file of files) {
+    if (!file.name.toLowerCase().endsWith('.pdf')) {
+      failed.push(`${file.name} (bukan PDF)`);
+      continue;
+    }
+    // File yang sama tidak dimasukkan dua kali, supaya konteks (dan token) tidak berlipat.
+    if (state.documents.some((doc) => doc.name === file.name && doc.size === file.size)) {
+      failed.push(`${file.name} (sudah ada di daftar)`);
+      continue;
+    }
+    try {
+      const result = await extractPdfText(file);
+      if (!result.text) {
+        failed.push(`${file.name} (tidak ada teks, mungkin hasil scan)`);
+        continue;
+      }
+      state.documents.push({ name: file.name, size: file.size, pages: result.pages, text: result.text });
+      added++;
+    } catch (error) {
+      console.error(error);
+      failed.push(`${file.name} (rusak atau terkunci password)`);
+    }
+  }
+
+  el.pdfInput.disabled = false;
+  el.pdfInput.value = ''; // supaya file yang sama bisa dipilih lagi
+  renderDocuments();
+  renderContextInfo();
+
+  if (failed.length > 0) {
+    const prefix = added > 0 ? `${added} PDF berhasil dibaca. ` : '';
+    setPdfStatus(`${prefix}Tidak bisa dipakai: ${failed.join(', ')}.`, 'error');
+  } else {
+    setPdfStatus(`${added} PDF berhasil dibaca.`, 'success');
+  }
+}
+
+function renderDocuments() {
+  el.pdfList.replaceChildren();
+
+  state.documents.forEach((doc, index) => {
+    const item = make('li', 'flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-3');
+    const badge = make('span', 'grid size-9 shrink-0 place-items-center rounded-lg bg-navy/5 text-navy');
+    badge.append(icon('file', 'size-4'));
+
+    const info = make('div', 'min-w-0 flex-1');
+    // textContent, bukan innerHTML, agar nama file tidak bisa menyisipkan HTML.
+    const name = make('p', 'truncate text-sm font-semibold', doc.name);
+    name.title = doc.name;
+    info.append(name, make('p', 'meta mt-0.5', `${doc.pages} halaman · ${numberFormat.format(doc.text.length)} karakter`));
+
+    const removeButton = make('button', 'btn px-3', 'Hapus');
+    removeButton.type = 'button';
+    removeButton.setAttribute('aria-label', `Hapus dokumen ${doc.name}`);
+    removeButton.addEventListener('click', () => {
+      state.documents.splice(index, 1);
+      renderDocuments();
+      renderContextInfo();
+      setPdfStatus(`${doc.name} dihapus dari konteks.`);
+    });
+
+    item.append(badge, info, removeButton);
+    el.pdfList.append(item);
+  });
 }
 
 const CONNECTION = {
@@ -637,7 +807,7 @@ function createBubble(message) {
   const head = make('div', 'mb-1.5 flex flex-wrap items-center gap-2');
   head.append(
     make('p', 'text-sm font-bold', 'Asisten Wikrama'),
-    make('span', 'rounded-md bg-gold/25 px-1.5 py-0.5 font-mono text-[11px] text-navy', 'konteks teks'),
+    make('span', 'rounded-md bg-gold/25 px-1.5 py-0.5 font-mono text-[11px] text-navy', message.source ?? 'konteks teks'),
   );
 
   const details = [formatTime(message.time)];
@@ -761,7 +931,7 @@ async function handleSubmit(event) {
   el.chatStatus.textContent = 'Asisten Wikrama sedang menulis jawaban.';
 
   // Riwayat chat ikut dikirim setiap kali, karena API tidak mengingat percakapan sebelumnya.
-  // Hanya role dan content yang dikirim; jam, latensi, dan token cuma untuk tampilan.
+  // Hanya role dan content yang dikirim; jam, latensi, token, dan sumber cuma untuk tampilan.
   const messages = [
     { role: 'system', content: buildSystemPrompt() },
     ...state.history.map(({ role, content }) => ({ role, content })),
@@ -770,7 +940,7 @@ async function handleSubmit(event) {
 
   try {
     const { content, tokens } = await askAgent(apiKey, model, messages);
-    state.history.push({ role: 'assistant', content, time: Date.now(), latencyMs: performance.now() - startedAt, tokens });
+    state.history.push({ role: 'assistant', content, time: Date.now(), latencyMs: performance.now() - startedAt, tokens, source: describeSources() });
     state.connection = 'ok';
     el.chatStatus.textContent = `Asisten Wikrama: ${content}`;
   } catch (error) {
@@ -818,6 +988,8 @@ el.toggleKey.addEventListener('click', () => {
 });
 
 el.contextText.addEventListener('input', renderContextInfo);
+
+el.pdfInput.addEventListener('change', () => handlePdfFiles(el.pdfInput.files));
 
 el.resetContext.addEventListener('click', () => {
   el.contextText.value = el.contextText.defaultValue;
