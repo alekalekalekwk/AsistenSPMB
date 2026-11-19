@@ -27,6 +27,36 @@
   const DEEPGRAM_LIVE_URL = 'wss://api.deepgram.com/v1/listen?model=nova-3&language=id&smart_format=true&interim_results=true&endpointing=500&utterance_end_ms=1000';
   const MAX_RECORDING_SECONDS = 60; // rekaman berhenti sendiri, supaya mikrofon tidak lupa dimatikan
 
+  /* Telepon (Tingkat 4): calon murid bicara, Sigi menjawab dengan suara, lalu kembali mendengarkan. */
+
+  const AGENT_NAME = 'Sigi';
+  // Text to speech Deepgram, suara Fitri (Bahasa Indonesia). Model Flux hanya tersedia di /v2/speak.
+  const DEEPGRAM_SPEAK_URL = 'https://api.deepgram.com/v2/speak?model=flux-fitri-id&encoding=mp3';
+  // Deepgram menutup koneksi yang 10 detik tidak menerima apa pun. Saat rekaman dijeda (Sigi berpikir
+  // atau bicara), tidak ada audio yang terkirim, jadi kita kirim KeepAlive lebih sering dari itu.
+  const KEEP_ALIVE_MS = 5000;
+
+  // Ditambahkan di akhir system prompt hanya untuk telepon. Aturan terakhir sengaja mengalahkan
+  // aturan Markdown di system prompt chat, karena tanda bintang dan tautan ikut dibacakan oleh suara.
+  const CALL_RULES = [
+    `Namamu ${AGENT_NAME}.`,
+    'Calon murid atau orang tua sedang menelepon, jadi jawabanmu akan dibacakan dengan suara.',
+    'Pakai bahasa lisan sehari-hari yang tetap sopan, misalnya "oke", "nah", atau "ya".',
+    'Jawab paling banyak tiga kalimat pendek dan langsung ke intinya.',
+    'Jangan membuka jawaban dengan sapaan atau ucapan terima kasih sudah menunggu, karena aplikasi sudah mengucapkannya.',
+    'Tulis angka, jam, tanggal, dan biaya dengan huruf, misalnya sembilan juta lima ratus ribu rupiah atau pukul delapan pagi.',
+    'Jangan memakai Markdown, daftar, tanda bintang, tautan, atau simbol lain.',
+  ].join('\n');
+
+  // Kalimat jeda seperti CS sungguhan, supaya penelepon tidak mengira sambungannya putus saat jawaban lama.
+  const CHECKING_LINES = ['Oke Kak, sebentar ya, saya cek dulu.', 'Baik Kak, saya cek terlebih dahulu ya.', 'Hmm, sebentar ya Kak, saya lihat datanya dulu.'];
+  const STILL_CHECKING_LINE = 'Masih saya cek ya Kak, mohon ditunggu sebentar.';
+  const THANKS_FOR_WAITING_LINES = ['Makasih sudah menunggu ya Kak.', 'Oke Kak, sudah saya cek ya.'];
+  const CHECKING_DELAY_MS = 1000; // jawaban yang datang dalam 1 detik tidak perlu kalimat jeda
+  const STILL_CHECKING_DELAY_MS = 6000;
+  // Basa-basi dijawab cepat, jadi tidak perlu "sebentar saya cek dulu".
+  const SMALL_TALK = /^(halo|hai|oke|ok|baik|siap|sip|iya|ya|makasih|terima kasih)\b/i;
+
   /* Data sekolah. Bawaannya dari sekolah/*.js; kalau sekolah sudah mengedit lewat dashboard,
      versi dashboard (disimpan di localStorage browser ini, mode demo) yang dipakai. */
 
@@ -94,14 +124,23 @@
     apiKey: '', // hanya di memori, hilang saat tab ditutup atau dimuat ulang
     deepgramKey: '', // untuk tombol mic, juga hanya di memori
     deepgramFormOpen: false, // kolom key Deepgram baru ditampilkan saat dibutuhkan
+    deepgramFor: 'mic', // 'mic' | 'call': tombol mana yang meminta key Deepgram, untuk tujuan fokus setelah disimpan
     history: [], // { role: 'user' | 'assistant', content }
     isSending: false,
     error: '',
     voiceStatus: 'idle', // 'idle' | 'connecting' | 'recording' | 'transcribing'
+    callStatus: 'off', // 'off' | 'connecting' | 'listening' | 'thinking' | 'speaking'
+    callHeard: '', // teks yang sedang didengar Deepgram, tampil di bar panggilan
+    callSeconds: 0, // lama panggilan
   };
 
   // Semua yang hidup selama merekam: WebSocket, mikrofon, perekam, timer, dan teks yang sudah terdengar.
   const dictation = {};
+
+  // Semua benda selama telepon (socket, mikrofon, perekam, audio yang diputar, timer, cache suara,
+  // object URL) ada di sini, supaya endCall bisa mematikan semuanya di satu tempat.
+  // Setiap panggilan baru memakai objek baru, jadi proses lama yang telat selesai bisa dikenali.
+  let call = {};
 
   /* System prompt: aturan yang sama dengan playground, ditambah nama sekolah */
 
@@ -177,6 +216,8 @@
     mic: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2.5" width="6" height="12" rx="3"/><path d="M5 11.5a7 7 0 0 0 14 0M12 18.5V22M8 22h8"/></svg>',
     stop: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>',
     send: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.714 3.048a.498.498 0 0 0-.683.627l2.843 7.627a2 2 0 0 1 0 1.396l-2.842 7.627a.498.498 0 0 0 .682.627l18-8.5a.5.5 0 0 0 0-.904z"/><path d="M6 12h16"/></svg>',
+    phone: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>',
+    phoneOff: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.42 19.42 0 0 1-3.33-2.67m-2.67-3.34a19.79 19.79 0 0 1-3.07-8.63A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91"/><path d="M22 2 2 22"/></svg>',
   };
 
   const STYLE = `
@@ -216,6 +257,8 @@
     .subtitle { display: flex; align-items: center; gap: 6px; font-size: 12px; opacity: 0.85; }
     .subtitle span:last-child { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
     .icon-btn { width: 44px; height: 44px; flex-shrink: 0; display: grid; place-items: center; border: 0; border-radius: 10px; background: transparent; color: inherit; }
+    /* Di header berlatar warna sekolah, cincin fokus warna sekolah tidak terlihat, jadi pakai warna teks header. */
+    .header :focus-visible { outline-color: var(--on-primary); }
     .icon-btn:hover { background: rgb(255 255 255 / 0.14); }
     .icon-btn:disabled { opacity: 0.4; background: transparent; }
     .icon-btn svg { width: 18px; height: 18px; }
@@ -271,6 +314,21 @@
     .send { width: 44px; height: 44px; flex-shrink: 0; display: grid; place-items: center; border: 0; border-radius: 14px; background: var(--accent); color: var(--on-accent); }
     .send svg { width: 18px; height: 18px; }
     .send:disabled { background: #e2e8f0; color: #94a3b8; }
+    /* Atribut hidden kalah oleh display: flex, jadi perlu ditegaskan. */
+    .composer[hidden], .call-bar[hidden], .call-heard[hidden] { display: none; }
+
+    /* Bar panggilan: menggantikan form pertanyaan selama telepon berjalan. Sengaja tanpa animasi. */
+    .call-bar { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; border-top: 1px solid #e2e8f0; background: #fff; }
+    .call-row { display: flex; align-items: center; gap: 10px; }
+    .call-info { flex: 1; min-width: 0; }
+    .call-state { color: #0f172a; font-size: 13px; font-weight: 700; line-height: 1.35; }
+    .call-time { color: #475569; font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
+    .call-heard { max-height: 66px; overflow-y: auto; padding: 8px 12px; border-radius: 12px; background: color-mix(in srgb, var(--primary) 8%, #fff); color: #0f172a; font-size: 13px; overflow-wrap: anywhere; }
+    /* Merah tua di atas putih: kontras sekitar 6,5:1, jadi tetap terbaca walau warna sekolah apa pun. */
+    .call-end { min-height: 44px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 0 14px; border: 0; border-radius: 999px; background: #b91c1c; color: #fff; font-size: 13px; font-weight: 700; }
+    .call-end:hover { background: #991b1b; }
+    .call-end svg { width: 18px; height: 18px; flex-shrink: 0; }
+    .call-note { color: #64748b; font-size: 11px; }
     .footer { padding: 0 12px 10px; background: #fff; color: #64748b; font-size: 11px; text-align: center; }
     .footer a { color: inherit; font-weight: 700; }
 
@@ -300,6 +358,7 @@
             <p class="title" id="asisten-title">Asisten SPMB</p>
             <p class="subtitle"><span data-ref="school"></span></p>
           </div>
+          <button class="icon-btn" type="button" aria-label="Telepon Sigi" title="Telepon Sigi" data-ref="phone">${ICONS.phone}</button>
           <button class="icon-btn" type="button" aria-label="Mulai percakapan baru" title="Mulai percakapan baru" data-ref="reset">${ICONS.reset}</button>
           <button class="icon-btn" type="button" aria-label="Tutup Asisten SPMB" title="Tutup" data-ref="close">${ICONS.close}</button>
         </header>
@@ -314,6 +373,19 @@
           <button class="mic" type="button" aria-label="Rekam suara" data-ref="mic"><span class="icon-mic">${ICONS.mic}</span><span class="icon-stop">${ICONS.stop}</span></button>
           <button class="send" type="submit" aria-label="Kirim pertanyaan" data-ref="send">${ICONS.send}</button>
         </form>
+        <div class="call-bar" data-ref="callBar" hidden>
+          <div class="call-row">
+            <div class="call-info">
+              <!-- Hanya status yang diumumkan pembaca layar. Lama panggilan dan teks yang terdengar
+                   sengaja di luar area ini, supaya tidak dibacakan setiap detik. -->
+              <p class="call-state" role="status" aria-live="polite" data-ref="callState"></p>
+              <p class="call-time"><span class="sr-only">Lama panggilan </span><span data-ref="callTime">0:00</span></p>
+            </div>
+            <button class="call-end" type="button" data-ref="callEnd">${ICONS.phoneOff}<span>Akhiri panggilan</span></button>
+          </div>
+          <p class="call-heard" data-ref="callHeard" hidden></p>
+          <p class="call-note">Suara kamu dikirim ke Deepgram untuk diubah jadi teks.</p>
+        </div>
         <p class="footer">Jawaban dibuat AI dari info sekolah · Didukung <a data-ref="powered" target="_blank" rel="noopener">Sigi</a></p>
       </section>
     </div>
@@ -565,10 +637,15 @@
 
   function readyRow(text, buttonText, onClick) {
     const row = make('div', 'demo-ready');
-    const button = make('button', 'link-btn', buttonText);
-    button.type = 'button';
-    button.addEventListener('click', onClick);
-    row.append(make('span', '', text), button);
+    row.append(make('span', '', text));
+    // Selama telepon, key tidak boleh diganti: tombolnya tidak ditampilkan sama sekali, supaya
+    // key yang sedang dipakai panggilan tidak dikosongkan dan fokus tidak lompat ke kotak kuning.
+    if (state.callStatus === 'off') {
+      const button = make('button', 'link-btn', buttonText);
+      button.type = 'button';
+      button.addEventListener('click', onClick);
+      row.append(button);
+    }
     return row;
   }
 
@@ -595,28 +672,31 @@
       );
     }
 
-    // Key Deepgram: untuk tombol mic. Kolomnya baru muncul saat dibutuhkan, supaya kotak ini tetap pendek.
+    // Key Deepgram: untuk tombol mic dan Telepon. Kolomnya baru muncul saat dibutuhkan, supaya kotak ini tetap pendek.
     if (state.deepgramKey) {
-      ref.demo.append(readyRow('Mic aktif · key Deepgram di tab ini', 'Ganti key mic', () => {
+      ref.demo.append(readyRow('Suara aktif · key Deepgram di tab ini', 'Ganti key Deepgram', () => {
         state.deepgramKey = '';
         state.deepgramFormOpen = true;
+        state.deepgramFor = 'mic';
         renderDemo();
         ref.demo.querySelector('[data-deepgram] input').focus();
       }));
     } else if (state.deepgramFormOpen) {
-      const form = keyForm('Tempel API key Deepgram', 'API key Deepgram untuk input suara', (key) => {
+      const form = keyForm('Tempel API key Deepgram', 'API key Deepgram untuk mic dan telepon', (key) => {
         state.deepgramKey = key;
         state.deepgramFormOpen = false;
         state.error = '';
         renderDemo();
         renderMessages();
-        ref.mic.focus();
+        // Fokus kembali ke tombol yang tadi meminta key, supaya bisa langsung dicoba lagi.
+        (state.deepgramFor === 'call' ? ref.phone : ref.mic).focus();
       });
       form.dataset.deepgram = '';
-      ref.demo.append(make('p', '', 'Untuk bertanya lewat suara, masukkan API key Deepgram. Key juga hanya disimpan di tab ini.'), form);
+      ref.demo.append(make('p', '', 'Untuk mic dan telepon, masukkan API key Deepgram. Key juga hanya disimpan di tab ini.'), form);
     } else if (state.apiKey) {
       ref.demo.append(readyRow('Mau bertanya lewat suara?', 'Pakai mic', () => {
         state.deepgramFormOpen = true;
+        state.deepgramFor = 'mic';
         renderDemo();
         ref.demo.querySelector('[data-deepgram] input').focus();
       }));
@@ -627,7 +707,8 @@
     ref.messages.replaceChildren(messageRow('assistant', school.greeting));
 
     const suggestions = school.suggestions.filter((question) => question.trim());
-    if (state.history.length === 0 && suggestions.length > 0) {
+    // Selama telepon, saran pertanyaan disembunyikan karena chat diketik sedang tidak bisa dipakai.
+    if (state.history.length === 0 && suggestions.length > 0 && state.callStatus === 'off') {
       const chips = make('div', 'chips');
       for (const question of suggestions) {
         const chip = make('button', 'chip', question);
@@ -663,10 +744,14 @@
     ref.launcher.setAttribute('aria-label', isOpen ? 'Tutup Asisten SPMB' : 'Buka Asisten SPMB');
     if (isOpen) {
       renderMessages();
-      (state.apiKey ? ref.input : ref.demo.querySelector('input')).focus();
+      // Selama telepon, kolom pertanyaan disembunyikan, jadi fokus ke tombol Akhiri panggilan.
+      if (state.callStatus !== 'off') ref.callEnd.focus();
+      else (state.apiKey ? ref.input : ref.demo.querySelector('input')).focus();
     } else {
       // Widget ditutup saat merekam: mikrofon langsung dimatikan, tanpa mengirim apa pun.
       if (state.voiceStatus !== 'idle') cancelRecording();
+      // Widget ditutup saat menelepon: panggilan diakhiri biasa, bukan dianggap error.
+      if (state.callStatus !== 'off') endCall();
       ref.launcher.focus();
     }
   }
@@ -675,7 +760,8 @@
 
   async function send(rawQuestion) {
     const question = rawQuestion.trim();
-    if (!question || state.isSending || state.voiceStatus !== 'idle') return;
+    // Selama telepon, pertanyaan diketik diabaikan: riwayat sedang dipakai oleh panggilan.
+    if (!question || state.isSending || state.voiceStatus !== 'idle' || state.callStatus !== 'off') return;
 
     if (!state.apiKey) {
       ref.input.value = question;
@@ -728,16 +814,58 @@
   function renderControls() {
     const voice = state.voiceStatus;
     const busy = voice !== 'idle';
+    const inCall = state.callStatus !== 'off';
     ref.mic.dataset.recording = String(voice === 'recording');
     ref.mic.setAttribute('aria-label', VOICE[voice].label);
     ref.mic.title = VOICE[voice].label;
-    ref.mic.disabled = state.isSending || voice === 'connecting' || voice === 'transcribing';
-    ref.send.disabled = state.isSending || busy;
-    ref.reset.disabled = state.history.length === 0 || state.isSending || busy;
+    // Selama telepon, semua tombol chat dimatikan supaya riwayat tidak diubah dari dua jalur sekaligus.
+    ref.mic.disabled = inCall || state.isSending || voice === 'connecting' || voice === 'transcribing';
+    ref.send.disabled = inCall || state.isSending || busy;
+    ref.reset.disabled = inCall || state.history.length === 0 || state.isSending || busy;
+    ref.phone.disabled = inCall || state.isSending || busy;
+    ref.phone.setAttribute('aria-label', CALL[state.callStatus].label);
+    ref.phone.title = CALL[state.callStatus].label;
     // Kolom pertanyaan dikunci selama merekam, supaya ketikan tidak tertimpa teks dari Deepgram.
     ref.input.readOnly = busy;
-    ref.voiceStatus.hidden = !busy;
+    ref.voiceStatus.hidden = !busy || inCall;
     ref.voiceStatus.textContent = VOICE[voice].text;
+    ref.form.hidden = inCall;
+    renderCallBar();
+  }
+
+  /* Telepon: tampilan */
+
+  // Nama tombol Telepon dan teks status di bar panggilan, per keadaan panggilan.
+  const CALL = {
+    off: { label: `Telepon ${AGENT_NAME}`, text: '' },
+    connecting: { label: 'Panggilan sedang menyambung', text: 'Menyambung...' },
+    listening: { label: 'Panggilan sedang berjalan', text: `Silakan bicara. ${AGENT_NAME} mendengarkan.` },
+    thinking: { label: 'Panggilan sedang berjalan', text: `${AGENT_NAME} sedang mencari jawaban...` },
+    speaking: { label: 'Panggilan sedang berjalan', text: `${AGENT_NAME} sedang bicara...` },
+  };
+
+  function formatDuration(seconds) {
+    return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+  }
+
+  function renderCallBar() {
+    ref.callBar.hidden = state.callStatus === 'off';
+    const text = CALL[state.callStatus].text;
+    // Teks status hanya diganti kalau berubah, supaya pembaca layar tidak mengumumkan ulang hal yang sama.
+    if (ref.callState.textContent !== text) ref.callState.textContent = text;
+    ref.callHeard.hidden = !state.callHeard;
+    ref.callHeard.textContent = state.callHeard;
+    // Kata terbaru ada di bawah; digulir otomatis karena penelepon tidak sedang memegang layar.
+    ref.callHeard.scrollTop = ref.callHeard.scrollHeight;
+    ref.callTime.textContent = formatDuration(state.callSeconds);
+  }
+
+  // Mengganti status panggilan, lalu menggambar ulang bar panggilan dan semua tombol.
+  function setCallStatus(status) {
+    state.callStatus = status;
+    renderControls();
+    // Kotak kuning ikut digambar ulang: tombol ganti key disembunyikan selama telepon dan kembali sesudahnya.
+    renderDemo();
   }
 
   function setVoiceStatus(status) {
@@ -900,10 +1028,11 @@
       stopRecording();
       return;
     }
-    if (state.voiceStatus !== 'idle' || state.isSending) return;
+    if (state.voiceStatus !== 'idle' || state.isSending || state.callStatus !== 'off') return;
 
     if (!state.deepgramKey) {
       state.deepgramFormOpen = true;
+      state.deepgramFor = 'mic';
       renderDemo();
       showError('Masukkan API key Deepgram dulu di kotak kuning di atas untuk bertanya lewat suara.');
       ref.demo.querySelector('[data-deepgram] input').focus();
@@ -933,9 +1062,431 @@
     }
   }
 
+  /* Telepon (Tingkat 4): mendengarkan lewat WebSocket Deepgram, menjawab lewat Netra,
+     lalu membacakan jawabannya dengan text to speech Deepgram. Agent belum bisa dipotong saat bicara. */
+
+  // Panggilan c masih berjalan? Proses yang telat selesai (misalnya jawaban Netra setelah ditutup)
+  // memakai ini supaya tidak mengganggu panggilan yang sudah berakhir atau panggilan baru.
+  function isLive(c) {
+    return c === call && state.callStatus !== 'off';
+  }
+
+  function pickRandom(items) {
+    return items[Math.floor(Math.random() * items.length)];
+  }
+
+  // true kalau promise selesai (berhasil atau gagal) dalam ms milidetik, false kalau belum.
+  function settlesWithin(promise, ms) {
+    let timer;
+    return Promise.race([
+      promise.then(() => true, () => true),
+      new Promise((resolve) => {
+        timer = setTimeout(() => resolve(false), ms);
+      }),
+    ]).finally(() => clearTimeout(timer));
+  }
+
+  // Salam pembuka menyesuaikan jam di komputer penelepon, seperti CS sungguhan.
+  function callGreeting(schoolName) {
+    const hour = new Date().getHours();
+    const time = hour < 11 ? 'pagi' : hour < 15 ? 'siang' : hour < 18 ? 'sore' : 'malam';
+    return `Halo, selamat ${time}! Dengan ${AGENT_NAME}, asisten SPMB ${schoolName}. Ada yang bisa saya bantu, Kak?`;
+  }
+
+  function needsChecking(question) {
+    return !SMALL_TALK.test(question.trim());
+  }
+
+  const DEEPGRAM_NETWORK_ERROR = 'Tidak bisa terhubung ke Deepgram. Periksa koneksi internet.';
+
+  function describeSpeechError(status) {
+    if (status === 401 || status === 403) return 'API key Deepgram ditolak. Periksa lagi API key Deepgram.';
+    if (status === 402) return 'Saldo Deepgram habis.';
+    if (status === 429) return 'Terlalu banyak permintaan ke Deepgram. Tunggu sebentar.';
+    return `Suara agent gagal dibuat (kode ${status}).`;
+  }
+
+  // Meminta suara dari Deepgram. signal dipakai endCall untuk membatalkan unduhan yang belum selesai.
+  async function requestSpeech(apiKey, text, signal) {
+    let response;
+    try {
+      response = await fetch(DEEPGRAM_SPEAK_URL, {
+        method: 'POST',
+        headers: {
+          Authorization: `Token ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ text }),
+        signal,
+      });
+    } catch {
+      throw new Error(DEEPGRAM_NETWORK_ERROR);
+    }
+    if (!response.ok) throw new Error(describeSpeechError(response.status));
+    return response;
+  }
+
+  // Object URL dicatat di call, supaya endCall bisa membersihkan yang belum sempat dilepas.
+  function trackUrl(url) {
+    call.urls?.add(url);
+    return url;
+  }
+
+  function releaseAudio(c, audio) {
+    if (audio.src.startsWith('blob:')) {
+      URL.revokeObjectURL(audio.src);
+      c.urls?.delete(audio.src);
+    }
+  }
+
+  function audioFromBlob(blob) {
+    return new Audio(trackUrl(URL.createObjectURL(blob)));
+  }
+
+  // Suara diputar sambil diunduh, supaya penelepon tidak menunggu seluruh file MP3 selesai.
+  function streamAudio(response) {
+    const mediaSource = new MediaSource();
+    const audio = new Audio(trackUrl(URL.createObjectURL(mediaSource)));
+    mediaSource.addEventListener('sourceopen', async () => {
+      const reader = response.body.getReader();
+      try {
+        const buffer = mediaSource.addSourceBuffer('audio/mpeg');
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer.appendBuffer(value);
+          // appendBuffer bekerja di latar belakang; potongan berikutnya baru boleh ditambahkan setelah selesai.
+          await new Promise((resolve) => buffer.addEventListener('updateend', resolve, { once: true }));
+        }
+        if (mediaSource.readyState === 'open') mediaSource.endOfStream();
+      } catch {
+        // Unduhan putus atau panggilan diakhiri. endOfStream('network') membuat audio memicu 'error'
+        // dan berhenti di tengah, jadi panggilan akan diakhiri. Tandanya dipasang dulu, supaya
+        // playAudio memberi pesan soal koneksi, bukan soal pemutaran.
+        reader.cancel().catch(() => {});
+        audio.dataset.networkFailed = 'true';
+        if (mediaSource.readyState === 'open') mediaSource.endOfStream('network');
+      }
+    }, { once: true });
+    return audio;
+  }
+
+  async function createAgentAudio(response) {
+    if (window.MediaSource && MediaSource.isTypeSupported('audio/mpeg') && response.body) {
+      return streamAudio(response);
+    }
+    // Cadangan untuk browser tanpa MediaSource (misalnya Safari di iPhone): unduh dulu, baru diputar.
+    let blob;
+    try {
+      blob = await response.blob();
+    } catch {
+      throw new Error(DEEPGRAM_NETWORK_ERROR);
+    }
+    return audioFromBlob(blob);
+  }
+
+  // Selesai saat audio habis diputar. Audio disimpan di call supaya endCall bisa menghentikannya.
+  function playAudio(audio) {
+    const c = call;
+    return new Promise((resolve, reject) => {
+      c.audio = audio;
+      c.finishAudio = resolve; // dipanggil endCall, karena audio yang di-pause tidak pernah 'ended'
+      audio.addEventListener('ended', () => resolve(), { once: true });
+      audio.addEventListener('error', () => {
+        // Unduhan yang putus di tengah (lihat streamAudio) adalah masalah koneksi, bukan masalah pemutaran.
+        reject(new Error(audio.dataset.networkFailed ? DEEPGRAM_NETWORK_ERROR : 'Suara agent tidak bisa diputar.'));
+      }, { once: true });
+      audio.play().catch((error) => {
+        if (error.name === 'NotAllowedError') {
+          reject(new Error('Browser menahan suara agent. Klik di mana saja di halaman, lalu tekan Telepon lagi.'));
+        } else if (error.name !== 'AbortError') {
+          // AbortError muncul kalau endCall mem-pause audio sebelum mulai; itu bukan error.
+          reject(new Error('Suara agent tidak bisa diputar.'));
+        }
+      });
+    }).finally(() => {
+      if (c.audio === audio) {
+        c.audio = null;
+        c.finishAudio = null;
+      }
+      releaseAudio(c, audio);
+    });
+  }
+
+  // Kalimat jeda diambil dari cache (sudah diunduh di awal), jawaban biasa diminta dan diputar sambil diunduh.
+  async function speak(text, fromCache = false) {
+    const c = call;
+    let audio;
+    if (fromCache) {
+      const blob = c.lineAudio?.get(text);
+      if (!blob) return;
+      audio = audioFromBlob(blob);
+    } else {
+      const response = await requestSpeech(c.deepgramKey, text, c.controller?.signal);
+      if (!isLive(c)) return;
+      audio = await createAgentAudio(response);
+    }
+    if (!isLive(c)) {
+      releaseAudio(c, audio);
+      return;
+    }
+    setCallStatus('speaking');
+    await playAudio(audio);
+  }
+
+  // Sigi bicara, lalu kembali mendengarkan. Kalau suara gagal, panggilan diakhiri dengan pesan yang jelas.
+  async function agentSays(text) {
+    const c = call;
+    try {
+      await speak(text);
+      if (isLive(c)) resumeListening();
+    } catch (error) {
+      if (isLive(c)) endCall(error.message);
+    }
+  }
+
+  // Suara kalimat jeda diminta sekali di awal panggilan, supaya bisa langsung diputar saat dibutuhkan.
+  // Kalau ada yang gagal, kalimat itu dilewati saja: panggilan tetap jalan tanpa kalimat jeda.
+  function preloadLines(c) {
+    for (const line of [...CHECKING_LINES, STILL_CHECKING_LINE]) {
+      requestSpeech(c.deepgramKey, line, c.controller.signal)
+        .then((response) => response.blob())
+        .then((blob) => {
+          if (isLive(c)) c.lineAudio.set(line, blob);
+        })
+        .catch(() => {});
+    }
+  }
+
+  // Mengucapkan kalimat jeda dan menampilkannya sebagai gelembung jawaban. true kalau benar-benar diucapkan.
+  // Entri kalimat jeda dicatat di turn, supaya answerCustomer tahu entri mana saja milik giliran ini.
+  async function sayFiller(c, line, turn) {
+    if (!isLive(c) || !c.lineAudio.has(line)) return false;
+    const filler = { role: 'assistant', content: line };
+    turn.push(filler);
+    state.history.push(filler);
+    renderMessages();
+    await speak(line, true);
+    if (isLive(c)) setCallStatus('thinking');
+    return true;
+  }
+
+  // Rekaman dijeda selama Sigi berpikir dan bicara, supaya suara Sigi sendiri tidak ikut terekam.
+  function pauseListening() {
+    if (call.recorder?.state === 'recording') call.recorder.pause();
+  }
+
+  function resumeListening() {
+    call.finalText = '';
+    call.interimText = '';
+    call.turnEnded = false;
+    state.callHeard = '';
+    if (call.recorder?.state === 'paused') call.recorder.resume();
+    setCallStatus('listening');
+  }
+
+  async function answerCustomer(question) {
+    const c = call;
+    pauseListening();
+    const before = state.history.length;
+    const entry = { role: 'user', content: question };
+    state.history.push(entry);
+    // Semua entri giliran ini (pertanyaan, lalu kalimat jeda kalau ada), berurutan sesudah `before`.
+    const turn = [entry];
+    // true kalau ujung riwayat masih persis milik giliran ini (belum dimulai ulang atau ditambah panggilan lain).
+    const ownsTail = () => state.history.length === before + turn.length
+      && turn.every((message, i) => state.history[before + i] === message);
+    state.callHeard = '';
+    setCallStatus('thinking');
+    renderMessages();
+
+    // Riwayat chat ikut dikirim, ditambah aturan telepon di akhir system prompt.
+    const messages = [{ role: 'system', content: `${buildSystemPrompt()}\n\n${CALL_RULES}` }, ...state.history];
+    const replyPromise = askAgent(c.netraKey, messages);
+
+    try {
+      let waited = false;
+      if (needsChecking(question) && !(await settlesWithin(replyPromise, CHECKING_DELAY_MS))) {
+        waited = await sayFiller(c, pickRandom(CHECKING_LINES), turn);
+        if (waited && !(await settlesWithin(replyPromise, STILL_CHECKING_DELAY_MS))) {
+          await sayFiller(c, STILL_CHECKING_LINE, turn);
+        }
+      }
+      let reply = await replyPromise;
+      if (waited) reply = `${pickRandom(THANKS_FOR_WAITING_LINES)} ${reply}`;
+
+      if (!isLive(c)) {
+        // Panggilan sudah ditutup selagi menunggu: jawaban tetap ditampilkan sebagai teks, tanpa suara,
+        // asalkan belum ada pesan lain sesudah pertanyaan dan kalimat jedanya.
+        if (ownsTail()) {
+          state.history.push({ role: 'assistant', content: reply });
+          renderMessages();
+        }
+        return;
+      }
+      state.history.push({ role: 'assistant', content: reply });
+      renderMessages();
+      agentSays(reply);
+    } catch (error) {
+      if (isLive(c)) {
+        // Pertanyaan dan kalimat jeda yang gagal dijawab dibuang, supaya riwayat tetap rapi.
+        state.history.length = before;
+        endCall(error.message);
+      } else if (ownsTail()) {
+        // Panggilan sudah ditutup: pertanyaan dan kalimat jedanya juga dibuang, sama seperti saat masih berjalan.
+        state.history.length = before;
+        renderMessages();
+      }
+    }
+  }
+
+  // Giliran bicara: Sigi menjawab setelah calon murid diam (UtteranceEnd) dan teksnya sudah final.
+  function handleCallMessage(event) {
+    if (state.callStatus !== 'listening') return;
+    let data;
+    try {
+      data = JSON.parse(event.data);
+    } catch {
+      return;
+    }
+    if (data.type === 'Results') {
+      state.callHeard = collectTranscript(call, data);
+      // Hasil final kosong (batuk, gumaman): UtteranceEnd tadi bukan akhir pertanyaan. Kalau tidak dibatalkan,
+      // potongan final pertama dari kalimat berikutnya langsung dijawab padahal orangnya masih bicara.
+      if (data.is_final && !call.finalText && !call.interimText) call.turnEnded = false;
+      renderCallBar();
+    } else if (data.type === 'UtteranceEnd' && (call.finalText || call.interimText)) {
+      call.turnEnded = true;
+    }
+    // UtteranceEnd kadang datang sebelum hasil final, jadi tunggu sampai tidak ada teks sementara.
+    if (call.turnEnded && !call.interimText && call.finalText) answerCustomer(call.finalText);
+  }
+
+  // Mematikan semua benda panggilan di satu tempat. Tanpa pesan: diakhiri biasa (tombol atau widget ditutup).
+  function endCall(message) {
+    const c = call;
+    const wasOn = state.callStatus !== 'off';
+    // Status 'off' dipasang paling awal, supaya event yang dipicu pembersihan di bawah (misalnya 'close'
+    // dari socket atau 'error' dari audio) tidak memanggil endCall lagi dan menimpa pesan error-nya.
+    state.callStatus = 'off';
+    clearInterval(c.keepAlive);
+    clearInterval(c.clock);
+    c.controller?.abort(); // membatalkan unduhan suara yang belum selesai
+    if (c.recorder && c.recorder.state !== 'inactive') c.recorder.stop();
+    c.stream?.getTracks().forEach((track) => track.stop()); // mematikan mikrofon
+    if (c.socket && c.socket.readyState === WebSocket.OPEN) c.socket.close();
+    if (c.audio) c.audio.pause();
+    c.finishAudio?.();
+    for (const url of c.urls ?? []) URL.revokeObjectURL(url);
+    c.urls?.clear();
+    c.lineAudio?.clear();
+    Object.assign(c, { keepAlive: null, clock: null, recorder: null, stream: null, socket: null, audio: null, finishAudio: null });
+
+    if (!wasOn) return;
+    state.callHeard = '';
+    if (message) state.error = message;
+    setCallStatus('off'); // menggambar ulang: bar panggilan hilang, form chat dan tombol kembali
+    renderMessages();
+    ref.status.textContent = message || 'Panggilan selesai.';
+    if (state.isOpen) ref.phone.focus(); // tombol Akhiri panggilan hilang, jadi fokus dipindah ke tombol Telepon
+  }
+
+  async function startCall() {
+    if (state.callStatus !== 'off' || state.isSending || state.voiceStatus !== 'idle') return;
+
+    if (!state.apiKey) {
+      showError('Masukkan API key Netra dulu di kotak kuning di atas.');
+      ref.demo.querySelector('input').focus();
+      return;
+    }
+    if (!state.deepgramKey) {
+      state.deepgramFormOpen = true;
+      state.deepgramFor = 'call';
+      renderDemo();
+      showError('Masukkan API key Deepgram dulu di kotak kuning di atas untuk menelepon.');
+      ref.demo.querySelector('[data-deepgram] input').focus();
+      return;
+    }
+
+    // Key disalin ke objek call, supaya panggilan tetap memakai key yang dipakai saat mulai.
+    call = {
+      controller: new AbortController(), urls: new Set(), lineAudio: new Map(), finalText: '', interimText: '', turnEnded: false,
+      netraKey: state.apiKey, deepgramKey: state.deepgramKey,
+    };
+    const c = call;
+    state.error = '';
+    state.callHeard = '';
+    state.callSeconds = 0;
+    setCallStatus('connecting');
+    renderMessages();
+    // Status di bar panggilan baru saja muncul bersamaan dengan isinya, jadi bisa tidak diumumkan.
+    // Awal panggilan diumumkan lewat area status yang selalu ada di halaman.
+    ref.status.textContent = `Menelepon ${AGENT_NAME}. Menyambung...`;
+    ref.callEnd.focus(); // tombol Telepon baru saja dimatikan, jadi fokus dipindah ke bar panggilan
+
+    try {
+      const stream = await getMicrophone();
+      if (!isLive(c)) {
+        stream.getTracks().forEach((track) => track.stop()); // panggilan diakhiri selagi menunggu izin mic
+        return;
+      }
+      c.stream = stream;
+
+      let socket;
+      try {
+        socket = await openDeepgramSocket(c.deepgramKey);
+      } catch (error) {
+        stream.getTracks().forEach((track) => track.stop()); // mematikan mikrofon lagi
+        throw error;
+      }
+      if (!isLive(c)) {
+        socket.close();
+        return;
+      }
+      c.socket = socket;
+      socket.addEventListener('message', (event) => {
+        if (c === call) handleCallMessage(event);
+      });
+      socket.addEventListener('close', () => {
+        if (isLive(c)) endCall('Panggilan terputus. Periksa koneksi internet, lalu tekan Telepon lagi.');
+      });
+
+      // Satu rekaman sepanjang panggilan. Hanya dijeda dan dilanjutkan, supaya header audio
+      // yang dibutuhkan Deepgram tidak terkirim ulang di tengah koneksi.
+      const recorder = new MediaRecorder(stream);
+      c.recorder = recorder;
+      recorder.addEventListener('dataavailable', (event) => {
+        if (event.data.size > 0 && socket.readyState === WebSocket.OPEN) socket.send(event.data);
+      });
+      recorder.start(250); // potongan audio dikirim ke Deepgram setiap 250 milidetik
+      c.keepAlive = setInterval(() => {
+        if (socket.readyState === WebSocket.OPEN) socket.send(JSON.stringify({ type: 'KeepAlive' }));
+      }, KEEP_ALIVE_MS);
+
+      const startedAt = Date.now();
+      c.clock = setInterval(() => {
+        state.callSeconds = Math.floor((Date.now() - startedAt) / 1000);
+        ref.callTime.textContent = formatDuration(state.callSeconds);
+      }, 1000);
+
+      preloadLines(c); // di latar belakang, sengaja tidak ditunggu supaya salam tidak tertunda
+
+      // Sigi membuka percakapan lebih dulu. Selama salam dibacakan, rekaman dijeda.
+      pauseListening();
+      const greeting = callGreeting(school.schoolName);
+      state.history.push({ role: 'assistant', content: greeting });
+      renderMessages();
+      agentSays(greeting);
+    } catch (error) {
+      if (isLive(c)) endCall(error.message);
+    }
+  }
+
   /* Event */
 
   ref.mic.addEventListener('click', handleMicClick);
+  ref.phone.addEventListener('click', startCall);
+  ref.callEnd.addEventListener('click', () => endCall());
 
   ref.launcher.addEventListener('click', () => setOpen(!state.isOpen));
   ref.close.addEventListener('click', () => setOpen(false));
@@ -984,8 +1535,14 @@
     open: () => setOpen(true),
     close: () => setOpen(false),
     ask: (question) => {
+      if (state.callStatus !== 'off') return; // pertanyaan dari halaman diabaikan selama telepon
       setOpen(true);
       send(question);
+    },
+    // Untuk tombol "Telepon Sigi" di halaman sekolah: membuka widget lalu langsung menelepon.
+    call: () => {
+      setOpen(true);
+      startCall();
     },
     refresh,
     // Dipakai dashboard untuk membaca dan menyimpan data sekolah.
