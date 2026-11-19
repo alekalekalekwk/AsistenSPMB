@@ -457,8 +457,9 @@
   </footer>
 
   <!-- Integrasi Sigi: dua baris ini saja yang ditempel di website sekolah. -->
-  <script src="sekolah/wikrama.js"></script>
-  <script src="widget.js" defer></script>
+  <!-- ?v=… memaksa browser mengambil versi terbaru, bukan salinan lama dari cache. Naikkan angkanya setiap kali widget.js atau sekolah/wikrama.js diubah. -->
+  <script src="sekolah/wikrama.js?v=20261119"></script>
+  <script src="widget.js?v=20261119" defer></script>
   <script>
     // Data ekskul paling diminati (TP 2026–2027, konteks-wikrama.txt). Satu skala untuk semua kelompok.
     const EKSKUL = [
