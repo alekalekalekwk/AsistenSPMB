@@ -1,6 +1,6 @@
 ---
 name: ui-design-review
-description: Review tampilan (UI) halaman AsistenSPMB, yaitu website index.html, halaman sekolah demo-wikrama.html, playground.html, dan widget chat widget.js. Mengecek layout desktop dan HP 375px, scroll ke samping, kontras warna, konsistensi brand (teal-limau AsistenSPMB vs warna sekolah), keadaan kosong/memuat/error, aksesibilitas, dan kejujuran copy (klaim fitur, harga, label demo). Pakai skill ini setiap kali user minta review, audit, cek, atau kritik UI/desain/tampilan ("rapi nggak?", "cek di HP", "udah bagus belum?"), sebelum demo ke investor atau sekolah, setelah mengubah HTML, class Tailwind, atau CSS widget, atau saat user kirim screenshot dan nanya tampilannya, walaupun user tidak menyebut kata "design review".
+description: Review tampilan (UI) halaman AsistenSPMB, yaitu website index.html, dashboard.html, halaman sekolah demo-wikrama.html, playground.html, dan widget chat widget.js. Mengecek layout desktop dan HP 375px, scroll ke samping, kontras warna, konsistensi brand (teal-limau AsistenSPMB vs warna sekolah), keadaan kosong/memuat/error, aksesibilitas, dan kejujuran copy (klaim fitur, harga, label demo), dan ciri "AI slop" (emoji, label di atas judul, kartu seragam, animasi berulang, kata-kata kosong). Pakai skill ini setiap kali user minta review, audit, cek, atau kritik UI/desain/tampilan ("rapi nggak?", "cek di HP", "udah bagus belum?"), sebelum demo ke investor atau sekolah, setelah mengubah HTML, class Tailwind, atau CSS widget, atau saat user kirim screenshot dan nanya tampilannya, walaupun user tidak menyebut kata "design review".
 ---
 
 # UI design review AsistenSPMB
@@ -14,13 +14,14 @@ Selama review, jangan mengubah file. Tulis temuannya, lalu tawarkan perbaikan di
 | File | Isi | Warna |
 |---|---|---|
 | `index.html` | Website jualan AsistenSPMB | Brand AsistenSPMB: teal `#0f766e`, deep `#042f2e`, limau `#bef264`, mint `#ccfbf1` |
+| `dashboard.html` | Dashboard sekolah bergaya catatan (Notion-like) | Netral, aksen teal AsistenSPMB |
 | `demo-wikrama.html` | Contoh website sekolah + widget | Wikrama: navy `#001e42`, emas `#e3ce0f`, royal `#223987` |
 | `playground.html` | Alat uji jawaban untuk tim/admin sekolah | Wikrama navy-emas |
 | `widget.js` + `sekolah/*.js` | Tombol dan jendela chat di Shadow DOM | Dari `colors` di file sekolah |
 
 Teknologi: HTML statis tanpa build, Tailwind v4 lewat `@tailwindcss/browser@4.1.11` dengan token warna di blok `@theme`. Widget memakai CSS biasa di dalam Shadow DOM, jadi class Tailwind tidak berlaku di sana.
 
-Pengecualian yang disengaja: contoh percakapan di hero dan kartu "Demo langsung" di `index.html` memakai warna Wikrama untuk menunjukkan bahwa widget mengikuti warna sekolah. Itu bukan pelanggaran brand.
+Pengecualian yang disengaja: contoh percakapan di hero `index.html` memakai warna Wikrama untuk menunjukkan bahwa widget mengikuti warna sekolah. Itu bukan pelanggaran brand.
 
 ## Langkah
 
@@ -41,6 +42,7 @@ Pengecualian yang disengaja: contoh percakapan di hero dan kartu "Demo langsung"
    - kolom isian di bawah 16px
    - kontrol tanpa nama, gambar tanpa alt, dan link `_blank` tanpa `noopener`
    - urutan heading
+   - emoji di teks yang terlihat (`emojiText`), termasuk di dalam widget
 
    Level target sentuh: "gagal (<24px dan terlalu rapat)" masuk Penting, sedangkan "kecil (<24px, tapi jaraknya cukup)" dan "kecil (<44px)" masuk Kecil. Kecualinya kalau target itu tombol utama, misalnya Kirim atau Daftar.
 
@@ -96,6 +98,17 @@ Bagian ini paling penting untuk demo investor. Klaim yang tidak benar merusak ke
 - Harga sama di semua tempat: Rp300 ribu/bulan per sekolah, dibayar Rp3.600.000 per tahun.
 - Halaman sekolah demo berlabel jelas "halaman demo … bukan situs resmi", dan contoh percakapan statis diberi keterangan "contoh".
 - Data sekolah di `demo-wikrama.html` dan `sekolah/wikrama.js` sesuai `konteks-wikrama.txt`.
+
+### Gaya AI slop
+Sumber: repo anti-slop di GitHub (miqdadbadjuber/anti-slop, Laith0003/ux-skill "Anti-AI-slop ban list", zero-slop). User minta website dan aplikasi ini bebas emoji dan ciri template AI. Temuan di sini masuk Penting.
+- **Emoji.** Tidak ada emoji di judul, menu, kartu, bullet, tombol, atau label (`emojiText` di hasil audit harus kosong). Kalau butuh penanda, pakai ikon SVG yang relevan dengan satu gaya garis, atau tidak pakai apa-apa. Tanda centang di setiap baris daftar juga termasuk.
+- **Label kecil di atas judul** (eyebrow, lencana pil seperti "Demo langsung" atau "Fitur" di atas h2): hapus kalau judulnya sudah bilang hal yang sama.
+- **Kata yang distabilo, dimiringkan, atau diberi warna lain di judul.** Judul cukup satu warna.
+- **Kartu seragam.** Tiga atau enam kartu identik (ikon + judul + paragraf) diganti struktur yang mengikuti isi: satu fitur utama dibuat besar, sisanya daftar biasa, baris tabel, atau teks di bawah garis. Tidak semua hal butuh kartu.
+- **Animasi.** Tidak ada yang berdenyut, berkedip, atau berulang terus (`animate-ping`, `animate-pulse`, loop `requestAnimationFrame`). Animasi otomatis selesai di bawah 5 detik (WCAG 2.2.2) dan berhenti dengan `prefers-reduced-motion`.
+- **Hiasan palsu.** Titik lampu jendela Mac di gambar produk, titik hijau "online" yang tidak pernah berubah status, panah → di setiap tombol. Panah hanya kalau memang menunjukkan arah, misalnya ↗ untuk tab baru atau ← untuk kembali.
+- **Kata-kata.** Tidak ada em dash (—), kata kosong (revolusioner, canggih, mulus, "solusi terbaik"), pola "bukan sekadar X, tapi Y", trio yang dipaksakan, angka tanpa sumber, atau klaim umum ("banyak orang", "kebanyakan sekolah") tanpa data. Tombol menyebut langkah berikutnya, bukan "Mulai sekarang" atau "Pelajari lebih lanjut".
+- **Ritme halaman.** Bagian-bagian tidak semuanya berpola judul tengah + grid kartu. Variasikan tata letak dan jarak antarbagian.
 
 ### Keamanan yang terlihat di UI
 - Teks dinamis (jawaban AI, nama file, pesan error) masuk lewat `textContent` atau text node. `innerHTML` hanya untuk markup statis tanpa data dari pengguna atau AI.
