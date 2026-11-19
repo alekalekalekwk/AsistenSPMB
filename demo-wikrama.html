@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SMK Wikrama Bogor · Demo AsistenSPMB</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.1.11"></script>
+  <style type="text/tailwindcss">
+    /* Halaman contoh website sekolah. Palet SMK Wikrama: navy dan kuning emas. */
+    @theme {
+      --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+      --color-navy: #001e42;
+      --color-navy-700: #002c62;
+      --color-royal: #223987;
+      --color-gold: #e3ce0f;
+      --color-cloud: #f3f6fa;
+    }
+    @layer base {
+      html { scroll-behavior: smooth; }
+      :focus-visible { outline: 2px solid var(--color-royal); outline-offset: 2px; }
+    }
+  </style>
+</head>
+<body class="bg-white font-sans text-slate-800 antialiased">
+  <!-- Penanda demo: halaman ini contoh integrasi, bukan situs resmi sekolah. -->
+  <div class="bg-slate-900 text-xs text-white">
+    <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-4 gap-y-1 px-4 py-2">
+      <p><span class="font-bold text-gold">Halaman demo</span> integrasi AsistenSPMB · bukan situs resmi SMK Wikrama Bogor</p>
+      <a href="index.html" class="font-semibold underline underline-offset-2 hover:text-gold">Kembali ke AsistenSPMB</a>
+    </div>
+  </div>
+
+  <header class="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur">
+    <div class="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4">
+      <a href="#beranda" class="flex items-center gap-3">
+        <span class="grid size-10 place-items-center rounded-full bg-navy text-gold">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="size-5"><path d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z"/><path d="M22 10v6"/><path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"/></svg>
+        </span>
+        <span class="leading-tight">
+          <span class="block text-base font-bold text-navy">SMK Wikrama Bogor</span>
+          <span class="block text-xs text-slate-600">Yayasan Wikrama Indonesia</span>
+        </span>
+      </a>
+      <nav aria-label="Menu utama" class="hidden items-center gap-6 text-sm font-medium text-slate-700 md:flex">
+        <a href="#profil" class="hover:text-navy">Profil</a>
+        <a href="#jurusan" class="hover:text-navy">Jurusan</a>
+        <a href="#spmb" class="hover:text-navy">SPMB</a>
+        <a href="#ekskul" class="hover:text-navy">Ekskul</a>
+        <a href="#kontak" class="hover:text-navy">Kontak</a>
+      </nav>
+      <a href="https://spmb.smkwikrama.sch.id/register" target="_blank" rel="noopener"
+        class="inline-flex min-h-11 items-center rounded-full bg-gold px-5 text-sm font-bold text-navy hover:brightness-95">Daftar SPMB</a>
+    </div>
+  </header>
+
+  <main>
+    <section id="beranda" class="bg-navy text-white">
+      <div class="mx-auto grid max-w-6xl gap-10 px-4 py-16 md:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] md:items-center md:py-24">
+        <div>
+          <p class="inline-flex rounded-full bg-white/10 px-3 py-1 text-sm font-semibold text-gold ring-1 ring-white/15">SPMB Tahun Ajaran 2027–2028 dibuka</p>
+          <h1 class="mt-5 text-4xl font-bold leading-tight sm:text-5xl">Siap jadi bagian dari SMK Wikrama Bogor?</h1>
+          <p class="mt-5 max-w-xl text-lg text-white/80">Sekolah swasta terakreditasi A di Bogor Timur dengan 7 jurusan di bidang Teknologi Informasi, Bisnis Manajemen, dan Pariwisata.</p>
+          <div class="mt-8 flex flex-wrap gap-3">
+            <a href="https://spmb.smkwikrama.sch.id/register" target="_blank" rel="noopener"
+              class="inline-flex min-h-12 items-center rounded-full bg-gold px-6 font-bold text-navy hover:brightness-95">Daftar sekarang</a>
+            <button type="button" data-open-asisten
+              class="inline-flex min-h-12 items-center gap-2 rounded-full px-6 font-bold text-white ring-1 ring-white/40 hover:bg-white/10">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="size-5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              Tanya Asisten SPMB
+            </button>
+          </div>
+        </div>
+        <div class="rounded-3xl bg-white/5 p-6 ring-1 ring-white/10">
+          <h2 class="text-lg font-bold text-gold">Kenapa Wikrama?</h2>
+          <ul class="mt-4 space-y-3 text-white/85">
+            <li class="flex gap-3"><span class="mt-2 size-2 shrink-0 rounded-full bg-gold"></span>SMK Pusat Keunggulan dari Kemendikbudristek sejak 2021</li>
+            <li class="flex gap-3"><span class="mt-2 size-2 shrink-0 rounded-full bg-gold"></span>Sekolah percontohan SMK PK Cyber Security, dengan Lab Security Operation Center</li>
+            <li class="flex gap-3"><span class="mt-2 size-2 shrink-0 rounded-full bg-gold"></span>Sekolah Adiwiyata Mandiri tingkat nasional sejak 2012</li>
+            <li class="flex gap-3"><span class="mt-2 size-2 shrink-0 rounded-full bg-gold"></span>Teaching Factory, plus hotel dan kafe sendiri untuk praktik siswa</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section id="profil" class="border-b border-slate-200 bg-cloud">
+      <dl class="mx-auto grid max-w-6xl grid-cols-2 gap-px px-4 py-10 text-center md:grid-cols-4">
+        <div class="p-4"><dt class="text-sm text-slate-600">Akreditasi</dt><dd class="mt-1 text-3xl font-bold text-navy">A</dd></div>
+        <div class="p-4"><dt class="text-sm text-slate-600">Jurusan</dt><dd class="mt-1 text-3xl font-bold text-navy">7</dd></div>
+        <div class="p-4"><dt class="text-sm text-slate-600">Bidang keahlian</dt><dd class="mt-1 text-3xl font-bold text-navy">3</dd></div>
+        <div class="p-4"><dt class="text-sm text-slate-600">Kurikulum</dt><dd class="mt-1 text-xl font-bold text-navy sm:text-3xl">Merdeka</dd></div>
+      </dl>
+    </section>
+
+    <section id="jurusan" class="mx-auto max-w-6xl px-4 py-16">
+      <p class="text-sm font-bold uppercase tracking-wider text-royal">Program keahlian</p>
+      <h2 class="mt-2 text-3xl font-bold text-navy">7 jurusan, 3 bidang keahlian</h2>
+      <div class="mt-10 grid gap-8 lg:grid-cols-3">
+        <div>
+          <h3 class="font-bold text-slate-900">Teknologi Informasi</h3>
+          <ul class="mt-4 space-y-3">
+            <li class="rounded-2xl border border-slate-200 p-4"><p class="font-bold text-navy">PPLG</p><p class="text-sm font-medium">Pengembangan Perangkat Lunak dan Gim</p><p class="mt-1 text-sm text-slate-600">Aplikasi web dan mobile, game 2D/3D, database, dan pemanfaatan AI.</p></li>
+            <li class="rounded-2xl border border-slate-200 p-4"><p class="font-bold text-navy">TJKT</p><p class="text-sm font-medium">Teknik Jaringan Komputer dan Telekomunikasi</p><p class="mt-1 text-sm text-slate-600">Jaringan, administrasi sistem, dan keamanan jaringan. Ada sertifikasi CNAP dan MCNA.</p></li>
+            <li class="rounded-2xl border border-slate-200 p-4"><p class="font-bold text-navy">DKV</p><p class="text-sm font-medium">Desain Komunikasi Visual</p><p class="mt-1 text-sm text-slate-600">Desain grafis, fotografi, videografi, animasi, dan branding.</p></li>
+          </ul>
+        </div>
+        <div>
+          <h3 class="font-bold text-slate-900">Bisnis Manajemen</h3>
+          <ul class="mt-4 space-y-3">
+            <li class="rounded-2xl border border-slate-200 p-4"><p class="font-bold text-navy">PMN</p><p class="text-sm font-medium">Pemasaran</p><p class="mt-1 text-sm text-slate-600">Sales, promosi digital, pembuatan konten, dan affiliate marketing.</p></li>
+            <li class="rounded-2xl border border-slate-200 p-4"><p class="font-bold text-navy">MPLB</p><p class="text-sm font-medium">Manajemen Perkantoran dan Layanan Bisnis</p><p class="mt-1 text-sm text-slate-600">Administrasi perkantoran, layanan bisnis, dan aplikasi perkantoran digital.</p></li>
+          </ul>
+        </div>
+        <div>
+          <h3 class="font-bold text-slate-900">Pariwisata</h3>
+          <ul class="mt-4 space-y-3">
+            <li class="rounded-2xl border border-slate-200 p-4"><p class="font-bold text-navy">KLN</p><p class="text-sm font-medium">Kuliner</p><p class="mt-1 text-sm text-slate-600">Tata boga berstandar industri untuk hotel, restoran, bakery, dan katering.</p></li>
+            <li class="rounded-2xl border border-slate-200 p-4"><p class="font-bold text-navy">HTL</p><p class="text-sm font-medium">Perhotelan</p><p class="mt-1 text-sm text-slate-600">Front office, housekeeping, F&amp;B service, plus bahasa Jepang dan Inggris.</p></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section id="spmb" class="bg-cloud">
+      <div class="mx-auto max-w-6xl px-4 py-16">
+        <p class="text-sm font-bold uppercase tracking-wider text-royal">SPMB 2027–2028</p>
+        <h2 class="mt-2 text-3xl font-bold text-navy">Alur pendaftaran</h2>
+        <ol class="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <li class="rounded-2xl bg-white p-5 shadow-sm"><span class="text-sm font-bold text-royal">01</span><p class="mt-2 font-semibold">Daftar online di spmb.smkwikrama.sch.id atau datang langsung ke sekolah</p></li>
+          <li class="rounded-2xl bg-white p-5 shadow-sm"><span class="text-sm font-bold text-royal">02</span><p class="mt-2 font-semibold">Bayar biaya seleksi</p></li>
+          <li class="rounded-2xl bg-white p-5 shadow-sm"><span class="text-sm font-bold text-royal">03</span><p class="mt-2 font-semibold">Isi data diri</p></li>
+          <li class="rounded-2xl bg-white p-5 shadow-sm"><span class="text-sm font-bold text-royal">04</span><p class="mt-2 font-semibold">Isi minat bidang keahlian</p></li>
+          <li class="rounded-2xl bg-white p-5 shadow-sm"><span class="text-sm font-bold text-royal">05</span><p class="mt-2 font-semibold">Isi pernyataan keuangan</p></li>
+          <li class="rounded-2xl bg-white p-5 shadow-sm"><span class="text-sm font-bold text-royal">06</span><p class="mt-2 font-semibold">Ikut wawancara, bawa berkas persyaratan</p></li>
+          <li class="rounded-2xl bg-white p-5 shadow-sm"><span class="text-sm font-bold text-royal">07</span><p class="mt-2 font-semibold">Daftar ulang</p></li>
+          <li class="rounded-2xl bg-white p-5 shadow-sm"><span class="text-sm font-bold text-royal">08</span><p class="mt-2 font-semibold">Selesai</p></li>
+        </ol>
+
+        <div class="mt-10 grid gap-6 md:grid-cols-2">
+          <div class="rounded-2xl bg-white p-6 shadow-sm">
+            <h3 class="text-lg font-bold text-navy">Berkas yang dibawa saat wawancara</h3>
+            <ul class="mt-4 list-disc space-y-1.5 pl-5 text-slate-700">
+              <li>Legalisir rapor semester 1–4</li>
+              <li>Fotokopi Kartu Keluarga</li>
+              <li>Fotokopi KTP ayah dan ibu</li>
+              <li>Fotokopi akta kelahiran</li>
+              <li>Surat keterangan golongan darah dari puskesmas/klinik</li>
+              <li>Surat keterangan tidak buta warna dari puskesmas/klinik</li>
+            </ul>
+          </div>
+          <div class="flex flex-col justify-between gap-6 rounded-2xl bg-navy p-6 text-white">
+            <div>
+              <h3 class="text-lg font-bold text-gold">Biaya, beasiswa, dan jadwal</h3>
+              <p class="mt-3 text-white/80">Pendaftaran dibagi beberapa gelombang, dan kuota jurusan IT biasanya paling cepat penuh. Untuk biaya resmi dan info terbaru, tanya langsung ke Asisten SPMB atau CS SPMB.</p>
+            </div>
+            <button type="button" data-open-asisten class="inline-flex min-h-11 w-fit items-center rounded-full bg-gold px-5 font-bold text-navy hover:brightness-95">Tanya Asisten SPMB</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="ekskul" class="mx-auto max-w-6xl px-4 py-16">
+      <p class="text-sm font-bold uppercase tracking-wider text-royal">Ekstrakurikuler</p>
+      <h2 class="mt-2 text-3xl font-bold text-navy">Paling diminati</h2>
+      <p class="mt-3 max-w-2xl text-slate-600">Berdasarkan pilihan 1.285 murid kelas X dan XI di Tahun Pelajaran 2026–2027. Selain ekskul umum dan seni budaya, ada klub keahlian sesuai jurusan seperti Python Club, Cyber Security Club, dan Barista.</p>
+      <div class="mt-8 flex flex-wrap gap-3">
+        <span class="rounded-full bg-cloud px-4 py-2 font-semibold text-navy">Bulu Tangkis</span>
+        <span class="rounded-full bg-cloud px-4 py-2 font-semibold text-navy">Futsal</span>
+        <span class="rounded-full bg-cloud px-4 py-2 font-semibold text-navy">Joyful English</span>
+        <span class="rounded-full bg-cloud px-4 py-2 font-semibold text-navy">Basket</span>
+        <span class="rounded-full bg-cloud px-4 py-2 font-semibold text-navy">PMR</span>
+        <span class="rounded-full bg-cloud px-4 py-2 font-semibold text-navy">Seni Musik Modern</span>
+        <span class="rounded-full bg-cloud px-4 py-2 font-semibold text-navy">Seni Suara</span>
+        <span class="rounded-full bg-cloud px-4 py-2 font-semibold text-navy">Seni Teater</span>
+      </div>
+    </section>
+
+    <section id="kontak" class="bg-navy text-white">
+      <div class="mx-auto grid max-w-6xl gap-10 px-4 py-16 md:grid-cols-2">
+        <div>
+          <p class="text-sm font-bold uppercase tracking-wider text-gold">Kontak SPMB</p>
+          <h2 class="mt-2 text-3xl font-bold">Masih ada pertanyaan?</h2>
+          <p class="mt-3 text-white/80">Tanya Asisten SPMB di pojok kanan bawah kapan saja, atau hubungi CS SPMB.</p>
+          <p class="mt-6 text-white/80">Jl. Raya Wangun No. 21, RT.01/RW.06, Kel. Sindangsari, Kec. Bogor Timur, Kota Bogor, Jawa Barat</p>
+        </div>
+        <dl class="grid gap-4 sm:grid-cols-2">
+          <div class="rounded-2xl bg-white/5 p-4 ring-1 ring-white/10"><dt class="text-sm text-white/70">Telepon</dt><dd class="mt-1 font-bold">0251-8242411</dd></div>
+          <div class="rounded-2xl bg-white/5 p-4 ring-1 ring-white/10"><dt class="text-sm text-white/70">Email</dt><dd class="mt-1 font-bold break-all">prohumasi@smkwikrama.sch.id</dd></div>
+          <div class="rounded-2xl bg-white/5 p-4 ring-1 ring-white/10"><dt class="text-sm text-white/70">WhatsApp CS 1 &amp; 2</dt><dd class="mt-1 font-bold">0819-0924-2411<br>0815-2584-6789</dd></div>
+          <div class="rounded-2xl bg-white/5 p-4 ring-1 ring-white/10"><dt class="text-sm text-white/70">WhatsApp CS 3 &amp; 4</dt><dd class="mt-1 font-bold">0819-1924-2411<br>0858-9093-7777</dd></div>
+        </dl>
+      </div>
+    </section>
+  </main>
+
+  <footer class="bg-slate-950 text-sm text-white/70">
+    <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-6">
+      <p>Halaman demo untuk menunjukkan widget AsistenSPMB di website SMK Wikrama Bogor.</p>
+      <p>Situs resmi: smkwikrama.sch.id · Instagram @smkwikrama</p>
+    </div>
+  </footer>
+
+  <!-- Integrasi AsistenSPMB: dua baris ini saja yang ditempel di website sekolah. -->
+  <script src="sekolah/wikrama.js"></script>
+  <script src="widget.js" defer></script>
+  <script>
+    // Tombol "Tanya Asisten SPMB" di halaman ikut membuka widget.
+    document.addEventListener('click', (event) => {
+      if (event.target.closest('[data-open-asisten]')) window.AsistenSPMBWidget?.open();
+    });
+  </script>
+</body>
+</html>

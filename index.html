@@ -3,1002 +3,305 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Asisten SPMB SMK Wikrama Bogor</title>
+  <title>AsistenSPMB · Chatbot SPMB untuk sekolah</title>
+  <meta name="description" content="AsistenSPMB menjawab pertanyaan calon murid dan orang tua di website sekolah, langsung dari data sekolah sendiri.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <!-- Tailwind versi browser: langsung jalan tanpa proses build. -->
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.1.11"></script>
   <style type="text/tailwindcss">
-    /* Palet SMK Wikrama Bogor: navy dan kuning emas dari logo dan situs smkwikrama.sch.id.
-       Tailwind otomatis membuat class seperti bg-navy, bg-gold, dan text-royal dari token ini. */
+    /* Identitas AsistenSPMB: hijau toska (teal) dan aksen hijau limau. Sengaja beda dari warna sekolah mana pun. */
     @theme {
       --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
       --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
-      --color-navy: #001e42;
-      --color-navy-700: #002c62;
-      --color-royal: #223987;
-      --color-gold: #e3ce0f;
-      --color-gold-strong: #cdb90d;
-      --color-paper: #f3f6fa;
+      --color-brand: #0f766e;
+      --color-brand-dark: #115e59;
+      --color-deep: #042f2e;
+      --color-ink: #0b1f1d;
+      --color-mint: #ccfbf1;
+      --color-cloud: #f4faf9;
+      --color-lime: #bef264;
+      /* Warna widget di contoh percakapan mengikuti sekolah demo (SMK Wikrama). */
+      --color-wk-navy: #001e42;
+      --color-wk-gold: #e3ce0f;
     }
     @layer base {
-      button, label[for] { cursor: pointer; }
-      button:disabled { cursor: not-allowed; }
-      :focus-visible { outline: 2px solid var(--color-navy); outline-offset: 2px; }
-      ::selection { background-color: rgb(227 206 15 / 0.45); color: var(--color-navy); }
+      html { scroll-behavior: smooth; }
+      :focus-visible { outline: 2px solid var(--color-brand); outline-offset: 2px; }
+      ::selection { background-color: var(--color-mint); color: var(--color-ink); }
     }
-    /* Komponen: sudut membulat, garis abu-abu tipis, navy sebagai warna utama, dan kuning emas sebagai aksen. */
     @layer components {
-      .field-label { @apply text-sm font-semibold text-navy; }
-      .field { @apply min-h-11 w-full min-w-0 rounded-xl border border-slate-300 bg-white px-4 text-sm text-navy placeholder:text-slate-500 focus:border-navy focus:ring-2 focus:ring-gold/60 focus-visible:outline-hidden; }
-      .hint { @apply text-xs leading-relaxed text-slate-600; }
-      .meta { @apply font-mono text-[11px] text-slate-600; }
-      .kbd { @apply rounded-md border border-slate-200 bg-slate-100 px-1.5 py-0.5 font-mono text-[11px] text-slate-700; }
-      .btn { @apply inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 text-sm font-semibold text-navy hover:bg-slate-50 active:bg-slate-100 disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400; }
-      .btn-gold { @apply border-gold bg-gold hover:border-gold-strong hover:bg-gold-strong active:bg-gold-strong; }
-      .bubble { @apply rounded-2xl px-4 py-3 text-[15px] leading-relaxed; }
-      .bubble-user { @apply max-w-[85%] rounded-br-md bg-navy text-white; }
-      .bubble-agent { @apply max-w-[44rem] rounded-tl-md border border-slate-200 bg-white text-navy shadow-sm; }
+      .btn { @apply inline-flex min-h-12 items-center justify-center gap-2 rounded-full px-6 font-bold transition; }
+      .btn-brand { @apply bg-brand text-white hover:bg-brand-dark; }
+      .btn-lime { @apply bg-lime text-ink hover:brightness-95; }
+      .eyebrow { @apply text-sm font-bold uppercase tracking-wider text-brand; }
+      .card { @apply rounded-3xl border border-slate-200 bg-white p-6; }
     }
   </style>
 </head>
-<body class="bg-paper font-sans text-navy antialiased lg:h-dvh lg:overflow-hidden">
-  <div class="flex min-h-dvh flex-col lg:h-dvh">
-    <header class="grid h-16 shrink-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-4 border-b border-navy-700 bg-navy px-4 text-white sm:px-5 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
-      <div class="flex min-w-0 items-center gap-3">
-        <span class="grid size-10 shrink-0 place-items-center rounded-xl bg-gold text-navy">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="size-5"><path d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z"/><path d="M22 10v6"/><path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"/></svg>
+<body class="bg-white font-sans text-ink antialiased">
+  <header class="sticky top-0 z-40 border-b border-white/10 bg-deep/95 text-white backdrop-blur">
+    <div class="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4">
+      <a href="#" class="flex items-center gap-2.5" aria-label="AsistenSPMB, ke atas halaman">
+        <span class="grid size-9 place-items-center rounded-xl bg-lime text-ink">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="size-5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="m8.5 10 2.5 2.5 4.5-4.5"/></svg>
         </span>
-        <div class="min-w-0">
-          <h1 class="truncate text-lg font-bold leading-tight">Asisten SPMB Wikrama</h1>
-          <p class="truncate text-xs text-white/70">SMK Wikrama Bogor</p>
+        <span class="text-lg tracking-tight">Asisten<span class="font-extrabold">SPMB</span></span>
+      </a>
+      <nav aria-label="Menu utama" class="hidden items-center gap-7 text-sm font-medium text-white/80 md:flex">
+        <a href="#fitur" class="hover:text-white">Fitur</a>
+        <a href="#cara-kerja" class="hover:text-white">Cara kerja</a>
+        <a href="#harga" class="hover:text-white">Harga</a>
+        <a href="#faq" class="hover:text-white">FAQ</a>
+      </nav>
+      <a href="demo-wikrama.html" class="btn btn-lime min-h-10 px-5 text-sm">Lihat demo</a>
+    </div>
+  </header>
+
+  <main>
+    <!-- Hero -->
+    <section class="relative overflow-hidden bg-deep text-white">
+      <div aria-hidden="true" class="pointer-events-none absolute -right-40 -top-40 size-[36rem] rounded-full bg-brand/40 blur-3xl"></div>
+      <div class="relative mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)] gap-12 px-4 pb-20 pt-14 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:items-center lg:pt-20">
+        <div>
+          <p class="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-sm font-semibold text-lime ring-1 ring-white/15">
+            <span class="size-2 rounded-full bg-lime"></span>Chatbot SPMB untuk website sekolah
+          </p>
+          <h1 class="mt-6 text-4xl font-extrabold leading-[1.1] tracking-tight sm:text-5xl lg:text-6xl">Jawab pertanyaan calon murid kapan saja, dari data sekolahmu sendiri.</h1>
+          <p class="mt-6 max-w-xl text-lg leading-relaxed text-white/75">AsistenSPMB menjawab pertanyaan soal pendaftaran, jurusan, dan berkas langsung di website sekolah. Kalau infonya tidak ada, ia jujur bilang belum tahu dan mengarahkan ke CS sekolah.</p>
+          <div class="mt-8 flex flex-wrap gap-3">
+            <a href="demo-wikrama.html" class="btn btn-lime">Coba demo SMK Wikrama</a>
+            <a href="#harga" class="btn text-white ring-1 ring-white/30 hover:bg-white/10">Lihat harga</a>
+          </div>
+          <p class="mt-5 text-sm text-white/60">Rp300 ribu per bulan per sekolah, dibayar tahunan.</p>
+        </div>
+
+        <!-- Contoh tampilan widget (statis) -->
+        <figure class="mx-auto w-full max-w-md">
+          <div class="overflow-hidden rounded-3xl bg-white text-slate-900 shadow-2xl shadow-black/40 ring-1 ring-white/10">
+            <div class="flex items-center gap-3 bg-wk-navy px-4 py-3.5 text-white">
+              <span class="grid size-10 place-items-center rounded-full bg-wk-gold text-wk-navy">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="size-5"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>
+              </span>
+              <div>
+                <p class="text-[15px] font-bold">Asisten SPMB</p>
+                <p class="flex items-center gap-1.5 text-xs text-white/85"><span class="size-2 rounded-full bg-green-400"></span>SMK Wikrama Bogor · online</p>
+              </div>
+            </div>
+            <div class="space-y-3 bg-slate-50 p-4 text-sm leading-relaxed">
+              <p class="w-fit max-w-[85%] rounded-2xl rounded-bl-md border border-slate-200 bg-white px-3.5 py-2.5">Halo! Aku Asisten SPMB SMK Wikrama Bogor. Mau tanya soal pendaftaran, jurusan, atau ekskul?</p>
+              <p class="ml-auto w-fit max-w-[85%] rounded-2xl rounded-br-md bg-wk-navy px-3.5 py-2.5 text-white">Berkas apa yang perlu disiapin?</p>
+              <p class="w-fit max-w-[85%] rounded-2xl rounded-bl-md border border-slate-200 bg-white px-3.5 py-2.5">Yang dibawa saat wawancara: legalisir rapor semester 1–4, fotokopi KK, KTP ayah dan ibu, akta kelahiran, surat golongan darah, dan surat tidak buta warna.</p>
+              <p class="ml-auto w-fit max-w-[85%] rounded-2xl rounded-br-md bg-wk-navy px-3.5 py-2.5 text-white">Ada beasiswa nggak?</p>
+              <p class="w-fit max-w-[85%] rounded-2xl rounded-bl-md border border-slate-200 bg-white px-3.5 py-2.5">Info beasiswa terbaru belum ada di data kami, Kak. Silakan tanya langsung ke CS SPMB lewat WhatsApp 0819-0924-2411 ya.</p>
+            </div>
+          </div>
+          <figcaption class="mt-3 text-center text-sm text-white/60">Contoh percakapan di demo SMK Wikrama Bogor. Warna widget mengikuti sekolah.</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <!-- Masalah -->
+    <section class="bg-cloud">
+      <div class="mx-auto max-w-6xl px-4 py-20">
+        <p class="eyebrow">Musim SPMB</p>
+        <h2 class="mt-2 max-w-2xl text-3xl font-extrabold tracking-tight sm:text-4xl">Pertanyaan yang sama datang terus, dari pagi sampai malam.</h2>
+        <div class="mt-10 grid gap-6 md:grid-cols-3">
+          <div class="card">
+            <p class="text-lg font-bold">CS kewalahan</p>
+            <p class="mt-2 text-slate-600">"Cara daftarnya gimana?", "berkasnya apa aja?", dan "jurusannya apa aja?" dijawab berulang-ulang setiap hari.</p>
+          </div>
+          <div class="card">
+            <p class="text-lg font-bold">Orang tua bertanya di luar jam kerja</p>
+            <p class="mt-2 text-slate-600">Banyak orang tua baru sempat mencari info sekolah malam hari, saat CS sudah tidak membalas.</p>
+          </div>
+          <div class="card">
+            <p class="text-lg font-bold">Info tersebar di mana-mana</p>
+            <p class="mt-2 text-slate-600">Alur pendaftaran ada di brosur, syarat ada di PDF, kontak ada di media sosial. Calon murid harus mencari sendiri.</p>
+          </div>
         </div>
       </div>
-      <span class="hidden rounded-xl bg-white/10 px-4 py-2 text-sm font-semibold ring-1 ring-white/15 md:inline-block">Simulasi CS</span>
-      <p class="meta hidden justify-self-end text-white/70 sm:block">Tingkat 2 · teks + PDF</p>
-    </header>
+    </section>
 
-    <main id="app-main" class="grid flex-1 grid-cols-[minmax(0,1fr)] lg:min-h-0 lg:grid-cols-[26rem_minmax(0,1fr)] lg:grid-rows-[minmax(0,1fr)] xl:grid-cols-[28rem_minmax(0,1fr)]">
-      <aside id="settings-panel" aria-labelledby="settings-title" class="flex flex-col border-b border-slate-200 bg-white lg:min-h-0 lg:border-r lg:border-b-0">
-        <div class="flex items-center gap-3 border-b border-slate-200 px-5 py-4">
-          <span class="grid size-10 shrink-0 place-items-center rounded-xl bg-navy/5 text-navy">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="size-5"><line x1="21" x2="14" y1="4" y2="4"/><line x1="10" x2="3" y1="4" y2="4"/><line x1="21" x2="12" y1="12" y2="12"/><line x1="8" x2="3" y1="12" y2="12"/><line x1="21" x2="16" y1="20" y2="20"/><line x1="12" x2="3" y1="20" y2="20"/><line x1="14" x2="14" y1="2" y2="6"/><line x1="8" x2="8" y1="10" y2="14"/><line x1="16" x2="16" y1="18" y2="22"/></svg>
-          </span>
-          <div>
-            <h2 id="settings-title" class="text-lg font-bold leading-tight">Pengaturan</h2>
-            <p class="text-xs text-slate-600">Parameter simulasi asisten</p>
-          </div>
+    <!-- Fitur -->
+    <section id="fitur" class="mx-auto max-w-6xl scroll-mt-20 px-4 py-20">
+      <p class="eyebrow">Fitur</p>
+      <h2 class="mt-2 max-w-2xl text-3xl font-extrabold tracking-tight sm:text-4xl">Satu asisten yang paham sekolahmu.</h2>
+      <div class="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div class="card">
+          <span class="grid size-11 place-items-center rounded-2xl bg-mint text-brand-dark"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="size-5"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M16 13H8"/><path d="M16 17H8"/></svg></span>
+          <h3 class="mt-4 text-lg font-bold">Jawab dari data sekolah</h3>
+          <p class="mt-2 text-slate-600">Info sekolah dalam bentuk teks atau PDF brosur jadi bahan jawaban. Bukan jawaban umum dari internet.</p>
         </div>
-
-        <div class="flex-1 space-y-6 p-5 lg:overflow-y-auto">
-          <div id="api-key-group">
-            <div class="flex items-baseline justify-between gap-2">
-              <label for="api-key" class="field-label">API key Netra <span class="text-red-600" aria-hidden="true">*</span></label>
-              <span class="meta">Bearer</span>
-            </div>
-            <div class="mt-2 flex rounded-xl border border-slate-300 bg-white focus-within:border-navy focus-within:ring-2 focus-within:ring-gold/60">
-              <input id="api-key" type="password" autocomplete="off" spellcheck="false" aria-describedby="api-key-hint"
-                placeholder="Tempel API key di sini"
-                class="min-h-11 w-full min-w-0 rounded-l-xl bg-transparent px-4 font-mono text-sm placeholder:font-sans placeholder:text-slate-500 focus-visible:outline-hidden">
-              <button id="btn-toggle-key" type="button" aria-controls="api-key" aria-pressed="false"
-                class="inline-flex min-w-36 shrink-0 items-center justify-center gap-2 rounded-r-xl border-l border-slate-300 px-3 text-sm font-medium text-slate-700 hover:bg-slate-50">
-                <svg id="icon-eye-show" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="size-4"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg>
-                <svg id="icon-eye-hide" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="hidden size-4"><path d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49"/><path d="M14.084 14.158a3 3 0 0 1-4.242-4.242"/><path d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143"/><path d="m2 2 20 20"/></svg>
-                <span id="btn-toggle-key-label">Tampilkan</span>
-              </button>
-            </div>
-            <p id="api-key-hint" class="hint mt-2 flex items-start gap-1.5">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="mt-0.5 size-3.5 shrink-0"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-              <span>Tidak disimpan di mana pun. Key hanya dikirim ke <code class="font-mono text-navy">api.netra.sh</code> dan hilang saat halaman dimuat ulang.</span>
-            </p>
-          </div>
-
-          <div id="model-group" class="border-t border-slate-200 pt-6">
-            <label for="model" class="field-label">Model</label>
-            <input id="model" type="text" spellcheck="false" value="deepseek/deepseek-v4.1-flash" aria-describedby="model-hint" class="field mt-2 font-mono">
-            <p id="model-hint" class="hint mt-2">Model bawaan tutorial. Boleh diganti dengan ID model lain yang tersedia di Netra.</p>
-          </div>
-
-          <div id="context-text-group" class="border-t border-slate-200 pt-6">
-            <div class="flex items-baseline justify-between gap-2">
-              <label for="context-text" class="field-label">Konteks teks</label>
-              <button id="btn-reset-context" type="button" class="text-sm font-semibold text-royal hover:underline disabled:text-slate-400 disabled:no-underline">Kembalikan isi awal</button>
-            </div>
-            <p id="context-text-hint" class="hint mt-1">Info sekolah yang jadi bahan jawaban. Sudah terisi dari konteks-wikrama.txt dan boleh diedit.</p>
-            <textarea id="context-text" rows="10" aria-describedby="context-text-hint"
-              class="field mt-3 min-h-48 resize-y py-3 leading-relaxed">=== CONTEXT CHATBOT: ASISTEN INFORMASI SMK WIKRAMA BOGOR ===
-
-[PERAN]
-Kamu adalah asisten virtual informasi SMK Wikrama Bogor. Tugasmu menjawab pertanyaan calon murid, orang tua/wali, dan masyarakat umum tentang pendaftaran murid baru (SPMB/PPDB), jurusan, ekstrakurikuler, keunggulan sekolah, dan info umum SMK Wikrama Bogor.
-
-[GAYA BAHASA]
-- Pakai Bahasa Indonesia yang ramah, santai tapi sopan.
-- Sapa calon murid dengan "Kak", orang tua/wali dengan "Bapak/Ibu".
-- Jawab singkat dan jelas. Pakai poin-poin untuk info yang panjang (syarat, alur, daftar jurusan).
-- Kalau pertanyaan kurang jelas, ajukan satu pertanyaan untuk memperjelas.
-
-[ATURAN PENTING]
-1. Jawab HANYA berdasarkan informasi di context ini. Jangan mengarang biaya, tanggal, kuota, nama guru, atau info lain yang tidak tertulis.
-2. Kalau info tidak tersedia, bilang dengan jujur, lalu arahkan ke CS SPMB (lihat bagian KONTAK).
-3. Jangan meminta data pribadi (NIK, NISN, nomor KK, password, nomor rekening) lewat chat. Pendaftaran hanya lewat spmb.smkwikrama.sch.id atau datang langsung ke sekolah.
-4. Jangan menjanjikan calon murid pasti diterima. Hasil seleksi ditentukan panitia.
-5. Untuk biaya, selalu sarankan konfirmasi ke CS karena biaya bisa berubah tiap tahun dan tiap gelombang.
-6. SMK Wikrama juga punya cabang di kota lain (misalnya Jepara dan Banjarmasin). Context ini HANYA untuk SMK Wikrama BOGOR. Kalau ditanya soal cabang lain, arahkan ke kontak cabang tersebut.
-7. Tolak dengan sopan pertanyaan di luar topik sekolah dan kembalikan ke topik SMK Wikrama Bogor.
-8. Istilah "PPDB" dan "SPMB" (Sistem Penerimaan Murid Baru) dianggap sama.
-
----------------------------------------------------------------
-[1. PROFIL SEKOLAH]
-- Nama: SMK Wikrama Bogor (SMKS Wikrama Bogor)
-- Status: Swasta, di bawah Yayasan Wikrama Indonesia
-- NPSN: 20220299
-- Akreditasi: A
-- Kurikulum: Kurikulum Merdeka
-- Jam belajar: pagi, 5 hari sekolah
-- Kepala Sekolah: Iin Mulyani, S.Si
-- Alamat: Jl. Raya Wangun No. 21, RT.01/RW.06, Kel. Sindangsari, Kec. Bogor Timur, Kota Bogor, Jawa Barat
-- Bidang keahlian: Teknologi Informasi, Bisnis Manajemen, dan Pariwisata (total 7 jurusan)
-
-Keunggulan &amp; prestasi sekolah:
-- Ditetapkan sebagai SMK Pusat Keunggulan (SMK PK) oleh Kemendikbudristek sejak 2021
-- Ditetapkan sebagai sekolah percontohan program SMK PK Cyber Security
-- Punya Laboratorium Security Operation Center (SOC), diresmikan September 2025
-- Sekolah Adiwiyata Mandiri tingkat nasional sejak 2012 (sekolah peduli lingkungan)
-- Pernah dipilih UNESCO sebagai wakil Indonesia untuk film dokumenter tentang perubahan iklim
-- Menerapkan Teaching Factory (siswa belajar lewat proyek/layanan nyata)
-- Punya hotel dan kafe sendiri untuk praktik siswa Perhotelan
-- Program kewirausahaan WYNS, bekerja sama dengan HIPMI Kota Bogor
-- Punya Bursa Kerja Khusus (BKK) untuk info lowongan dan penyaluran kerja lulusan
-- Kerja sama industri untuk PKL, misalnya Swiss-Belinn Bogor (Perhotelan), Shangri-La Jakarta dan Hotel Amaris Pakuan Bogor (Kuliner), serta Childreams Studio (DKV)
-
----------------------------------------------------------------
-[2. INFORMASI SPMB/PPDB]
-
-Periode yang sedang dibuka: SPMB Tahun Ajaran 2027-2028
-Link pendaftaran: https://spmb.smkwikrama.sch.id/register
-
-A. Alur Pendaftaran
-1. Daftar online di spmb.smkwikrama.sch.id (atau datang langsung ke SMK Wikrama Bogor)
-2. Bayar biaya seleksi
-3. Isi data diri (nama lengkap, NISN, asal sekolah, email, nomor HP siswa, ayah, dan ibu)
-4. Isi minat bidang keahlian (pilihan jurusan)
-5. Isi pernyataan keuangan
-6. Ikut wawancara (bawa berkas persyaratan)
-7. Daftar ulang
-8. Selesai
-
-B. Berkas Persyaratan (dibawa saat wawancara)
-1. Legalisir rapor semester 1-4
-2. Fotokopi Kartu Keluarga (KK)
-3. Fotokopi KTP ayah dan ibu
-4. Fotokopi akta kelahiran
-5. Surat keterangan golongan darah dari puskesmas/klinik
-6. Surat keterangan tidak buta warna dari puskesmas/klinik
-
-C. Gelombang &amp; Biaya
-- Pendaftaran dibagi beberapa gelombang. Semakin awal gelombangnya, biasanya biayanya semakin murah.
-- Biaya resmi TA 2027-2028 BELUM tercantum di context ini. Arahkan pengguna ke CS SPMB untuk biaya terbaru.
-- Sebagai gambaran SAJA, biaya pendaftaran tahun ajaran 2025-2026 dulu:
-  - Gelombang 1 (Okt 2024 - Mar 2025): Rp9.500.000
-  - Gelombang 2 (Apr - Jun 2025): Rp10.500.000
-  - Gelombang 3 (Jul 2025): Rp12.000.000
-  Kalau menyebut angka ini, WAJIB bilang itu biaya tahun ajaran 2025-2026, bukan biaya terbaru.
-
-D. Kuota
-- Kuota tiap tahun terbatas. Sebagai gambaran, TA 2024/2025 menerima 648 peserta didik baru.
-- Jurusan bidang IT (PPLG, TJKT, DKV) biasanya paling cepat penuh. Pernah terjadi kuota IT penuh duluan, sementara bidang Pariwisata dan Bisnis Manajemen masih buka.
-- Sarankan calon murid daftar di gelombang awal, terutama yang mengincar jurusan IT.
-
----------------------------------------------------------------
-[3. JURUSAN (PROGRAM KEAHLIAN)]
-
-BIDANG TEKNOLOGI INFORMASI
-1. PPLG - Pengembangan Perangkat Lunak dan Gim
-   - Belajar: membuat aplikasi web &amp; mobile, game interaktif 2D/3D, desktop programming, database, business analyst, dan pemanfaatan AI. Pembelajaran berbasis proyek.
-   - Arah karier/PKL: Fullstack, Frontend, Backend, Mobile, Game Developer, QA, Business Analyst, UI/UX Designer, RPA Designer.
-
-2. TJKT - Teknik Jaringan Komputer dan Telekomunikasi
-   - Belajar: jaringan komputer, administrasi sistem, keamanan jaringan.
-   - Keunggulan: bisa dapat sertifikasi internasional CNAP (Cisco Networking Academy) dan MCNA (MikroTik Certified Network Associate). Ada lab SOC untuk keamanan siber.
-   - Arah karier/PKL: IT Support, Network &amp; System Security Engineer, NOC (Network Operation Center), SOC (Security Operation Center).
-
-3. DKV - Desain Komunikasi Visual
-   - Belajar: desain grafis, fotografi, videografi, animasi, branding, dan pemanfaatan AI.
-   - Arah karier: periklanan, production house, radio &amp; TV, industri kreatif, freelancer.
-
-BIDANG BISNIS MANAJEMEN
-4. PMN - Pemasaran
-   - Belajar: komunikasi, sales, promosi digital, pembuatan &amp; editing konten, AI untuk digital marketing, affiliate marketing.
-   - Arah karier: Digital Marketer, Host Live Streaming Selling, Social Media Marketing, Sales.
-
-5. MPLB - Manajemen Perkantoran dan Layanan Bisnis
-   - Belajar: administrasi perkantoran, layanan bisnis, aplikasi perkantoran digital, otomasi, dan AI.
-   - Arah karier: Office Administrator, sekretaris, admin, customer service.
-
-BIDANG PARIWISATA
-6. KLN - Kuliner
-   - Belajar: tata boga berstandar industri.
-   - Arah karier: hotel, restoran, bakery, katering, termasuk peluang kerja di luar negeri. Cocok juga untuk yang mau buka usaha kuliner.
-
-7. HTL - Perhotelan
-   - Belajar: front office, housekeeping, food &amp; beverage service, laundry, banquet/event, plus bahasa Jepang dan Inggris.
-   - Keunggulan: praktik langsung di hotel dan kafe milik sekolah.
-   - Arah karier: bekerja di berbagai departemen hotel.
-
-Tips menjawab soal jurusan:
-- Kalau calon murid bingung, tanyakan minat, hobi, dan cita-citanya, lalu sarankan 1-2 jurusan yang paling cocok.
-- Contoh: suka coding/game -> PPLG; suka utak-atik jaringan/keamanan siber -> TJKT; suka gambar/desain/video -> DKV; suka jualan/bikin konten -> PMN; rapi dan suka administrasi -> MPLB; suka masak -> Kuliner; suka melayani orang &amp; bahasa asing -> Perhotelan.
-
----------------------------------------------------------------
-[3B. EKSTRAKURIKULER, SENI BUDAYA, DAN KEPUTRIAN]
-Sumber: jadwal resmi Tahun Pelajaran 2026-2027. Jadwal untuk murid baru TA 2027-2028 bisa berubah, jadi setiap kali menyebut hari, bilang bahwa itu jadwal TP 2026-2027.
-
-A. Aturan Memilih
-- Murid kelas X dan XI memilih 1 ekskul umum dan 1 kegiatan seni budaya.
-- Murid putri juga memilih 1 kegiatan keputrian (hari Jumat). Ada pilihan kegiatan khusus untuk murid putri non-muslim.
-- Ekskul produktif adalah klub keahlian yang berkaitan dengan jurusan (nama jurusannya ada di dalam kurung).
-- Beberapa kegiatan punya hari yang berbeda untuk kelas X dan kelas XI.
-
-B. Ekskul Umum
-Olahraga:
-- Basket: Senin (X), Rabu (XI)
-- Futsal: Senin &amp; Kamis (X), Selasa &amp; Rabu (XI)
-- Bulu Tangkis Putra: Kamis (X), Senin (XI)
-- Bulu Tangkis Putri: Rabu (X), Selasa (XI)
-- Voli: Kamis (X), Sabtu (XI)
-- Sepak Bola: Sabtu
-- Tenis Meja: Jumat
-- Catur: Senin
-Bela diri:
-- Karate: Senin
-- Pencak Silat: Rabu
-- Taekwondo: Sabtu
-Organisasi:
-- Pramuka: Selasa &amp; Jumat
-- PMR: Senin (X), Selasa (XI)
-- Paskibra: Jumat (X), Sabtu (XI)
-Media, bahasa, dan lainnya:
-- Broadcasting: Senin
-- Jurnalistik &amp; Mading: Senin (X), Rabu (XI)
-- Joyful English: Senin (X), Rabu &amp; Jumat (XI)
-- Karya Ilmiah Remaja (KIR): Rabu
-- Kewirausahaan: Rabu
-- Hadroh: Rabu
-- Band: Sabtu
-- Tunas Hijau: Sabtu
-
-C. Seni Budaya
-- Seni Musik Modern: Rabu (X), Selasa &amp; Jumat (XI)
-- Seni Suara: Kamis (X), Jumat (XI)
-- Seni Teater: Kamis (X), Rabu (XI)
-- Seni Lukis: Kamis (X), Rabu (XI)
-- Seni Tari: Kamis (X), Rabu (XI)
-- Perkusi: Kamis (X), Jumat (XI)
-- Arumba &amp; Angklung: Senin (X), Rabu (XI)
-- Gamelan Sunda: Senin (X), Rabu (XI)
-
-D. Ekskul Produktif (hari Kamis, kecuali AI Club hari Jumat)
-- PPLG: Flutter Club, Python Club, Java Club, Net Club, JavaScript Club, IoT Club, Gamedev Club
-- TJKT: Network Cabling, Cyber Security Club, Linux Club, Mikrotik Club, Cloud Computing Club
-- DKV: Fotografi &amp; Videografi Club, Desain Grafis Club, 3D
-- PMN: Content Creator Club
-- MPLB: Public Speaking
-- Pariwisata (Kuliner &amp; Perhotelan): Bahasa Jepang, Barista
-- Lainnya: AI Club, Digital Marketing, English for Tourism, Ausbildung (Bahasa Jerman)
-
-E. Keputrian (hari Jumat, khusus murid putri)
-- Merangkai Bunga &amp; Crafter
-- Menyulam
-- Merajut
-- Memasak
-- Menjahit
-- Kegiatan khusus untuk murid putri non-muslim
-
-F. Paling Diminati (TP 2026-2027, dari 1.285 murid kelas X dan XI)
-- Ekskul umum: Bulu Tangkis (226 pemilih), Futsal (143), Joyful English (131), Basket (126), PMR (99)
-- Seni budaya: Seni Musik Modern (343), Seni Suara (261), Seni Teater (233)
-- Keputrian: Memasak (233), Merajut (126)
-
-Tips menjawab:
-- Kalau ditanya "ekskul X hari apa?", sebutkan harinya sesuai kelas (X atau XI), lalu ingatkan bahwa itu jadwal TP 2026-2027.
-- Kalau calon murid minta saran, tanyakan hobinya, lalu sarankan 1 ekskul umum + 1 seni budaya. Tambahkan ekskul produktif yang sesuai jurusan pilihannya.
-- Ruangan, nama pembina, dan biaya ekskul tidak tersedia di sini. Arahkan ke CS SPMB.
-
----------------------------------------------------------------
-[4. KONTAK RESMI SPMB]
-- Telepon (hotline): 0251-8242411
-- CS 1 (WhatsApp): 0819-0924-2411
-- CS 2 (WhatsApp): 0815-2584-6789
-- CS 3 (WhatsApp): 0819-1924-2411
-- CS 4 (WhatsApp): 0858-9093-7777
-- Email: prohumasi@smkwikrama.sch.id
-- Website sekolah: smkwikrama.sch.id
-- Website SPMB: spmb.smkwikrama.sch.id
-- Instagram: @smkwikrama
-- LinkedIn: linkedin.com/school/smkwikramabogor
-
----------------------------------------------------------------
-[5. INFO YANG TIDAK TERSEDIA DI CONTEXT INI]
-Kalau ditanya soal hal-hal di bawah, jawab jujur bahwa infonya belum tersedia dan arahkan ke CS SPMB:
-- Biaya resmi dan jadwal gelombang TA 2027-2028
-- Rincian SPP bulanan, seragam, dan apa saja yang termasuk dalam biaya
-- Beasiswa terbaru
-- Jadwal wawancara dan pengumuman hasil seleksi
-
----------------------------------------------------------------
-[6. CONTOH PERCAKAPAN]
-
-Pengguna: Kak, cara daftar ke Wikrama gimana?
-Asisten: Halo Kak! Pendaftaran SPMB SMK Wikrama Bogor TA 2027-2028 bisa lewat spmb.smkwikrama.sch.id. Alurnya:
-1. Daftar online
-2. Bayar biaya seleksi
-3. Isi data diri dan pilihan jurusan
-4. Isi pernyataan keuangan
-5. Wawancara (bawa berkas persyaratan)
-6. Daftar ulang
-Mau Kakak dijelasin juga berkas yang perlu disiapin?
-
-Pengguna: Biaya masuknya berapa?
-Asisten: Untuk TA 2027-2028, rincian biaya resminya bisa Kakak tanyakan langsung ke CS SPMB, misalnya WhatsApp 0819-0924-2411, karena biayanya beda tiap gelombang. Sebagai gambaran, di TA 2025-2026 biayanya mulai dari Rp9.500.000 di gelombang 1. Biasanya makin awal daftar, makin hemat.
-
-Pengguna: Saya suka main game sama gambar, cocoknya jurusan apa?
-Asisten: Seru, Kak! Ada dua yang cocok:
-- PPLG, kalau Kakak pengen bikin game-nya (coding + game 2D/3D).
-- DKV, kalau Kakak lebih suka desain, ilustrasi, dan animasinya.
-Oh iya, jurusan IT biasanya cepat penuh, jadi lebih aman daftar di gelombang awal ya!</textarea>
-            <div class="meta mt-2 flex justify-between gap-2">
-              <span id="context-chars"></span>
-              <span id="context-tokens" title="Perkiraan kasar: 1 token kira-kira 4 karakter. Jumlah token asli muncul di bawah setiap jawaban."></span>
-            </div>
-          </div>
-
-          <div id="pdf-group" class="rounded-xl border border-slate-200 bg-paper p-4">
-            <div class="flex items-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="size-5 text-navy"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
-              <label for="pdf-input" class="field-label">Dokumen PDF</label>
-            </div>
-            <p id="pdf-hint" class="hint mt-1">Teks PDF dibaca di browser kamu lalu ikut dikirim sebagai konteks. PDF hasil scan (berupa gambar) tidak bisa dibaca.</p>
-            <input id="pdf-input" type="file" accept="application/pdf,.pdf" multiple aria-describedby="pdf-hint"
-              class="mt-3 block w-full min-w-0 text-sm text-slate-600 file:mr-3 file:min-h-11 file:cursor-pointer file:rounded-xl file:border file:border-navy file:bg-white file:px-4 file:text-sm file:font-semibold file:text-navy hover:file:bg-navy/5 disabled:opacity-60">
-            <p id="pdf-status" role="status" aria-live="polite" class="mt-2 text-sm empty:hidden"></p>
-            <ul id="pdf-list" class="mt-3 space-y-2 empty:hidden"></ul>
-          </div>
-
-          <div id="context-status" class="flex gap-3 rounded-xl border p-4"></div>
+        <div class="card">
+          <span class="grid size-11 place-items-center rounded-2xl bg-mint text-brand-dark"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="size-5"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg></span>
+          <h3 class="mt-4 text-lg font-bold">Tidak mengarang</h3>
+          <p class="mt-2 text-slate-600">Kalau biaya, beasiswa, atau jadwal tidak ada di data, asisten bilang belum tahu dan memberi nomor CS sekolah.</p>
         </div>
+        <div class="card">
+          <span class="grid size-11 place-items-center rounded-2xl bg-mint text-brand-dark"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="size-5"><path d="m16 18 6-6-6-6"/><path d="m8 6-6 6 6 6"/></svg></span>
+          <h3 class="mt-4 text-lg font-bold">Pasang dengan dua baris kode</h3>
+          <p class="mt-2 text-slate-600">Tempel di website sekolah, lalu tombol chat muncul di pojok kanan bawah. Gaya website sekolah tidak terganggu.</p>
+        </div>
+        <div class="card">
+          <span class="grid size-11 place-items-center rounded-2xl bg-mint text-brand-dark"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="size-5"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg></span>
+          <h3 class="mt-4 text-lg font-bold">Tampil dengan identitas sekolah</h3>
+          <p class="mt-2 text-slate-600">Nama dan warna widget mengikuti sekolah. Di demo, widget memakai navy dan kuning emas SMK Wikrama.</p>
+        </div>
+        <div class="card">
+          <span class="grid size-11 place-items-center rounded-2xl bg-mint text-brand-dark"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="size-5"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></svg></span>
+          <h3 class="mt-4 text-lg font-bold">Nyaman di HP</h3>
+          <p class="mt-2 text-slate-600">Kebanyakan calon murid membuka website dari HP. Di layar kecil, chat tampil penuh layar.</p>
+        </div>
+        <div class="card">
+          <span class="grid size-11 place-items-center rounded-2xl bg-mint text-brand-dark"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="size-5"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
+          <h3 class="mt-4 text-lg font-bold">Aman untuk calon murid</h3>
+          <p class="mt-2 text-slate-600">Asisten tidak meminta NIK, NISN, atau password lewat chat, dan mengarahkan pendaftaran ke situs resmi sekolah.</p>
+        </div>
+      </div>
+    </section>
 
-        <div class="flex items-center justify-between gap-3 border-t border-slate-200 px-5 py-3">
-          <p class="flex min-w-0 items-center gap-2 text-sm font-medium">
-            <span id="connection-dot" class="size-2.5 shrink-0 rounded-full bg-slate-400"></span>
-            <span id="connection-text" class="truncate"></span>
+    <!-- Cara kerja -->
+    <section id="cara-kerja" class="scroll-mt-16 bg-deep text-white">
+      <div class="mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)] gap-12 px-4 py-20 lg:grid-cols-2 lg:items-center">
+        <div>
+          <p class="text-sm font-bold uppercase tracking-wider text-lime">Cara kerja</p>
+          <h2 class="mt-2 text-3xl font-extrabold tracking-tight sm:text-4xl">Siap dalam tiga langkah.</h2>
+          <ol class="mt-8 space-y-6">
+            <li class="flex gap-4">
+              <span class="grid size-10 shrink-0 place-items-center rounded-full bg-lime font-bold text-ink">1</span>
+              <div><p class="font-bold">Kirim info sekolah</p><p class="mt-1 text-white/70">Alur pendaftaran, syarat berkas, jurusan, dan kontak CS. Boleh berupa teks atau PDF brosur.</p></div>
+            </li>
+            <li class="flex gap-4">
+              <span class="grid size-10 shrink-0 place-items-center rounded-full bg-lime font-bold text-ink">2</span>
+              <div><p class="font-bold">Kami siapkan asistennya</p><p class="mt-1 text-white/70">Nama dan warna disesuaikan dengan sekolah. Jawabannya bisa dicoba dulu di playground sebelum dipasang.</p></div>
+            </li>
+            <li class="flex gap-4">
+              <span class="grid size-10 shrink-0 place-items-center rounded-full bg-lime font-bold text-ink">3</span>
+              <div><p class="font-bold">Tempel di website sekolah</p><p class="mt-1 text-white/70">Dua baris kode, dan tombol Asisten SPMB langsung muncul.</p></div>
+            </li>
+          </ol>
+        </div>
+        <div>
+          <div class="overflow-hidden rounded-2xl bg-ink ring-1 ring-white/10">
+            <div class="flex items-center gap-2 border-b border-white/10 px-4 py-3">
+              <span class="size-3 rounded-full bg-white/20"></span><span class="size-3 rounded-full bg-white/20"></span><span class="size-3 rounded-full bg-white/20"></span>
+              <span class="ml-2 font-mono text-xs text-white/60">website-sekolah.html</span>
+            </div>
+            <pre class="overflow-x-auto p-5 font-mono text-[13px] leading-relaxed text-white/90"><code><span class="text-white/50">&lt;!-- Tempel sebelum &lt;/body&gt; --&gt;</span>
+<span class="text-lime">&lt;script</span> src="sekolah/wikrama.js"<span class="text-lime">&gt;&lt;/script&gt;</span>
+<span class="text-lime">&lt;script</span> src="widget.js" defer<span class="text-lime">&gt;&lt;/script&gt;</span></code></pre>
+          </div>
+          <p class="mt-3 text-sm text-white/60">Baris pertama berisi nama, warna, dan info sekolah. Baris kedua memunculkan tombol chat.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Demo -->
+    <section class="mx-auto max-w-6xl px-4 py-20">
+      <div class="grid grid-cols-[minmax(0,1fr)] gap-8 rounded-[2rem] bg-wk-navy p-8 text-white sm:p-12 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] lg:items-center">
+        <div>
+          <p class="text-sm font-bold uppercase tracking-wider text-wk-gold">Demo langsung</p>
+          <h2 class="mt-2 text-3xl font-extrabold tracking-tight">Lihat AsistenSPMB di website SMK Wikrama Bogor.</h2>
+          <p class="mt-4 text-white/75">Halaman demo dengan data SPMB 2027–2028 SMK Wikrama Bogor. Klik tombol chat di pojok kanan bawah, lalu tanya soal pendaftaran, jurusan, atau ekskul.</p>
+        </div>
+        <div class="flex flex-col gap-3 sm:flex-row lg:flex-col">
+          <a href="demo-wikrama.html" class="btn bg-wk-gold text-wk-navy hover:brightness-95">Buka demo SMK Wikrama</a>
+          <a href="playground.html" class="btn text-white ring-1 ring-white/30 hover:bg-white/10">Buka playground</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Harga -->
+    <section id="harga" class="scroll-mt-16 bg-cloud">
+      <div class="mx-auto max-w-6xl px-4 py-20">
+        <div class="text-center">
+          <p class="eyebrow">Harga</p>
+          <h2 class="mt-2 text-3xl font-extrabold tracking-tight sm:text-4xl">Satu paket, semua sudah termasuk.</h2>
+        </div>
+        <div class="mx-auto mt-10 max-w-lg rounded-[2rem] border-2 border-brand bg-white p-8 shadow-xl shadow-brand/10 sm:p-10">
+          <div class="flex items-center justify-between gap-4">
+            <h3 class="text-xl font-bold">Paket Sekolah</h3>
+            <span class="rounded-full bg-mint px-3 py-1 text-xs font-bold text-brand-dark">per sekolah</span>
+          </div>
+          <p class="mt-6 flex items-baseline gap-2">
+            <span class="text-5xl font-extrabold tracking-tight">Rp300rb</span>
+            <span class="text-slate-600">/bulan</span>
           </p>
-          <span class="meta shrink-0">api.netra.sh</span>
+          <p class="mt-2 text-slate-600">Dibayar tahunan <strong class="text-ink">Rp3.600.000</strong> per tahun.</p>
+          <ul class="mt-8 space-y-3">
+            <li class="flex gap-3"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="mt-0.5 size-5 shrink-0 text-brand"><path d="M20 6 9 17l-5-5"/></svg>Chatbot SPMB untuk satu sekolah</li>
+            <li class="flex gap-3"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="mt-0.5 size-5 shrink-0 text-brand"><path d="M20 6 9 17l-5-5"/></svg>Jawaban dari info sekolah, teks dan PDF</li>
+            <li class="flex gap-3"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="mt-0.5 size-5 shrink-0 text-brand"><path d="M20 6 9 17l-5-5"/></svg>Widget siap tempel di website sekolah</li>
+            <li class="flex gap-3"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="mt-0.5 size-5 shrink-0 text-brand"><path d="M20 6 9 17l-5-5"/></svg>Nama dan warna sesuai identitas sekolah</li>
+            <li class="flex gap-3"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="mt-0.5 size-5 shrink-0 text-brand"><path d="M20 6 9 17l-5-5"/></svg>Bantuan pemasangan</li>
+          </ul>
+          <div class="mt-8 flex flex-col gap-3">
+            <a href="demo-wikrama.html" class="btn btn-brand">Coba demo dulu</a>
+            <a id="cta-whatsapp" hidden target="_blank" rel="noopener" class="btn text-brand ring-1 ring-brand hover:bg-mint">Hubungi kami di WhatsApp</a>
+          </div>
         </div>
-      </aside>
+      </div>
+    </section>
 
-      <section id="chat-panel" aria-labelledby="chat-title" class="flex h-[40rem] flex-col bg-paper lg:h-auto lg:min-h-0">
-        <div class="flex items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-3 sm:px-5">
-          <div class="flex min-w-0 items-center gap-3">
-            <span class="grid size-11 shrink-0 place-items-center rounded-full bg-gold text-navy">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="size-5"><path d="M3 11h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-5Zm0 0a9 9 0 1 1 18 0m0 0v5a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3Z"/><path d="M21 16v2a4 4 0 0 1-4 4h-5"/></svg>
-            </span>
-            <div class="min-w-0">
-              <h2 id="chat-title" class="text-lg font-bold leading-tight">Chat Simulasi CS</h2>
-              <p class="truncate text-sm text-slate-600">Asisten Wikrama menjawab sesuai konteks sekolah</p>
-            </div>
-          </div>
-          <button id="btn-clear-chat" type="button" aria-label="Hapus percakapan" class="btn">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="size-4"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
-            <span class="hidden sm:inline">Hapus percakapan</span>
-          </button>
-        </div>
+    <!-- FAQ -->
+    <section id="faq" class="mx-auto max-w-3xl scroll-mt-16 px-4 py-20">
+      <p class="eyebrow text-center">FAQ</p>
+      <h2 class="mt-2 text-center text-3xl font-extrabold tracking-tight sm:text-4xl">Pertanyaan yang sering muncul</h2>
+      <div class="mt-10 divide-y divide-slate-200 border-y border-slate-200">
+        <details class="group py-5">
+          <summary class="flex cursor-pointer list-none items-center justify-between gap-4 font-bold">Apakah AsistenSPMB bisa salah jawab?<span class="text-brand transition group-open:rotate-45" aria-hidden="true">+</span></summary>
+          <p class="mt-3 text-slate-600">AsistenSPMB hanya menjawab dari info yang diberikan sekolah. Kalau infonya tidak ada, ia bilang belum punya informasinya dan memberi nomor CS SPMB. Karena jawaban dibuat AI, sekolah tetap perlu memastikan data yang diberikan sudah benar dan terbaru.</p>
+        </details>
+        <details class="group py-5">
+          <summary class="flex cursor-pointer list-none items-center justify-between gap-4 font-bold">Data apa yang perlu disiapkan sekolah?<span class="text-brand transition group-open:rotate-45" aria-hidden="true">+</span></summary>
+          <p class="mt-3 text-slate-600">Alur pendaftaran, syarat berkas, daftar jurusan, ekstrakurikuler, dan kontak CS SPMB. Info biaya juga boleh, kalau sekolah ingin asisten menjawabnya. Bisa berupa teks atau PDF yang teksnya bisa disalin (bukan hasil scan).</p>
+        </details>
+        <details class="group py-5">
+          <summary class="flex cursor-pointer list-none items-center justify-between gap-4 font-bold">Bisa dipasang di website sekolah apa saja?<span class="text-brand transition group-open:rotate-45" aria-hidden="true">+</span></summary>
+          <p class="mt-3 text-slate-600">Di website apa pun yang bisa ditambahkan tag <code class="font-mono text-sm">&lt;script&gt;</code>. Widget berjalan terpisah dari gaya website, jadi tampilan website sekolah tidak berubah.</p>
+        </details>
+        <details class="group py-5">
+          <summary class="flex cursor-pointer list-none items-center justify-between gap-4 font-bold">Apakah chatbot meminta data pribadi calon murid?<span class="text-brand transition group-open:rotate-45" aria-hidden="true">+</span></summary>
+          <p class="mt-3 text-slate-600">Tidak. Asisten diatur untuk tidak meminta NIK, NISN, nomor KK, password, atau nomor rekening. Pendaftaran tetap lewat situs resmi sekolah.</p>
+        </details>
+        <details class="group py-5">
+          <summary class="flex cursor-pointer list-none items-center justify-between gap-4 font-bold">Berapa biayanya?<span class="text-brand transition group-open:rotate-45" aria-hidden="true">+</span></summary>
+          <p class="mt-3 text-slate-600">Rp300 ribu per bulan per sekolah, dibayar tahunan Rp3.600.000.</p>
+        </details>
+      </div>
+    </section>
 
-        <div id="chat-messages" class="flex-1 space-y-6 overflow-y-auto px-4 py-6 sm:px-6"></div>
-        <p id="chat-status" role="status" aria-live="polite" class="sr-only"></p>
+    <!-- Ajakan akhir -->
+    <section class="px-4 pb-20">
+      <div class="mx-auto max-w-6xl rounded-[2rem] bg-brand px-8 py-14 text-center text-white">
+        <h2 class="text-3xl font-extrabold tracking-tight sm:text-4xl">Biarkan calon murid bertanya kapan saja.</h2>
+        <p class="mx-auto mt-4 max-w-xl text-white/85">Coba demonya, lalu bayangkan tombol yang sama di website sekolahmu.</p>
+        <a href="demo-wikrama.html" class="btn btn-lime mt-8">Coba demo SMK Wikrama</a>
+      </div>
+    </section>
+  </main>
 
-        <form id="chat-form" class="border-t border-slate-200 bg-white px-4 py-3 sm:px-5">
-          <div class="flex items-center justify-between gap-2">
-            <label for="chat-input" class="field-label flex items-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="size-4 text-slate-600"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-              Pertanyaan calon murid
-            </label>
-            <span class="hidden items-center gap-2 text-xs text-slate-600 sm:flex">Pintasan: <kbd class="kbd">Enter</kbd></span>
-          </div>
-          <div class="mt-2 flex items-end gap-2">
-            <textarea id="chat-input" rows="1" aria-describedby="chat-input-hint"
-              placeholder="Contoh: Cara daftarnya gimana?"
-              class="field max-h-40 resize-none py-3 leading-normal"></textarea>
-            <button id="btn-send" type="submit" class="btn btn-gold min-w-28">
-              <span id="btn-send-label">Kirim</span>
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="size-4"><path d="M3.714 3.048a.498.498 0 0 0-.683.627l2.843 7.627a2 2 0 0 1 0 1.396l-2.842 7.627a.498.498 0 0 0 .682.627l18-8.5a.5.5 0 0 0 0-.904z"/><path d="M6 12h16"/></svg>
-            </button>
-          </div>
-          <div class="mt-2 flex flex-wrap items-center justify-between gap-2">
-            <p id="chat-input-hint" class="hint"><kbd class="kbd">Enter</kbd> untuk kirim, <kbd class="kbd">Shift+Enter</kbd> untuk baris baru.</p>
-            <span class="meta hidden sm:inline">Mode: simulasi calon murid</span>
-          </div>
-        </form>
-      </section>
-    </main>
-  </div>
-
-  <!-- Ikon yang dipakai berulang oleh JavaScript. Disalin dengan cloneNode, jadi tidak perlu innerHTML. -->
-  <template id="icon-bot"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg></template>
-  <template id="icon-chat"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></template>
-  <template id="icon-sent"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 7 17l-5-5"/><path d="m22 10-7.5 7.5L13 16"/></svg></template>
-  <template id="icon-copy"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg></template>
-  <template id="icon-ok"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg></template>
-  <template id="icon-file"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg></template>
-  <template id="icon-alert"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg></template>
+  <footer class="border-t border-slate-200">
+    <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-8 text-sm text-slate-600">
+      <p>© 2026 AsistenSPMB</p>
+      <nav aria-label="Tautan footer" class="flex flex-wrap gap-5">
+        <a href="demo-wikrama.html" class="hover:text-ink">Demo SMK Wikrama</a>
+        <a href="playground.html" class="hover:text-ink">Playground</a>
+        <a href="#harga" class="hover:text-ink">Harga</a>
+      </nav>
+    </div>
+  </footer>
 
   <script>
-'use strict';
+    // Isi nomor WhatsApp AsistenSPMB (format 62..., tanpa + dan spasi) supaya tombol "Hubungi kami" muncul.
+    const KONTAK_WHATSAPP = '';
 
-const API_URL = 'https://api.netra.sh/v1/chat/completions';
-const DEFAULT_MODEL = 'deepseek/deepseek-v4.1-flash';
-
-// Sekitar 15 ribu token. Konteks yang lebih panjang dipotong agar permintaan tidak ditolak.
-const MAX_CONTEXT_CHARS = 60000;
-
-// pdf.js dari Mozilla, dimuat dari cdnjs hanya saat PDF pertama dipilih.
-const PDFJS_URL = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs';
-const PDFJS_WORKER_URL = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs';
-
-// Contoh pertanyaan di layar kosong. Diklik hanya mengisi kolom input, belum mengirim.
-const SAMPLE_QUESTIONS = ['Cara daftarnya gimana?', 'Ada beasiswa nggak?', 'Jurusan apa aja yang ada?'];
-
-// Semua data aplikasi ada di sini. Tampilan selalu digambar ulang dari state ini.
-const state = {
-  documents: [], // { name, size, pages, text }
-  history: [], // { role: 'user' | 'assistant', content, time, latencyMs?, tokens?, source? }
-  isSending: false,
-  error: '',
-  connection: 'idle', // hasil permintaan terakhir ke Netra: 'idle' | 'ok' | 'error'
-};
-
-const el = {
-  apiKey: document.getElementById('api-key'),
-  toggleKey: document.getElementById('btn-toggle-key'),
-  toggleKeyLabel: document.getElementById('btn-toggle-key-label'),
-  eyeShow: document.getElementById('icon-eye-show'),
-  eyeHide: document.getElementById('icon-eye-hide'),
-  model: document.getElementById('model'),
-  contextText: document.getElementById('context-text'),
-  contextChars: document.getElementById('context-chars'),
-  contextTokens: document.getElementById('context-tokens'),
-  contextStatus: document.getElementById('context-status'),
-  resetContext: document.getElementById('btn-reset-context'),
-  pdfInput: document.getElementById('pdf-input'),
-  pdfStatus: document.getElementById('pdf-status'),
-  pdfList: document.getElementById('pdf-list'),
-  connectionDot: document.getElementById('connection-dot'),
-  connectionText: document.getElementById('connection-text'),
-  chatMessages: document.getElementById('chat-messages'),
-  chatStatus: document.getElementById('chat-status'),
-  chatForm: document.getElementById('chat-form'),
-  chatInput: document.getElementById('chat-input'),
-  sendButton: document.getElementById('btn-send'),
-  sendLabel: document.getElementById('btn-send-label'),
-  clearButton: document.getElementById('btn-clear-chat'),
-};
-
-/* Konteks dan system prompt */
-
-// Tingkat 2: setelah catatan teks, teks setiap PDF ditambahkan dengan label nama filenya.
-function buildContext() {
-  const parts = [];
-  const text = el.contextText.value.trim();
-  if (text) parts.push(`[Catatan teks]\n${text}`);
-  for (const doc of state.documents) {
-    parts.push(`[Dokumen: ${doc.name}]\n${doc.text}`);
-  }
-  return parts.join('\n\n');
-}
-
-// Label sumber konteks di samping nama Asisten Wikrama, misalnya "konteks teks + 2 PDF".
-function describeSources() {
-  const parts = [];
-  if (el.contextText.value.trim()) parts.push('konteks teks');
-  if (state.documents.length > 0) parts.push(`${state.documents.length} PDF`);
-  return parts.join(' + ') || 'tanpa konteks';
-}
-
-function buildSystemPrompt() {
-  const context = buildContext().slice(0, MAX_CONTEXT_CHARS);
-  const rules = [
-    'Kamu adalah customer service SMK Wikrama Bogor.',
-    'Kamu adalah customer service yang ramah, sopan, dan membantu.',
-    'Jawab pertanyaan calon murid/orang tua hanya berdasarkan informasi di bagian KONTEKS.',
-    'Jika informasinya tidak ada di KONTEKS, katakan terus terang bahwa kamu belum punya informasi itu, lalu sarankan calon murid/orang tua menghubungi CS SPMB dan sebutkan nomor kontaknya dari KONTEKS.',
-    'Jangan mengarang biaya, kuota, jadwal, beasiswa, atau kebijakan sekolah.',
-    'Jawab singkat dan jelas, dengan bahasa yang dipakai calon murid/orang tua.',
-    'Tulis jawaban sebagai teks biasa tanpa format Markdown.',
-  ];
-  return `${rules.join('\n')}\n\nKONTEKS:\n${context || '(kosong, belum ada informasi sekolah)'}`;
-}
-
-/* Memanggil API Netra */
-
-function describeApiError(status, data) {
-  const detail = data?.error?.message;
-  if (status === 401 || status === 403) return 'API key ditolak. Periksa lagi API key Anda.';
-  if (status === 402) return 'Saldo atau kuota API habis.';
-  if (status === 429) return 'Terlalu banyak permintaan. Tunggu sebentar, lalu kirim lagi.';
-  if (status >= 500) return 'Server Netra sedang bermasalah. Coba lagi beberapa saat lagi.';
-  return `Permintaan gagal (kode ${status})${detail ? `: ${detail}` : '.'}`;
-}
-
-async function askAgent(apiKey, model, messages) {
-  let response;
-  try {
-    response = await fetch(API_URL, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model,
-        messages,
-        // Token penalaran ikut dihitung di max_tokens, jadi batasnya dibuat cukup longgar.
-        max_tokens: 2048,
-        reasoning: { enabled: true },
-      }),
-    });
-  } catch {
-    throw new Error('Tidak bisa terhubung ke server Netra. Periksa koneksi internet.');
-  }
-
-  const data = await response.json().catch(() => null);
-  if (!response.ok) throw new Error(describeApiError(response.status, data));
-
-  const reply = data?.choices?.[0]?.message?.content?.trim();
-  if (!reply) throw new Error('Model tidak mengirim jawaban. Coba kirim ulang pertanyaannya.');
-  // total_tokens = system prompt + riwayat + jawaban (termasuk token berpikir). Ini yang memotong saldo.
-  return { content: reply, tokens: data?.usage?.total_tokens ?? null };
-}
-
-/* Bantuan kecil untuk membuat elemen */
-
-const numberFormat = new Intl.NumberFormat('id-ID');
-const secondsFormat = new Intl.NumberFormat('id-ID', { maximumFractionDigits: 1 });
-
-function formatTime(time) {
-  return new Date(time).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-}
-
-function formatLatency(ms) {
-  return ms < 1000 ? `${Math.round(ms)} ms` : `${secondsFormat.format(ms / 1000)} dtk`;
-}
-
-// Teks selalu dimasukkan lewat textContent, bukan innerHTML, supaya jawaban AI tidak bisa menjalankan kode (XSS).
-function make(tag, className, text) {
-  const node = document.createElement(tag);
-  if (className) node.className = className;
-  if (text !== undefined) node.textContent = text;
-  return node;
-}
-
-function icon(name, className) {
-  const svg = document.getElementById(`icon-${name}`).content.firstElementChild.cloneNode(true);
-  svg.setAttribute('class', className);
-  return svg;
-}
-
-/* Panel Pengaturan */
-
-function renderContextInfo() {
-  const chars = el.contextText.value.trim().length;
-  const total = buildContext().length;
-  const docCount = state.documents.length;
-  const limit = numberFormat.format(MAX_CONTEXT_CHARS);
-
-  el.contextChars.textContent = `${numberFormat.format(chars)} karakter`;
-  el.contextTokens.textContent = `≈${numberFormat.format(Math.ceil(buildSystemPrompt().length / 4))} token`;
-  el.resetContext.disabled = el.contextText.value === el.contextText.defaultValue;
-
-  let tone = 'border-emerald-200 bg-emerald-50 text-emerald-900';
-  let iconName = 'ok';
-  let title = 'Konteks aktif';
-  let body = `Total ${numberFormat.format(total)} dari ${limit} karakter${docCount > 0 ? `, termasuk ${docCount} PDF` : ''}. Asisten siap menjawab calon murid berdasarkan info ini.`;
-  if (total === 0) {
-    tone = 'border-amber-200 bg-amber-50 text-amber-900';
-    iconName = 'alert';
-    title = 'Konteks kosong';
-    body = 'Asisten belum punya info sekolah. Isi Konteks teks atau unggah PDF dulu.';
-  } else if (total > MAX_CONTEXT_CHARS) {
-    tone = 'border-amber-200 bg-amber-50 text-amber-900';
-    iconName = 'alert';
-    title = 'Konteks terlalu panjang';
-    body = `Total ${numberFormat.format(total)} karakter, melebihi batas ${limit}. Bagian akhir akan dipotong. Hapus PDF yang tidak perlu agar semua info terbaca.`;
-  }
-
-  const text = make('div', 'text-sm');
-  text.append(make('p', 'font-semibold', title), make('p', 'mt-0.5 leading-relaxed', body));
-  el.contextStatus.className = `flex gap-3 rounded-xl border p-4 ${tone}`;
-  el.contextStatus.replaceChildren(icon(iconName, 'mt-0.5 size-5 shrink-0'), text);
-}
-
-/* Dokumen PDF (Tingkat 2) */
-
-let pdfjsPromise = null;
-
-// pdf.js baru diunduh saat pertama kali ada PDF, jadi halaman awal tetap ringan.
-function loadPdfJs() {
-  if (!pdfjsPromise) {
-    pdfjsPromise = import(PDFJS_URL)
-      .then((pdfjsLib) => {
-        pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_URL;
-        return pdfjsLib;
-      })
-      .catch((error) => {
-        pdfjsPromise = null; // supaya bisa dicoba lagi setelah internet kembali
-        throw error;
-      });
-  }
-  return pdfjsPromise;
-}
-
-async function extractPdfText(file) {
-  const pdfjsLib = await loadPdfJs();
-  const data = new Uint8Array(await file.arrayBuffer());
-  const pdf = await pdfjsLib.getDocument({ data }).promise;
-  const pageCount = pdf.numPages;
-  const pageTexts = [];
-
-  for (let pageNumber = 1; pageNumber <= pageCount; pageNumber++) {
-    const page = await pdf.getPage(pageNumber);
-    const content = await page.getTextContent();
-    // hasEOL menandai akhir baris di PDF, jadi baris asli tetap terjaga.
-    const text = content.items.map((item) => item.str + (item.hasEOL ? '\n' : ' ')).join('');
-    pageTexts.push(text.trim());
-  }
-
-  await pdf.destroy();
-  const text = pageTexts.join('\n\n').replace(/[ \t]+/g, ' ').trim();
-  return { pages: pageCount, text };
-}
-
-const PDF_STATUS_TONE = { info: 'text-slate-600', success: 'text-emerald-700', error: 'text-red-700' };
-
-function setPdfStatus(message, tone = 'info') {
-  el.pdfStatus.className = `mt-2 text-sm empty:hidden ${PDF_STATUS_TONE[tone]}`;
-  el.pdfStatus.textContent = message;
-}
-
-async function handlePdfFiles(fileList) {
-  const files = Array.from(fileList);
-  if (files.length === 0) return;
-
-  el.pdfInput.disabled = true;
-  setPdfStatus(`Membaca ${files.length} PDF...`);
-
-  try {
-    await loadPdfJs();
-  } catch (error) {
-    console.error(error);
-    el.pdfInput.disabled = false;
-    el.pdfInput.value = '';
-    setPdfStatus('Pembaca PDF gagal dimuat. Periksa koneksi internet, lalu pilih file lagi.', 'error');
-    return;
-  }
-
-  const failed = [];
-  let added = 0;
-
-  for (const file of files) {
-    if (!file.name.toLowerCase().endsWith('.pdf')) {
-      failed.push(`${file.name} (bukan PDF)`);
-      continue;
+    if (KONTAK_WHATSAPP) {
+      const link = document.getElementById('cta-whatsapp');
+      link.href = `https://wa.me/${KONTAK_WHATSAPP}?text=${encodeURIComponent('Halo, saya tertarik dengan AsistenSPMB untuk sekolah kami.')}`;
+      link.hidden = false;
     }
-    // File yang sama tidak dimasukkan dua kali, supaya konteks (dan token) tidak berlipat.
-    if (state.documents.some((doc) => doc.name === file.name && doc.size === file.size)) {
-      failed.push(`${file.name} (sudah ada di daftar)`);
-      continue;
-    }
-    try {
-      const result = await extractPdfText(file);
-      if (!result.text) {
-        failed.push(`${file.name} (tidak ada teks, mungkin hasil scan)`);
-        continue;
-      }
-      state.documents.push({ name: file.name, size: file.size, pages: result.pages, text: result.text });
-      added++;
-    } catch (error) {
-      console.error(error);
-      failed.push(`${file.name} (rusak atau terkunci password)`);
-    }
-  }
-
-  el.pdfInput.disabled = false;
-  el.pdfInput.value = ''; // supaya file yang sama bisa dipilih lagi
-  renderDocuments();
-  renderContextInfo();
-
-  if (failed.length > 0) {
-    const prefix = added > 0 ? `${added} PDF berhasil dibaca. ` : '';
-    setPdfStatus(`${prefix}Tidak bisa dipakai: ${failed.join(', ')}.`, 'error');
-  } else {
-    setPdfStatus(`${added} PDF berhasil dibaca.`, 'success');
-  }
-}
-
-function renderDocuments() {
-  el.pdfList.replaceChildren();
-
-  state.documents.forEach((doc, index) => {
-    const item = make('li', 'flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-3');
-    const badge = make('span', 'grid size-9 shrink-0 place-items-center rounded-lg bg-navy/5 text-navy');
-    badge.append(icon('file', 'size-4'));
-
-    const info = make('div', 'min-w-0 flex-1');
-    // textContent, bukan innerHTML, agar nama file tidak bisa menyisipkan HTML.
-    const name = make('p', 'truncate text-sm font-semibold', doc.name);
-    name.title = doc.name;
-    info.append(name, make('p', 'meta mt-0.5', `${doc.pages} halaman · ${numberFormat.format(doc.text.length)} karakter`));
-
-    const removeButton = make('button', 'btn px-3', 'Hapus');
-    removeButton.type = 'button';
-    removeButton.setAttribute('aria-label', `Hapus dokumen ${doc.name}`);
-    removeButton.addEventListener('click', () => {
-      state.documents.splice(index, 1);
-      renderDocuments();
-      renderContextInfo();
-      setPdfStatus(`${doc.name} dihapus dari konteks.`);
-    });
-
-    item.append(badge, info, removeButton);
-    el.pdfList.append(item);
-  });
-}
-
-const CONNECTION = {
-  idle: { dot: 'bg-slate-400', text: 'Belum ada permintaan ke Netra' },
-  sending: { dot: 'bg-amber-500 animate-pulse', text: 'Menghubungi Netra...' },
-  ok: { dot: 'bg-emerald-500', text: 'Netra merespons' },
-  error: { dot: 'bg-red-500', text: 'Permintaan terakhir gagal' },
-};
-
-function renderConnection() {
-  const status = CONNECTION[state.isSending ? 'sending' : state.connection];
-  el.connectionDot.className = `size-2.5 shrink-0 rounded-full ${status.dot}`;
-  el.connectionText.textContent = status.text;
-}
-
-/* Tampilan chat */
-
-function createAvatar() {
-  const avatar = make('span', 'grid size-9 shrink-0 place-items-center rounded-full bg-navy text-gold');
-  avatar.append(icon('bot', 'size-[18px]'));
-  return avatar;
-}
-
-function createCopyButton(text) {
-  const button = make('button', 'inline-flex min-h-8 items-center gap-1 rounded-md px-1.5 hover:bg-slate-200/70 hover:text-navy');
-  button.type = 'button';
-  const label = make('span', '', 'Salin');
-  button.append(icon('copy', 'size-3.5'), label);
-  button.addEventListener('click', async () => {
-    try {
-      await navigator.clipboard.writeText(text);
-      label.textContent = 'Tersalin';
-    } catch {
-      label.textContent = 'Gagal menyalin';
-    }
-    setTimeout(() => { label.textContent = 'Salin'; }, 1500);
-  });
-  return button;
-}
-
-function createBubble(message) {
-  const isUser = message.role === 'user';
-  const bubble = make('div', isUser ? 'bubble bubble-user' : 'bubble bubble-agent');
-  bubble.append(make('p', 'whitespace-pre-wrap break-words', message.content));
-
-  if (isUser) {
-    const wrapper = make('div', 'flex flex-col items-end');
-    const meta = make('p', 'meta mt-1.5 flex items-center gap-1', formatTime(message.time));
-    meta.append(icon('sent', 'size-3.5 text-emerald-600'));
-    wrapper.append(make('p', 'mb-1 text-xs font-semibold text-slate-600', 'Calon Murid'), bubble, meta);
-    return wrapper;
-  }
-
-  const head = make('div', 'mb-1.5 flex flex-wrap items-center gap-2');
-  head.append(
-    make('p', 'text-sm font-bold', 'Asisten Wikrama'),
-    make('span', 'rounded-md bg-gold/25 px-1.5 py-0.5 font-mono text-[11px] text-navy', message.source ?? 'konteks teks'),
-  );
-
-  const details = [formatTime(message.time)];
-  if (message.latencyMs != null) details.push(`latensi ${formatLatency(message.latencyMs)}`);
-  if (message.tokens != null) details.push(`${numberFormat.format(message.tokens)} token`);
-  const meta = make('div', 'meta mt-1.5 flex flex-wrap items-center gap-x-2');
-  meta.append(make('span', '', details.join(' · ')), createCopyButton(message.content));
-
-  const column = make('div', 'flex min-w-0 flex-1 flex-col items-start');
-  column.append(head, bubble, meta);
-  const wrapper = make('div', 'flex items-start gap-3');
-  wrapper.append(createAvatar(), column);
-  return wrapper;
-}
-
-function createEmptyState() {
-  const box = make('div', 'mx-auto mt-8 max-w-md text-center');
-  const badge = make('span', 'mx-auto grid size-14 place-items-center rounded-2xl bg-gold text-navy');
-  badge.append(icon('chat', 'size-6'));
-
-  const samples = make('div', 'mt-3 flex flex-wrap justify-center gap-2');
-  for (const question of SAMPLE_QUESTIONS) {
-    const chip = make('button', 'min-h-11 rounded-full border border-slate-300 bg-white px-4 text-sm font-medium hover:border-navy', question);
-    chip.type = 'button';
-    chip.addEventListener('click', () => {
-      el.chatInput.value = question;
-      fitChatInput();
-      el.chatInput.focus();
-    });
-    samples.append(chip);
-  }
-
-  box.append(
-    badge,
-    make('p', 'mt-4 text-lg font-bold', 'Belum ada percakapan'),
-    make('p', 'mt-1 text-sm leading-relaxed text-slate-600', 'Isi API key di panel Pengaturan, lalu kirim pertanyaan seolah-olah kamu calon murid atau orang tua.'),
-    make('p', 'meta mt-6', 'Coba tanya:'),
-    samples,
-  );
-  return box;
-}
-
-function createLoading() {
-  const bubble = make('div', 'bubble bubble-agent flex items-center gap-3');
-  const dots = make('span', 'flex gap-1');
-  for (const delay of ['[animation-delay:-0.3s]', '[animation-delay:-0.15s]', '']) {
-    dots.append(make('span', `size-1.5 animate-bounce rounded-full bg-navy/40 ${delay}`));
-  }
-  bubble.append(dots, make('span', 'text-sm text-slate-600', 'Asisten Wikrama sedang menulis jawaban...'));
-  const wrapper = make('div', 'flex items-start gap-3');
-  wrapper.append(createAvatar(), bubble);
-  return wrapper;
-}
-
-function createError(text) {
-  const box = make('div', 'flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-800');
-  box.append(icon('alert', 'mt-0.5 size-4 shrink-0'), make('p', '', text));
-  return box;
-}
-
-// Tiga keadaan layar: kosong, memuat, dan error. Semuanya dibaca dari state.
-function renderMessages() {
-  el.chatMessages.replaceChildren();
-
-  if (state.history.length === 0 && !state.isSending && !state.error) {
-    el.chatMessages.append(createEmptyState());
-  }
-  for (const message of state.history) {
-    el.chatMessages.append(createBubble(message));
-  }
-  if (state.isSending) el.chatMessages.append(createLoading());
-  if (state.error) el.chatMessages.append(createError(state.error));
-
-  // Scroll ke pesan terbaru setelah browser selesai menata ulang (Tailwind menambah CSS untuk class baru dulu).
-  requestAnimationFrame(() => {
-    el.chatMessages.scrollTop = el.chatMessages.scrollHeight;
-  });
-  el.clearButton.disabled = state.history.length === 0 || state.isSending;
-  renderConnection();
-}
-
-function setSending(isSending) {
-  state.isSending = isSending;
-  el.sendButton.disabled = isSending;
-  el.sendLabel.textContent = isSending ? 'Mengirim...' : 'Kirim';
-  el.chatForm.setAttribute('aria-busy', String(isSending));
-  renderMessages();
-}
-
-// Kolom pertanyaan ikut memanjang saat isinya lebih dari satu baris (maksimal 160 piksel).
-function fitChatInput() {
-  el.chatInput.style.height = 'auto';
-  el.chatInput.style.height = `${Math.min(el.chatInput.scrollHeight + 2, 160)}px`;
-}
-
-async function handleSubmit(event) {
-  event.preventDefault();
-  if (state.isSending) return;
-
-  const question = el.chatInput.value.trim();
-  const apiKey = el.apiKey.value.trim();
-  const model = el.model.value.trim() || DEFAULT_MODEL;
-
-  if (!question) {
-    el.chatInput.focus();
-    return;
-  }
-  if (!apiKey) {
-    state.error = 'Isi API key dulu di panel Pengaturan.';
-    renderMessages();
-    el.chatStatus.textContent = state.error;
-    el.apiKey.focus();
-    return;
-  }
-
-  state.error = '';
-  state.history.push({ role: 'user', content: question, time: Date.now() });
-  el.chatInput.value = '';
-  fitChatInput();
-  setSending(true);
-  el.chatStatus.textContent = 'Asisten Wikrama sedang menulis jawaban.';
-
-  // Riwayat chat ikut dikirim setiap kali, karena API tidak mengingat percakapan sebelumnya.
-  // Hanya role dan content yang dikirim; jam, latensi, token, dan sumber cuma untuk tampilan.
-  const messages = [
-    { role: 'system', content: buildSystemPrompt() },
-    ...state.history.map(({ role, content }) => ({ role, content })),
-  ];
-  const startedAt = performance.now();
-
-  try {
-    const { content, tokens } = await askAgent(apiKey, model, messages);
-    state.history.push({ role: 'assistant', content, time: Date.now(), latencyMs: performance.now() - startedAt, tokens, source: describeSources() });
-    state.connection = 'ok';
-    el.chatStatus.textContent = `Asisten Wikrama: ${content}`;
-  } catch (error) {
-    // Pertanyaan yang gagal dikembalikan ke kolom input supaya bisa langsung dikirim ulang.
-    state.history.pop();
-    el.chatInput.value = question;
-    fitChatInput();
-    state.error = error.message;
-    state.connection = 'error';
-    el.chatStatus.textContent = error.message;
-  } finally {
-    setSending(false);
-  }
-}
-
-/* Event */
-
-el.chatForm.addEventListener('submit', handleSubmit);
-
-el.chatInput.addEventListener('keydown', (event) => {
-  // isComposing dicek agar Enter saat mengetik dengan IME tidak langsung mengirim.
-  if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
-    event.preventDefault();
-    el.chatForm.requestSubmit();
-  }
-});
-
-el.chatInput.addEventListener('input', fitChatInput);
-
-el.clearButton.addEventListener('click', () => {
-  state.history = [];
-  state.error = '';
-  renderMessages();
-  el.chatStatus.textContent = 'Percakapan dihapus.';
-  el.chatInput.focus();
-});
-
-el.toggleKey.addEventListener('click', () => {
-  const show = el.apiKey.type === 'password';
-  el.apiKey.type = show ? 'text' : 'password';
-  el.toggleKey.setAttribute('aria-pressed', String(show));
-  el.toggleKeyLabel.textContent = show ? 'Sembunyikan' : 'Tampilkan';
-  el.eyeShow.classList.toggle('hidden', show);
-  el.eyeHide.classList.toggle('hidden', !show);
-});
-
-el.contextText.addEventListener('input', renderContextInfo);
-
-el.pdfInput.addEventListener('change', () => handlePdfFiles(el.pdfInput.files));
-
-el.resetContext.addEventListener('click', () => {
-  el.contextText.value = el.contextText.defaultValue;
-  renderContextInfo();
-  el.contextText.focus();
-});
-
-renderContextInfo();
-renderMessages();
   </script>
 </body>
 </html>
