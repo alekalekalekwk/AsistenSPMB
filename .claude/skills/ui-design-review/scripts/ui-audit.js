@@ -202,7 +202,9 @@
 
   /* Heading: satu h1, urutan tidak loncat. */
 
-  const headings = all.filter((el) => /^H[1-6]$/.test(el.tagName) && isVisible(el)).map((el) => Number(el.tagName[1]));
+  // Heading khusus pembaca layar (sr-only, 1x1 piksel) tetap dihitung, karena memang dibaca pembaca layar.
+  const inAccessibilityTree = (el) => (el.checkVisibility ? el.checkVisibility({ visibilityProperty: true }) : isVisible(el));
+  const headings = all.filter((el) => /^H[1-6]$/.test(el.tagName) && inAccessibilityTree(el)).map((el) => Number(el.tagName[1]));
   const headingIssues = [];
   const h1Count = headings.filter((level) => level === 1).length;
   if (h1Count !== 1) headingIssues.push(`jumlah h1 = ${h1Count} (seharusnya 1)`);

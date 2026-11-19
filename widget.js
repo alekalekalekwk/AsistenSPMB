@@ -12,7 +12,7 @@
   'use strict';
 
   const config = window.AsistenSPMB;
-  if (!config || !config.context) {
+  if (!config || !(config.pages || config.context)) {
     console.warn('AsistenSPMB: data sekolah belum dimuat. Pasang file sekolah/*.js sebelum widget.js.');
     return;
   }
@@ -20,10 +20,67 @@
   const API_URL = 'https://api.netra.sh/v1/chat/completions';
   const MODEL = config.model || 'deepseek/deepseek-v4.1-flash';
   const MAX_CONTEXT_CHARS = 60000;
-  const SCHOOL = config.schoolName || 'sekolah';
-  const COLORS = { primary: '#0f766e', onPrimary: '#ffffff', accent: '#bef264', onAccent: '#0b1f1d', ...config.colors };
-  const SUGGESTIONS = config.suggestions || [];
-  const GREETING = config.greeting || `Halo! Aku Asisten SPMB ${SCHOOL}. Ada yang bisa dibantu?`;
+
+  /* Data sekolah. Bawaannya dari sekolah/*.js; kalau sekolah sudah mengedit lewat dashboard,
+     versi dashboard (disimpan di localStorage browser ini, mode demo) yang dipakai. */
+
+  const STORAGE_KEY = `asistenspmb:sekolah:${config.id || 'default'}`;
+
+  function defaults() {
+    const pages = config.pages
+      ? config.pages.map((page, i) => ({ id: `p${i + 1}`, icon: page.icon || '📄', title: page.title, body: page.body.trim(), updatedAt: null }))
+      : [{ id: 'p1', icon: '📄', title: 'Info sekolah', body: config.context.trim(), updatedAt: null }];
+    const schoolName = config.schoolName || 'Sekolah';
+    return {
+      schoolName,
+      colors: { primary: '#0f766e', onPrimary: '#ffffff', accent: '#bef264', onAccent: '#0b1f1d', ...config.colors },
+      greeting: config.greeting || `Halo! Aku Asisten SPMB ${schoolName}. Ada yang bisa dibantu?`,
+      suggestions: config.suggestions || [],
+      pages,
+      documents: [], // { id, name, size, pages, text, addedAt }
+      updatedAt: null,
+    };
+  }
+
+  function load() {
+    const base = defaults();
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+      if (saved && typeof saved === 'object') return { ...base, ...saved, colors: { ...base.colors, ...saved.colors } };
+    } catch {
+      // localStorage tidak tersedia atau isinya rusak: pakai data bawaan.
+    }
+    return base;
+  }
+
+  // Melempar error kalau penyimpanan browser penuh, supaya dashboard bisa memberi tahu pengguna.
+  function save(data) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...data, updatedAt: Date.now() }));
+    refresh();
+  }
+
+  function reset() {
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      // abaikan
+    }
+    refresh();
+  }
+
+  // Semua halaman info sekolah dan teks PDF digabung jadi satu konteks untuk system prompt.
+  function compileContext(data) {
+    const parts = [`=== INFO ${data.schoolName.toUpperCase()} ===`];
+    for (const page of data.pages) {
+      if (page.body.trim()) parts.push(`[${page.title.trim() || 'Tanpa judul'}]\n${page.body.trim()}`);
+    }
+    for (const doc of data.documents) {
+      parts.push(`[Dokumen: ${doc.name}]\n${doc.text}`);
+    }
+    return parts.join('\n\n');
+  }
+
+  let school = load();
 
   // Semua data widget ada di sini. Tampilan selalu digambar ulang dari state ini.
   const state = {
@@ -36,10 +93,10 @@
 
   /* System prompt: aturan yang sama dengan playground, ditambah nama sekolah */
 
-  function buildSystemPrompt() {
-    const context = `[Info sekolah]\n${config.context.trim()}`.slice(0, MAX_CONTEXT_CHARS);
+  function buildSystemPrompt(data = school) {
+    const context = compileContext(data).slice(0, MAX_CONTEXT_CHARS);
     const rules = [
-      `Kamu adalah customer service ${SCHOOL}.`,
+      `Kamu adalah customer service ${data.schoolName}.`,
       'Kamu adalah customer service yang ramah, sopan, dan membantu.',
       'Jawab pertanyaan calon murid/orang tua hanya berdasarkan informasi di bagian KONTEKS.',
       'Jika informasinya tidak ada di KONTEKS, katakan terus terang bahwa kamu belum punya informasi itu, lalu sarankan calon murid/orang tua menghubungi CS SPMB dan sebutkan nomor kontaknya dari KONTEKS.',
@@ -113,8 +170,7 @@
     *, *::before, *::after { box-sizing: border-box; }
     p { margin: 0; }
     .root {
-      --primary: ${COLORS.primary}; --on-primary: ${COLORS.onPrimary};
-      --accent: ${COLORS.accent}; --on-accent: ${COLORS.onAccent};
+      /* --primary, --on-primary, --accent, --on-accent diisi dari data sekolah oleh applySchool(). */
       font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
       font-size: 14px; line-height: 1.5; color: #0f172a;
       -webkit-font-smoothing: antialiased;
@@ -242,9 +298,18 @@
   const ref = {};
   for (const node of shadow.querySelectorAll('[data-ref]')) ref[node.dataset.ref] = node;
 
-  ref.school.textContent = `${SCHOOL} · online`;
   ref.powered.href = config.poweredByUrl || 'index.html';
-  ref.panel.setAttribute('aria-label', `Asisten SPMB ${SCHOOL}`);
+
+  // Nama dan warna sekolah dipasang ulang setiap kali data berubah (misalnya setelah disimpan di dashboard).
+  function applySchool() {
+    root.style.setProperty('--primary', school.colors.primary);
+    root.style.setProperty('--on-primary', school.colors.onPrimary);
+    root.style.setProperty('--accent', school.colors.accent);
+    root.style.setProperty('--on-accent', school.colors.onAccent);
+    ref.school.textContent = `${school.schoolName} · online`;
+    ref.panel.setAttribute('aria-label', `Asisten SPMB ${school.schoolName}`);
+  }
+  applySchool();
 
   /* Bantuan kecil untuk membuat elemen */
 
@@ -328,11 +393,12 @@
   }
 
   function renderMessages() {
-    ref.messages.replaceChildren(messageRow('assistant', GREETING));
+    ref.messages.replaceChildren(messageRow('assistant', school.greeting));
 
-    if (state.history.length === 0 && SUGGESTIONS.length > 0) {
+    const suggestions = school.suggestions.filter((question) => question.trim());
+    if (state.history.length === 0 && suggestions.length > 0) {
       const chips = make('div', 'chips');
-      for (const question of SUGGESTIONS) {
+      for (const question of suggestions) {
         const chip = make('button', 'chip', question);
         chip.type = 'button';
         chip.addEventListener('click', () => send(question));
@@ -446,12 +512,30 @@
   });
   ref.input.addEventListener('input', fitInput);
 
+  // Muat ulang data sekolah: dipanggil setelah dashboard menyimpan, atau saat tab lain mengubah data.
+  function refresh() {
+    school = load();
+    applySchool();
+    renderMessages();
+  }
+
+  window.addEventListener('storage', (event) => {
+    if (event.key === STORAGE_KEY || event.key === null) refresh();
+  });
+
   renderDemo();
   renderMessages();
 
-  // Supaya tombol di halaman sekolah (misalnya "Tanya Asisten SPMB") bisa membuka widget.
+  // Supaya tombol di halaman sekolah (misalnya "Tanya Asisten SPMB") dan dashboard bisa memakai widget.
   window.AsistenSPMBWidget = {
     open: () => setOpen(true),
     close: () => setOpen(false),
+    ask: (question) => {
+      setOpen(true);
+      send(question);
+    },
+    refresh,
+    // Dipakai dashboard untuk membaca dan menyimpan data sekolah.
+    data: { key: STORAGE_KEY, defaults, load, save, reset, compileContext, systemPrompt: buildSystemPrompt, maxContextChars: MAX_CONTEXT_CHARS },
   };
 })();
