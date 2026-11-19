@@ -113,7 +113,7 @@
       'Jika informasinya tidak ada di KONTEKS, katakan terus terang bahwa kamu belum punya informasi itu, lalu sarankan calon murid/orang tua menghubungi CS SPMB dan sebutkan nomor kontaknya dari KONTEKS.',
       'Jangan mengarang biaya, kuota, jadwal, beasiswa, atau kebijakan sekolah.',
       'Jawab singkat dan jelas, dengan bahasa yang dipakai calon murid/orang tua.',
-      'Tulis jawaban sebagai teks biasa tanpa format Markdown.',
+      'Boleh memakai Markdown sederhana: **tebal** untuk info penting, daftar poin atau daftar bernomor untuk langkah dan pilihan, dan tautan [teks](https://...) hanya untuk alamat yang ada di KONTEKS. Jangan memakai tabel, judul (#), atau blok kode.',
     ];
     return `${rules.join('\n')}\n\nKONTEKS:\n${context}`;
   }
@@ -244,6 +244,13 @@
     .typing span:nth-child(2) { animation-delay: 0.15s; }
     .typing span:nth-child(3) { animation-delay: 0.3s; }
     @keyframes asisten-bounce { 0%, 80%, 100% { transform: translateY(0); opacity: 0.5; } 40% { transform: translateY(-4px); opacity: 1; } }
+    .md { white-space: normal; }
+    .md > * + * { margin-top: 8px; }
+    .md ul, .md ol { margin: 0; padding-left: 20px; }
+    .md li + li, .md li > ul, .md li > ol { margin-top: 4px; }
+    .md strong, .md .md-heading { font-weight: 700; }
+    .md code { padding: 1px 5px; border-radius: 6px; background: #f1f5f9; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.9em; }
+    .md a { color: var(--primary); font-weight: 600; text-decoration: underline; text-underline-offset: 2px; overflow-wrap: anywhere; }
     .error { padding: 10px 12px; border: 1px solid #fecaca; border-radius: 14px; background: #fef2f2; color: #991b1b; font-size: 13px; }
 
     .composer { display: flex; align-items: flex-end; gap: 8px; padding: 10px 12px; border-top: 1px solid #e2e8f0; background: #fff; }
@@ -347,6 +354,153 @@
     return node;
   }
 
+  /* Markdown sederhana untuk jawaban asisten.
+     Dibuat sendiri (tanpa library) dan hanya memakai createElement, textContent, dan text node,
+     tidak pernah innerHTML, jadi jawaban AI tetap tidak bisa menjalankan kode (XSS).
+     Didukung: paragraf, **tebal**, *miring*, `kode`, daftar poin, daftar bernomor (boleh bertingkat),
+     judul (#) yang ditampilkan sebagai teks tebal, dan tautan http(s), mailto, serta tel. */
+
+  const INLINE_MARKDOWN = /\*\*([^*\n]+?)\*\*|`([^`\n]+)`|\[([^\]\n]+)\]\(([^)\s]+)\)|(?<![\w*])\*(?!\s)([^*\n]+?)\*(?![\w*])|(https?:\/\/[^\s<>()[\]]*[^\s<>()[\].,!?;:'"])/g;
+  const LIST_ITEM = /^(\s*)([-*•]|\d+[.)])\s+(.*)$/;
+  const HEADING = /^\s*#{1,6}\s+(.*)$/;
+
+  // Tautan hanya untuk alamat web, email, dan telepon. Skema lain (javascript:, data:) ditampilkan sebagai teks biasa.
+  function markdownLink(text, href) {
+    if (!/^(https?:\/\/|mailto:|tel:)/i.test(href)) return document.createTextNode(text);
+    const link = make('a', '', text);
+    link.href = href;
+    if (/^https?:/i.test(href)) {
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+    }
+    return link;
+  }
+
+  function appendInline(parent, text) {
+    let last = 0;
+    for (const match of text.matchAll(INLINE_MARKDOWN)) {
+      if (match.index > last) parent.append(text.slice(last, match.index));
+      const [, bold, code, linkText, linkHref, italic, url] = match;
+      if (bold) {
+        const strong = make('strong');
+        appendInline(strong, bold);
+        parent.append(strong);
+      } else if (code) {
+        parent.append(make('code', '', code));
+      } else if (linkText) {
+        parent.append(markdownLink(linkText, linkHref));
+      } else if (italic) {
+        const em = make('em');
+        appendInline(em, italic);
+        parent.append(em);
+      } else if (url) {
+        parent.append(markdownLink(url, url));
+      }
+      last = match.index + match[0].length;
+    }
+    if (last < text.length) parent.append(text.slice(last));
+  }
+
+  // Membaca satu daftar mulai dari baris start. Mengembalikan [elemen daftar, indeks baris berikutnya].
+  function parseList(lines, start) {
+    const first = lines[start].match(LIST_ITEM);
+    const indent = first[1].length;
+    const ordered = /\d/.test(first[2]);
+    const list = make(ordered ? 'ol' : 'ul');
+    const startNumber = parseInt(first[2], 10);
+    if (ordered && startNumber !== 1) list.start = startNumber;
+
+    let i = start;
+    let item = null;
+    while (i < lines.length) {
+      const line = lines[i];
+      if (!line.trim()) {
+        // Baris kosong di antara butir tidak memutus daftar (model sering memberi jarak antarbutir).
+        const next = lines.slice(i + 1).find((candidate) => candidate.trim());
+        const nextItem = next?.match(LIST_ITEM);
+        if (nextItem && nextItem[1].length >= indent) {
+          i++;
+          continue;
+        }
+        break;
+      }
+      const match = line.match(LIST_ITEM);
+      if (match) {
+        const level = match[1].length;
+        if (level > indent && item) {
+          const [nested, next] = parseList(lines, i); // daftar bertingkat di dalam butir sebelumnya
+          item.append(nested);
+          i = next;
+          continue;
+        }
+        if (level < indent || /\d/.test(match[2]) !== ordered) break;
+        item = make('li');
+        appendInline(item, match[3]);
+        list.append(item);
+        i++;
+        continue;
+      }
+      if (item && /^\s+/.test(line)) {
+        // Baris menjorok tanpa penanda: lanjutan dari butir sebelumnya.
+        item.append(make('br'));
+        appendInline(item, line.trim());
+        i++;
+        continue;
+      }
+      break;
+    }
+    return [list, i];
+  }
+
+  function renderMarkdown(text) {
+    const fragment = document.createDocumentFragment();
+    const lines = text.replace(/\r\n?/g, '\n').split('\n');
+    let i = 0;
+    while (i < lines.length) {
+      const line = lines[i];
+      if (!line.trim() || /^\s*([-*_])(\s*\1){2,}\s*$/.test(line)) {
+        i++; // baris kosong dan garis pemisah (---) dilewati
+        continue;
+      }
+      if (LIST_ITEM.test(line)) {
+        const [list, next] = parseList(lines, i);
+        fragment.append(list);
+        i = next;
+        continue;
+      }
+      const heading = line.match(HEADING);
+      if (heading) {
+        const title = make('p', 'md-heading');
+        appendInline(title, heading[1]);
+        fragment.append(title);
+        i++;
+        continue;
+      }
+      // Paragraf: baris-baris berurutan sampai baris kosong, daftar, atau judul. Pindah baris jadi <br>.
+      const paragraph = make('p');
+      let first = true;
+      while (i < lines.length && lines[i].trim() && !LIST_ITEM.test(lines[i]) && !HEADING.test(lines[i])) {
+        if (!first) paragraph.append(make('br'));
+        appendInline(paragraph, lines[i].trim().replace(/^>\s?/, ''));
+        first = false;
+        i++;
+      }
+      fragment.append(paragraph);
+    }
+    return fragment;
+  }
+
+  // Versi teks biasa untuk pembaca layar (role="status"), supaya tanda bintang dan pagar tidak ikut dibacakan.
+  function stripMarkdown(text) {
+    return text
+      .replace(/\[([^\]\n]+)\]\(([^)\s]+)\)/g, '$1')
+      .replace(/\*\*([^*\n]+?)\*\*/g, '$1')
+      .replace(/`([^`\n]+)`/g, '$1')
+      .replace(/(?<![\w*])\*(?!\s)([^*\n]+?)\*(?![\w*])/g, '$1')
+      .replace(/^\s*#{1,6}\s+/gm, '')
+      .replace(/^\s*[-*•]\s+/gm, '');
+  }
+
   function miniAvatar() {
     const avatar = make('span', 'mini-avatar');
     avatar.innerHTML = ICONS.bot; // ikon statis, bukan teks dari AI
@@ -357,8 +511,16 @@
     const isUser = role === 'user';
     const row = make('div', `row ${isUser ? 'user' : 'bot'}`);
     const bubble = make('div', 'bubble');
-    // Label untuk pembaca layar, lalu isi pesan lewat text node (sama amannya dengan textContent).
-    bubble.append(make('span', 'sr-only', isUser ? 'Kamu: ' : 'Asisten: '), document.createTextNode(text));
+    // Label untuk pembaca layar, lalu isinya. Pesan pengguna tetap teks biasa (text node);
+    // jawaban asisten ditampilkan sebagai Markdown sederhana lewat renderMarkdown (juga tanpa innerHTML).
+    bubble.append(make('span', 'sr-only', isUser ? 'Kamu: ' : 'Asisten: '));
+    if (isUser) {
+      bubble.append(document.createTextNode(text));
+    } else {
+      const body = make('div', 'md');
+      body.append(renderMarkdown(text));
+      bubble.append(body);
+    }
     if (!isUser) row.append(miniAvatar());
     row.append(bubble);
     return row;
@@ -537,7 +699,7 @@
     try {
       const reply = await askAgent(state.apiKey, messages);
       state.history.push({ role: 'assistant', content: reply });
-      ref.status.textContent = `Asisten: ${reply}`;
+      ref.status.textContent = `Asisten: ${stripMarkdown(reply)}`;
     } catch (error) {
       // Pertanyaan yang gagal dikembalikan ke kolom input supaya bisa langsung dikirim ulang.
       state.history.pop();
