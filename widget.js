@@ -31,7 +31,18 @@
 
   const AGENT_NAME = 'Sigi';
   // Text to speech Deepgram, suara Fitri (Bahasa Indonesia). Model Flux hanya tersedia di /v2/speak.
-  const DEEPGRAM_SPEAK_URL = 'https://api.deepgram.com/v2/speak?model=flux-fitri-id&encoding=mp3';
+  // Suara Bahasa Indonesia dari Deepgram Flux (Early Access, daftar di developers.deepgram.com/docs/flux-tts/voices).
+  // Model Flux hanya tersedia di /v2/speak.
+  const VOICES = [
+    { id: 'flux-fitri-id', name: 'Fitri', gender: 'perempuan' },
+    { id: 'flux-dewi-id', name: 'Dewi', gender: 'perempuan' },
+    { id: 'flux-rizky-id', name: 'Rizky', gender: 'laki-laki' },
+    { id: 'flux-fajar-id', name: 'Fajar', gender: 'laki-laki' },
+    { id: 'flux-teguh-id', name: 'Teguh', gender: 'laki-laki' },
+  ];
+  const DEFAULT_VOICE = 'flux-fitri-id';
+  // Hanya suara dari daftar di atas yang dipakai; nilai lain (misalnya data lama) kembali ke suara bawaan.
+  const speakUrl = (voice) => `https://api.deepgram.com/v2/speak?model=${VOICES.some((v) => v.id === voice) ? voice : DEFAULT_VOICE}&encoding=mp3`;
   // Deepgram menutup koneksi yang 10 detik tidak menerima apa pun. Saat rekaman dijeda (Sigi berpikir
   // atau bicara), tidak ada audio yang terkirim, jadi kita kirim KeepAlive lebih sering dari itu.
   const KEEP_ALIVE_MS = 5000;
@@ -41,10 +52,14 @@
   const CALL_RULES = [
     `Namamu ${AGENT_NAME}.`,
     'Calon murid atau orang tua sedang menelepon, jadi jawabanmu akan dibacakan dengan suara.',
-    'Pakai bahasa lisan sehari-hari yang tetap sopan, misalnya "oke", "nah", atau "ya".',
-    'Jawab paling banyak tiga kalimat pendek dan langsung ke intinya.',
+    'Bicaralah seperti CS sekolah yang ramah sedang ngobrol di telepon, bukan seperti membaca pengumuman.',
+    'Pakai kalimat pendek, kira-kira paling banyak lima belas kata per kalimat, dan beri koma di tempat orang biasanya mengambil napas.',
+    'Boleh memakai kata lisan secukupnya seperti "jadi", "nah", "oke", atau "gitu ya", tapi jangan di setiap kalimat.',
+    'Sebut "Kak" paling banyak sekali dalam satu jawaban.',
+    'Jawab paling banyak tiga kalimat dan langsung ke intinya. Kalau infonya panjang, sebut dua atau tiga hal yang paling penting, lalu tawarkan untuk melanjutkan, misalnya "mau saya sebutkan sisanya?".',
     'Jangan membuka jawaban dengan sapaan atau ucapan terima kasih sudah menunggu, karena aplikasi sudah mengucapkannya.',
-    'Tulis angka, jam, tanggal, dan biaya dengan huruf, misalnya sembilan juta lima ratus ribu rupiah atau pukul delapan pagi.',
+    'Tulis angka, jam, tanggal, dan biaya dengan huruf, misalnya sembilan juta lima ratus ribu rupiah atau pukul delapan pagi. Nomor telepon disebut per kelompok dengan huruf, misalnya nol delapan satu sembilan, nol sembilan dua empat, dua empat satu satu.',
+    'Jangan membacakan alamat website atau email huruf demi huruf. Cukup sebut, misalnya, "lewat website SPMB sekolah".',
     'Jangan memakai Markdown, daftar, tanda bintang, tautan, atau simbol lain.',
   ].join('\n');
 
@@ -72,6 +87,7 @@
       colors: { primary: '#0f766e', onPrimary: '#ffffff', accent: '#bef264', onAccent: '#0b1f1d', ...config.colors },
       greeting: config.greeting || `Halo! Aku Asisten SPMB ${schoolName}. Ada yang bisa dibantu?`,
       suggestions: config.suggestions || [],
+      voice: config.voice || DEFAULT_VOICE, // suara Sigi di telepon, bisa diganti di dashboard
       pages,
       documents: [], // { id, name, size, pages, text, addedAt }
       updatedAt: null,
@@ -1107,10 +1123,10 @@
   }
 
   // Meminta suara dari Deepgram. signal dipakai endCall untuk membatalkan unduhan yang belum selesai.
-  async function requestSpeech(apiKey, text, signal) {
+  async function requestSpeech(apiKey, text, signal, voice) {
     let response;
     try {
-      response = await fetch(DEEPGRAM_SPEAK_URL, {
+      response = await fetch(speakUrl(voice), {
         method: 'POST',
         headers: {
           Authorization: `Token ${apiKey}`,
@@ -1222,7 +1238,7 @@
       if (!blob) return;
       audio = audioFromBlob(blob);
     } else {
-      const response = await requestSpeech(c.deepgramKey, text, c.controller?.signal);
+      const response = await requestSpeech(c.deepgramKey, text, c.controller?.signal, c.voice);
       if (!isLive(c)) return;
       audio = await createAgentAudio(response);
     }
@@ -1238,7 +1254,8 @@
   async function agentSays(text) {
     const c = call;
     try {
-      await speak(text);
+      // Tanda Markdown yang lolos dari aturan telepon dibuang dulu, supaya tidak ikut dibacakan.
+      await speak(stripMarkdown(text));
       if (isLive(c)) resumeListening();
     } catch (error) {
       if (isLive(c)) endCall(error.message);
@@ -1249,7 +1266,7 @@
   // Kalau ada yang gagal, kalimat itu dilewati saja: panggilan tetap jalan tanpa kalimat jeda.
   function preloadLines(c) {
     for (const line of [...CHECKING_LINES, STILL_CHECKING_LINE]) {
-      requestSpeech(c.deepgramKey, line, c.controller.signal)
+      requestSpeech(c.deepgramKey, line, c.controller.signal, c.voice)
         .then((response) => response.blob())
         .then((blob) => {
           if (isLive(c)) c.lineAudio.set(line, blob);
@@ -1411,7 +1428,7 @@
     // Key disalin ke objek call, supaya panggilan tetap memakai key yang dipakai saat mulai.
     call = {
       controller: new AbortController(), urls: new Set(), lineAudio: new Map(), finalText: '', interimText: '', turnEnded: false,
-      netraKey: state.apiKey, deepgramKey: state.deepgramKey,
+      netraKey: state.apiKey, deepgramKey: state.deepgramKey, voice: school.voice,
     };
     const c = call;
     state.error = '';
@@ -1546,7 +1563,7 @@
     },
     refresh,
     // Dipakai dashboard untuk membaca dan menyimpan data sekolah.
-    data: { key: STORAGE_KEY, defaults, load, save, reset, compileContext, systemPrompt: buildSystemPrompt, maxContextChars: MAX_CONTEXT_CHARS },
+    data: { key: STORAGE_KEY, voices: VOICES, defaults, load, save, reset, compileContext, systemPrompt: buildSystemPrompt, maxContextChars: MAX_CONTEXT_CHARS },
   };
   window.AsistenSPMBWidget = window.SigiWidget; // nama lama, tetap bisa dipakai
 })();

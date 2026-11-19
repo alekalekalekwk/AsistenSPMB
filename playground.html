@@ -126,6 +126,23 @@
             </p>
           </div>
 
+          <!-- Suara Sigi saat menelepon: lima suara Bahasa Indonesia dari Deepgram Flux (Early Access). -->
+          <div id="voice-group" class="border-t border-slate-200 pt-6">
+            <label for="voice" class="field-label">Suara Sigi di telepon</label>
+            <div class="mt-2 flex gap-2">
+              <select id="voice" aria-describedby="voice-hint" class="field">
+                <option value="flux-fitri-id">Fitri (perempuan)</option>
+                <option value="flux-dewi-id">Dewi (perempuan)</option>
+                <option value="flux-rizky-id">Rizky (laki-laki)</option>
+                <option value="flux-fajar-id">Fajar (laki-laki)</option>
+                <option value="flux-teguh-id">Teguh (laki-laki)</option>
+              </select>
+              <button id="btn-voice-preview" type="button" class="btn">Dengarkan</button>
+            </div>
+            <p id="voice-hint" class="hint mt-2">Suara Bahasa Indonesia dari Deepgram, masih Early Access. Dengarkan memakai key Deepgram dan memotong saldo sedikit. Suara baru dipakai mulai panggilan berikutnya.</p>
+            <p id="voice-preview-status" role="status" class="hint mt-1 font-semibold text-navy"></p>
+          </div>
+
           <div id="model-group" class="border-t border-slate-200 pt-6">
             <label for="model" class="field-label">Model</label>
             <input id="model" type="text" spellcheck="false" value="deepseek/deepseek-v4.1-flash" aria-describedby="model-hint" class="field mt-2 font-mono">
@@ -529,7 +546,18 @@ const MAX_RECORDING_SECONDS = 60;
 
 // Tingkat 4: text to speech. Model Flux (suara Fitri, Bahasa Indonesia) hanya tersedia di /v2/speak.
 // encoding=mp3 supaya suaranya bisa diputar sambil diunduh lewat MediaSource ('audio/mpeg').
-const DEEPGRAM_SPEAK_URL = 'https://api.deepgram.com/v2/speak?model=flux-fitri-id&encoding=mp3';
+// Suara Bahasa Indonesia dari Deepgram Flux (Early Access, daftar di developers.deepgram.com/docs/flux-tts/voices).
+// Model Flux hanya tersedia di /v2/speak.
+const VOICES = [
+  { id: 'flux-fitri-id', name: 'Fitri', gender: 'perempuan' },
+  { id: 'flux-dewi-id', name: 'Dewi', gender: 'perempuan' },
+  { id: 'flux-rizky-id', name: 'Rizky', gender: 'laki-laki' },
+  { id: 'flux-fajar-id', name: 'Fajar', gender: 'laki-laki' },
+  { id: 'flux-teguh-id', name: 'Teguh', gender: 'laki-laki' },
+];
+const DEFAULT_VOICE = 'flux-fitri-id';
+// Hanya suara dari daftar di atas yang dipakai; nilai lain (misalnya data lama) kembali ke suara bawaan.
+const speakUrl = (voice) => `https://api.deepgram.com/v2/speak?model=${VOICES.some((v) => v.id === voice) ? voice : DEFAULT_VOICE}&encoding=mp3`;
 
 // Deepgram menutup koneksi yang 10 detik tidak menerima apa pun, misalnya saat rekaman dijeda selama agent bicara.
 const KEEP_ALIVE_MS = 5000;
@@ -542,10 +570,14 @@ const SCHOOL_NAME = 'SMK Wikrama Bogor';
 const CALL_RULES = [
   `Namamu ${AGENT_NAME}.`,
   'Calon murid atau orang tua sedang menelepon, jadi jawabanmu akan dibacakan dengan suara.',
-  'Pakai bahasa lisan sehari-hari yang tetap sopan, misalnya "oke", "nah", atau "ya".',
-  'Jawab paling banyak tiga kalimat pendek dan langsung ke intinya.',
+  'Bicaralah seperti CS sekolah yang ramah sedang ngobrol di telepon, bukan seperti membaca pengumuman.',
+  'Pakai kalimat pendek, kira-kira paling banyak lima belas kata per kalimat, dan beri koma di tempat orang biasanya mengambil napas.',
+  'Boleh memakai kata lisan secukupnya seperti "jadi", "nah", "oke", atau "gitu ya", tapi jangan di setiap kalimat.',
+  'Sebut "Kak" paling banyak sekali dalam satu jawaban.',
+  'Jawab paling banyak tiga kalimat dan langsung ke intinya. Kalau infonya panjang, sebut dua atau tiga hal yang paling penting, lalu tawarkan untuk melanjutkan, misalnya "mau saya sebutkan sisanya?".',
   'Jangan membuka jawaban dengan sapaan atau ucapan terima kasih sudah menunggu, karena aplikasi sudah mengucapkannya.',
-  'Tulis angka, jam, tanggal, dan biaya dengan huruf, misalnya sembilan juta lima ratus ribu rupiah atau pukul delapan pagi.',
+  'Tulis angka, jam, tanggal, dan biaya dengan huruf, misalnya sembilan juta lima ratus ribu rupiah atau pukul delapan pagi. Nomor telepon disebut per kelompok dengan huruf, misalnya nol delapan satu sembilan, nol sembilan dua empat, dua empat satu satu.',
+  'Jangan membacakan alamat website atau email huruf demi huruf. Cukup sebut, misalnya, "lewat website SPMB sekolah".',
   'Jangan memakai Markdown, daftar, tanda bintang, tautan, atau simbol lain.',
 ].join('\n');
 
@@ -584,6 +616,9 @@ const el = {
   apiKey: document.getElementById('api-key'),
   toggleKey: document.getElementById('btn-toggle-key'),
   deepgramKey: document.getElementById('deepgram-key'),
+  voice: document.getElementById('voice'),
+  voicePreview: document.getElementById('btn-voice-preview'),
+  voicePreviewStatus: document.getElementById('voice-preview-status'),
   toggleDeepgramKey: document.getElementById('btn-toggle-deepgram-key'),
   model: document.getElementById('model'),
   contextText: document.getElementById('context-text'),
@@ -1531,10 +1566,10 @@ function describeSpeechError(status) {
 }
 
 // signal dipakai endCall untuk membatalkan unduhan suara yang masih berjalan.
-async function requestSpeech(apiKey, text, signal) {
+async function requestSpeech(apiKey, text, signal, voice) {
   let response;
   try {
-    response = await fetch(DEEPGRAM_SPEAK_URL, {
+    response = await fetch(speakUrl(voice), {
       method: 'POST',
       headers: {
         Authorization: `Token ${apiKey}`,
@@ -1614,7 +1649,7 @@ async function speak(text, fromCache, session) {
     if (!blob) return;
     audio = new Audio(URL.createObjectURL(blob));
   } else {
-    const response = await requestSpeech(session.deepgramKey, text, session.abort.signal);
+    const response = await requestSpeech(session.deepgramKey, text, session.abort.signal, session.voice);
     if (!isLive(session)) return;
     audio = await createAgentAudio(response);
   }
@@ -1655,7 +1690,7 @@ async function agentSays(text, session) {
 async function preloadLines(session) {
   await Promise.all([...CHECKING_LINES, STILL_CHECKING_LINE].map(async (line) => {
     try {
-      const response = await requestSpeech(session.deepgramKey, line, session.abort.signal);
+      const response = await requestSpeech(session.deepgramKey, line, session.abort.signal, session.voice);
       const blob = await response.blob();
       if (isLive(session)) session.lineAudio.set(line, blob);
     } catch (error) {
@@ -1808,6 +1843,7 @@ async function startCall() {
     netraKey,
     deepgramKey,
     model: el.model.value.trim() || DEFAULT_MODEL,
+    voice: el.voice.value,
     finalText: '',
     interimText: '',
     turnEnded: false,
@@ -1967,6 +2003,38 @@ el.resetContext.addEventListener('click', () => {
   el.contextText.value = el.contextText.defaultValue;
   renderContextInfo();
   el.contextText.focus();
+});
+
+// Contoh suara, supaya suara-suara Sigi bisa dibandingkan tanpa menelepon.
+const PREVIEW_TEXT = 'Halo, saya Sigi, asisten SPMB SMK Wikrama Bogor. Nah, ada yang bisa saya bantu?';
+let previewAudio = null;
+
+el.voicePreview.addEventListener('click', async () => {
+  const apiKey = el.deepgramKey.value.trim();
+  if (!apiKey) {
+    el.voicePreviewStatus.textContent = 'Isi API key Deepgram dulu untuk mendengarkan contoh suara.';
+    el.deepgramKey.focus();
+    return;
+  }
+  if (state.callStatus !== 'off') return; // jangan menumpuk suara di atas panggilan yang sedang berjalan
+  const voice = VOICES.find((item) => item.id === el.voice.value) ?? VOICES[0];
+  el.voicePreview.disabled = true;
+  el.voicePreviewStatus.textContent = `Memuat suara ${voice.name}...`;
+  try {
+    const response = await requestSpeech(apiKey, PREVIEW_TEXT, undefined, voice.id);
+    const url = URL.createObjectURL(await response.blob());
+    previewAudio?.pause();
+    previewAudio = new Audio(url);
+    previewAudio.addEventListener('ended', () => URL.revokeObjectURL(url), { once: true });
+    await previewAudio.play();
+    el.voicePreviewStatus.textContent = `Memutar suara ${voice.name}.`;
+  } catch (error) {
+    el.voicePreviewStatus.textContent = error.name === 'NotAllowedError'
+      ? 'Browser menahan suara. Klik di mana saja di halaman, lalu coba lagi.'
+      : error.message;
+  } finally {
+    el.voicePreview.disabled = false;
+  }
 });
 
 renderContextInfo();
