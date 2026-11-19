@@ -5,8 +5,8 @@
  *   <script src="sekolah/wikrama.js"></script>  -> nama, warna, dan info sekolah
  *   <script src="widget.js" defer></script>     -> tombol chat di pojok kanan bawah
  *
- * Catatan demo: API key Netra diketik di dalam widget dan hanya disimpan di memori tab ini.
- * Untuk dipakai pengunjung sungguhan, key harus dipindah ke server.
+ * Catatan demo: API key Netra (jawaban) dan Deepgram (input suara) diketik di dalam widget dan hanya
+ * disimpan di memori tab ini. Untuk dipakai pengunjung sungguhan, kedua key harus dipindah ke server.
  */
 (() => {
   'use strict';
@@ -20,6 +20,11 @@
   const API_URL = 'https://api.netra.sh/v1/chat/completions';
   const MODEL = config.model || 'deepseek/deepseek-v4.1-flash';
   const MAX_CONTEXT_CHARS = 60000;
+
+  // Input suara: speech to text langsung lewat WebSocket Deepgram, pengaturannya sama dengan playground (Tingkat 3).
+  // nova-3, Bahasa Indonesia, tanda baca otomatis, teks sementara, dan kalimat ditutup setelah diam 0,5 detik.
+  const DEEPGRAM_LIVE_URL = 'wss://api.deepgram.com/v1/listen?model=nova-3&language=id&smart_format=true&interim_results=true&endpointing=500&utterance_end_ms=1000';
+  const MAX_RECORDING_SECONDS = 60; // rekaman berhenti sendiri, supaya mikrofon tidak lupa dimatikan
 
   /* Data sekolah. Bawaannya dari sekolah/*.js; kalau sekolah sudah mengedit lewat dashboard,
      versi dashboard (disimpan di localStorage browser ini, mode demo) yang dipakai. */
@@ -86,10 +91,16 @@
   const state = {
     isOpen: false,
     apiKey: '', // hanya di memori, hilang saat tab ditutup atau dimuat ulang
+    deepgramKey: '', // untuk tombol mic, juga hanya di memori
+    deepgramFormOpen: false, // kolom key Deepgram baru ditampilkan saat dibutuhkan
     history: [], // { role: 'user' | 'assistant', content }
     isSending: false,
     error: '',
+    voiceStatus: 'idle', // 'idle' | 'connecting' | 'recording' | 'transcribing'
   };
+
+  // Semua yang hidup selama merekam: WebSocket, mikrofon, perekam, timer, dan teks yang sudah terdengar.
+  const dictation = {};
 
   /* System prompt: aturan yang sama dengan playground, ditambah nama sekolah */
 
@@ -162,6 +173,8 @@
     close: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>',
     bot: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>',
     reset: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>',
+    mic: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2.5" width="6" height="12" rx="3"/><path d="M5 11.5a7 7 0 0 0 14 0M12 18.5V22M8 22h8"/></svg>',
+    stop: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>',
     send: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.714 3.048a.498.498 0 0 0-.683.627l2.843 7.627a2 2 0 0 1 0 1.396l-2.842 7.627a.498.498 0 0 0 .682.627l18-8.5a.5.5 0 0 0 0-.904z"/><path d="M6 12h16"/></svg>',
   };
 
@@ -212,6 +225,7 @@
     .demo input:focus { outline: 2px solid #b45309; outline-offset: 0; }
     .demo button[type="submit"] { height: 44px; padding: 0 14px; border: 0; border-radius: 10px; background: #78350f; color: #fff; font-size: 13px; font-weight: 600; }
     .demo-ready { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .demo-ready + .demo-ready, .demo-ready + p, .demo form + p { margin-top: 6px; }
     .link-btn { min-height: 32px; padding: 4px; border: 0; background: none; color: #78350f; font-size: 12px; font-weight: 700; text-decoration: underline; }
 
     .messages { flex: 1; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; padding: 16px; background: #f8fafc; }
@@ -235,6 +249,17 @@
     .composer { display: flex; align-items: flex-end; gap: 8px; padding: 10px 12px; border-top: 1px solid #e2e8f0; background: #fff; }
     .composer textarea { flex: 1; min-width: 0; min-height: 44px; max-height: 120px; padding: 11px 12px; border: 1px solid #cbd5e1; border-radius: 14px; background: #fff; line-height: 1.4; resize: none; }
     .composer textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent); }
+    .mic { width: 44px; height: 44px; flex-shrink: 0; display: grid; place-items: center; border: 1px solid #cbd5e1; border-radius: 14px; background: #fff; color: var(--primary); }
+    .mic:hover { background: #f8fafc; }
+    .mic svg { width: 20px; height: 20px; }
+    .mic .icon-stop { display: none; }
+    /* Selama merekam: tombol memakai warna utama sekolah, dan ikon mic diganti ikon kotak (berhenti). */
+    .mic[data-recording="true"] { border-color: var(--primary); background: var(--primary); color: var(--on-primary); }
+    .mic[data-recording="true"] .icon-mic { display: none; }
+    .mic[data-recording="true"] .icon-stop { display: block; }
+    .mic:disabled { border-color: #e2e8f0; background: #f1f5f9; color: #94a3b8; }
+    .voice-status { padding: 8px 14px 0; background: #fff; color: #334155; font-size: 12px; font-weight: 600; }
+    .voice-status[hidden] { display: none; }
     .send { width: 44px; height: 44px; flex-shrink: 0; display: grid; place-items: center; border: 0; border-radius: 14px; background: var(--accent); color: var(--on-accent); }
     .send svg { width: 18px; height: 18px; }
     .send:disabled { background: #e2e8f0; color: #94a3b8; }
@@ -273,9 +298,12 @@
         <div class="demo" data-ref="demo"></div>
         <div class="messages" data-ref="messages"></div>
         <p class="sr-only" role="status" aria-live="polite" data-ref="status"></p>
+        <p class="voice-status" data-ref="voiceStatus" hidden></p>
         <form class="composer" data-ref="form">
           <label class="sr-only" for="asisten-input">Tulis pertanyaan</label>
           <textarea id="asisten-input" rows="1" placeholder="Tulis pertanyaan..." data-ref="input"></textarea>
+          <!-- type="button": tanpa ini, tombol di dalam form dianggap tombol kirim. -->
+          <button class="mic" type="button" aria-label="Rekam suara" data-ref="mic"><span class="icon-mic">${ICONS.mic}</span><span class="icon-stop">${ICONS.stop}</span></button>
           <button class="send" type="submit" aria-label="Kirim pertanyaan" data-ref="send">${ICONS.send}</button>
         </form>
         <p class="footer">Jawaban dibuat AI dari info sekolah · Didukung <a data-ref="powered" target="_blank" rel="noopener">AsistenSPMB</a></p>
@@ -348,30 +376,15 @@
 
   /* Tampilan */
 
-  function renderDemo() {
-    ref.demo.replaceChildren();
-
-    if (state.apiKey) {
-      const ready = make('div', 'demo-ready');
-      const change = make('button', 'link-btn', 'Ganti key');
-      change.type = 'button';
-      change.addEventListener('click', () => {
-        state.apiKey = '';
-        renderDemo();
-        ref.demo.querySelector('input').focus();
-      });
-      ready.append(make('span', '', 'Mode demo · API key aktif di tab ini'), change);
-      ref.demo.append(ready);
-      return;
-    }
-
+  // Kolom API key di kotak kuning mode demo. Dipakai untuk key Netra dan key Deepgram.
+  function keyForm(placeholder, label, onSave) {
     const form = make('form');
     const input = make('input');
     input.type = 'password';
     input.autocomplete = 'off';
     input.spellcheck = false;
-    input.placeholder = 'Tempel API key Netra';
-    input.setAttribute('aria-label', 'API key Netra untuk mode demo');
+    input.placeholder = placeholder;
+    input.setAttribute('aria-label', label);
     const save = make('button', '', 'Pakai');
     save.type = 'submit';
     form.append(input, save);
@@ -382,13 +395,69 @@
         input.focus();
         return;
       }
-      state.apiKey = key;
-      state.error = '';
-      renderDemo();
-      renderMessages();
-      ref.input.focus();
+      onSave(key);
     });
-    ref.demo.append(make('p', '', 'Mode demo: masukkan API key Netra untuk mencoba. Key hanya disimpan di tab ini.'), form);
+    return form;
+  }
+
+  function readyRow(text, buttonText, onClick) {
+    const row = make('div', 'demo-ready');
+    const button = make('button', 'link-btn', buttonText);
+    button.type = 'button';
+    button.addEventListener('click', onClick);
+    row.append(make('span', '', text), button);
+    return row;
+  }
+
+  function renderDemo() {
+    ref.demo.replaceChildren();
+
+    // Key Netra: untuk jawaban asisten.
+    if (state.apiKey) {
+      ref.demo.append(readyRow('Mode demo · API key aktif di tab ini', 'Ganti key', () => {
+        state.apiKey = '';
+        renderDemo();
+        ref.demo.querySelector('input').focus();
+      }));
+    } else {
+      ref.demo.append(
+        make('p', '', 'Mode demo: masukkan API key Netra untuk mencoba. Key hanya disimpan di tab ini.'),
+        keyForm('Tempel API key Netra', 'API key Netra untuk mode demo', (key) => {
+          state.apiKey = key;
+          state.error = '';
+          renderDemo();
+          renderMessages();
+          ref.input.focus();
+        }),
+      );
+    }
+
+    // Key Deepgram: untuk tombol mic. Kolomnya baru muncul saat dibutuhkan, supaya kotak ini tetap pendek.
+    if (state.deepgramKey) {
+      ref.demo.append(readyRow('Mic aktif · key Deepgram di tab ini', 'Ganti key mic', () => {
+        state.deepgramKey = '';
+        state.deepgramFormOpen = true;
+        renderDemo();
+        ref.demo.querySelector('[data-deepgram] input').focus();
+      }));
+    } else if (state.deepgramFormOpen) {
+      const form = keyForm('Tempel API key Deepgram', 'API key Deepgram untuk input suara', (key) => {
+        state.deepgramKey = key;
+        state.deepgramFormOpen = false;
+        state.error = '';
+        renderDemo();
+        renderMessages();
+        ref.mic.focus();
+      });
+      form.dataset.deepgram = '';
+      ref.demo.append(make('p', '', 'Untuk bertanya lewat suara, masukkan API key Deepgram. Key juga hanya disimpan di tab ini.'), form);
+    } else if (state.apiKey) {
+      ref.demo.append(readyRow('Mau bertanya lewat suara?', 'Pakai mic', () => {
+        state.deepgramFormOpen = true;
+        renderDemo();
+        ref.demo.querySelector('[data-deepgram] input').focus();
+      }));
+    }
   }
 
   function renderMessages() {
@@ -412,8 +481,7 @@
     if (state.isSending) ref.messages.append(typingRow());
     if (state.error) ref.messages.append(make('p', 'error', state.error));
 
-    ref.send.disabled = state.isSending;
-    ref.reset.disabled = state.history.length === 0 || state.isSending;
+    renderControls();
     requestAnimationFrame(() => {
       ref.messages.scrollTop = ref.messages.scrollHeight;
     });
@@ -434,6 +502,8 @@
       renderMessages();
       (state.apiKey ? ref.input : ref.demo.querySelector('input')).focus();
     } else {
+      // Widget ditutup saat merekam: mikrofon langsung dimatikan, tanpa mengirim apa pun.
+      if (state.voiceStatus !== 'idle') cancelRecording();
       ref.launcher.focus();
     }
   }
@@ -442,7 +512,7 @@
 
   async function send(rawQuestion) {
     const question = rawQuestion.trim();
-    if (!question || state.isSending) return;
+    if (!question || state.isSending || state.voiceStatus !== 'idle') return;
 
     if (!state.apiKey) {
       ref.input.value = question;
@@ -481,7 +551,228 @@
     }
   }
 
+  /* Input suara lewat Deepgram (sama dengan Tingkat 3 di playground) */
+
+  // Nama tombol mic untuk pembaca layar, dan keterangan di atas kolom pertanyaan, per keadaan rekaman.
+  const VOICE = {
+    idle: { label: 'Rekam suara', text: '' },
+    connecting: { label: 'Menyambung ke Deepgram', text: 'Menyambung ke Deepgram...' },
+    recording: { label: 'Berhenti merekam dan kirim', text: 'Merekam. Tekan tombol mic lagi untuk berhenti dan mengirim.' },
+    transcribing: { label: 'Menunggu teks terakhir', text: 'Menunggu teks terakhir dari Deepgram...' },
+  };
+
+  // Tombol mic, tombol kirim, tombol mulai ulang, dan kolom pertanyaan selalu digambar ulang dari state.
+  function renderControls() {
+    const voice = state.voiceStatus;
+    const busy = voice !== 'idle';
+    ref.mic.dataset.recording = String(voice === 'recording');
+    ref.mic.setAttribute('aria-label', VOICE[voice].label);
+    ref.mic.title = VOICE[voice].label;
+    ref.mic.disabled = state.isSending || voice === 'connecting' || voice === 'transcribing';
+    ref.send.disabled = state.isSending || busy;
+    ref.reset.disabled = state.history.length === 0 || state.isSending || busy;
+    // Kolom pertanyaan dikunci selama merekam, supaya ketikan tidak tertimpa teks dari Deepgram.
+    ref.input.readOnly = busy;
+    ref.voiceStatus.hidden = !busy;
+    ref.voiceStatus.textContent = VOICE[voice].text;
+  }
+
+  function setVoiceStatus(status) {
+    state.voiceStatus = status;
+    renderControls();
+  }
+
+  function showError(message) {
+    state.error = message;
+    renderMessages();
+    ref.status.textContent = message;
+  }
+
+  // Membuka mikrofon. Error dari browser diubah jadi pesan yang mudah dipahami.
+  async function getMicrophone() {
+    // Browser hanya mengizinkan mikrofon di halaman yang aman: https://, localhost, atau file di komputer sendiri.
+    if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
+      throw new Error('Mikrofon hanya bisa dipakai di halaman https:// atau localhost.');
+    }
+    if (typeof MediaRecorder === 'undefined') {
+      throw new Error('Browser ini belum bisa merekam suara. Coba pakai versi terbaru Chrome, Edge, Firefox, atau Safari.');
+    }
+    try {
+      return await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch (error) {
+      if (error.name === 'NotAllowedError' || error.name === 'SecurityError') {
+        throw new Error('Izin mikrofon ditolak. Izinkan mikrofon untuk halaman ini lewat ikon di address bar, lalu coba lagi.');
+      }
+      if (error.name === 'NotFoundError' || error.name === 'OverconstrainedError') {
+        throw new Error('Mikrofon tidak ditemukan. Sambungkan mikrofon, lalu coba lagi.');
+      }
+      if (error.name === 'NotReadableError') {
+        throw new Error('Mikrofon sedang dipakai aplikasi lain. Tutup aplikasi itu, lalu coba lagi.');
+      }
+      throw new Error('Mikrofon tidak bisa dibuka. Coba lagi.');
+    }
+  }
+
+  function openDeepgramSocket(apiKey) {
+    return new Promise((resolve, reject) => {
+      // Browser tidak bisa menambah header Authorization ke WebSocket, jadi API key dikirim lewat subprotocol.
+      const socket = new WebSocket(DEEPGRAM_LIVE_URL, ['token', apiKey]);
+      socket.addEventListener('open', () => resolve(socket));
+      socket.addEventListener('error', () => {
+        reject(new Error('Gagal tersambung ke Deepgram. Periksa API key Deepgram dan koneksi internet.'));
+      });
+    });
+  }
+
+  async function startRecording(apiKey) {
+    const stream = await getMicrophone();
+    let socket;
+    try {
+      socket = await openDeepgramSocket(apiKey);
+    } catch (error) {
+      stream.getTracks().forEach((track) => track.stop()); // mematikan mikrofon lagi
+      throw error;
+    }
+
+    const recorder = new MediaRecorder(stream);
+    Object.assign(dictation, {
+      socket, stream, recorder, typedText: ref.input.value.trim(), finalText: '', interimText: '', stopping: false, cancelled: false,
+    });
+    socket.addEventListener('message', handleDictationMessage);
+    socket.addEventListener('close', finishRecording);
+    recorder.addEventListener('dataavailable', (event) => {
+      if (event.data.size > 0 && socket.readyState === WebSocket.OPEN) socket.send(event.data);
+    });
+    recorder.addEventListener('stop', () => {
+      stream.getTracks().forEach((track) => track.stop()); // mematikan mikrofon
+      // CloseStream: Deepgram mengirim sisa teks yang belum final, lalu menutup koneksi.
+      if (socket.readyState === WebSocket.OPEN) socket.send(JSON.stringify({ type: 'CloseStream' }));
+      setTimeout(() => socket.close(), 5000); // cadangan kalau Deepgram tidak menutup sendiri
+    });
+    recorder.start(250); // potongan audio dikirim ke Deepgram setiap 250 milidetik
+    dictation.timer = setTimeout(stopRecording, MAX_RECORDING_SECONDS * 1000);
+  }
+
+  // Hasil sementara (is_final false) masih bisa berubah, jadi hanya hasil final yang disimpan.
+  function collectTranscript(target, data) {
+    const text = data.channel?.alternatives?.[0]?.transcript ?? '';
+    if (data.is_final) {
+      if (text) target.finalText = `${target.finalText} ${text}`.trim();
+      target.interimText = '';
+    } else {
+      target.interimText = text;
+    }
+    return `${target.finalText} ${target.interimText}`.trim();
+  }
+
+  function handleDictationMessage(event) {
+    let data;
+    try {
+      data = JSON.parse(event.data);
+    } catch {
+      return;
+    }
+    if (data.type !== 'Results' || dictation.cancelled) return;
+    // Teks muncul di kolom pertanyaan selagi orang bicara, setelah teks yang sudah diketik sebelumnya.
+    ref.input.value = `${dictation.typedText} ${collectTranscript(dictation, data)}`.trim();
+    fitInput();
+  }
+
+  function stopRecording() {
+    if (state.voiceStatus !== 'recording') return;
+    clearTimeout(dictation.timer);
+    dictation.stopping = true;
+    dictation.recorder.stop();
+    setVoiceStatus('transcribing');
+    ref.status.textContent = 'Menunggu teks terakhir dari Deepgram.';
+  }
+
+  // Dipakai saat widget ditutup di tengah rekaman: mikrofon dimatikan dan tidak ada yang dikirim.
+  function cancelRecording() {
+    if (state.voiceStatus === 'connecting') {
+      dictation.cancelled = true; // startRecording akan membatalkan sendiri setelah tersambung
+      return;
+    }
+    if (!dictation.recorder) return;
+    clearTimeout(dictation.timer);
+    dictation.cancelled = true;
+    dictation.stopping = true;
+    if (dictation.recorder.state !== 'inactive') dictation.recorder.stop();
+    if (dictation.socket.readyState === WebSocket.OPEN) dictation.socket.close();
+  }
+
+  // Dipanggil saat koneksi Deepgram tertutup: sesudah CloseStream, karena internet putus, atau karena dibatalkan.
+  function finishRecording() {
+    if (state.voiceStatus === 'idle') return;
+    clearTimeout(dictation.timer);
+    if (dictation.recorder.state !== 'inactive') dictation.recorder.stop();
+    dictation.stream.getTracks().forEach((track) => track.stop());
+    const { typedText, finalText, interimText, stopping, cancelled } = dictation;
+    // Kalau koneksi putus tiba-tiba atau rekaman dibatalkan, teks sementara ikut disimpan supaya tidak hilang.
+    const heard = stopping && !cancelled ? finalText : `${finalText} ${interimText}`.trim();
+    ref.input.value = `${typedText} ${heard}`.trim();
+    fitInput();
+    setVoiceStatus('idle');
+    if (cancelled) {
+      ref.status.textContent = 'Rekaman dibatalkan.';
+      return;
+    }
+    ref.mic.focus(); // fokus keyboard kembali ke tombol mic, karena tombol itu sempat dimatikan
+
+    if (!stopping) {
+      showError(heard
+        ? 'Sambungan ke Deepgram terputus. Teks yang sudah terdengar ada di kolom pertanyaan.'
+        : 'Sambungan ke Deepgram terputus. Periksa koneksi internet, lalu coba lagi.');
+    } else if (!finalText) {
+      showError('Suara tidak terdengar jelas. Dekatkan mikrofon, lalu coba lagi.');
+    } else {
+      // Teks hasil rekaman dikirim lewat jalur yang sama dengan pertanyaan yang diketik
+      // (termasuk pengecekan API key Netra dan tampilan error).
+      send(ref.input.value);
+    }
+  }
+
+  async function handleMicClick() {
+    if (state.voiceStatus === 'recording') {
+      stopRecording();
+      return;
+    }
+    if (state.voiceStatus !== 'idle' || state.isSending) return;
+
+    if (!state.deepgramKey) {
+      state.deepgramFormOpen = true;
+      renderDemo();
+      showError('Masukkan API key Deepgram dulu di kotak kuning di atas untuk bertanya lewat suara.');
+      ref.demo.querySelector('[data-deepgram] input').focus();
+      return;
+    }
+
+    state.error = '';
+    renderMessages();
+    setVoiceStatus('connecting');
+    ref.status.textContent = 'Menyambung ke Deepgram.';
+    try {
+      dictation.cancelled = false;
+      await startRecording(state.deepgramKey);
+      setVoiceStatus('recording');
+      // Widget ditutup selagi menyambung: rekaman langsung dibatalkan.
+      if (!state.isOpen) {
+        cancelRecording();
+        return;
+      }
+      ref.status.textContent = 'Merekam. Tekan tombol mic lagi untuk berhenti dan mengirim.';
+      ref.mic.focus();
+    } catch (error) {
+      setVoiceStatus('idle');
+      if (!state.isOpen) return;
+      showError(error.message);
+      ref.mic.focus();
+    }
+  }
+
   /* Event */
+
+  ref.mic.addEventListener('click', handleMicClick);
 
   ref.launcher.addEventListener('click', () => setOpen(!state.isOpen));
   ref.close.addEventListener('click', () => setOpen(false));
