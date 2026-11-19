@@ -147,9 +147,14 @@
       // Anak yang sengaja digeser atau dimiringkan (parallax, animasi melayang) bukan isi yang meluber.
       const moved = [childStyle.transform, childStyle.translate, childStyle.rotate, childStyle.scale].some((value) => value && value !== 'none');
       if (moved) continue;
-      worst = Math.max(worst, child.getBoundingClientRect().bottom - bottom);
+      const over = child.getBoundingClientRect().bottom - bottom;
+      // Kotak elemen inline (misalnya <span> di dalam judul) setinggi kotak hurufnya, yang memang sedikit
+      // lebih tinggi dari baris kalau line-height rapat. Selisih kecil itu bukan isi yang meluber;
+      // teks yang benar-benar tumpah satu baris penuh tetap tertangkap.
+      const allowed = childStyle.display === 'inline' ? parseFloat(childStyle.fontSize) * 0.25 : 2;
+      if (over > allowed) worst = Math.max(worst, over);
     }
-    if (worst > 2) verticalSpills.push(`${describe(el)} → isinya keluar ${Math.round(worst)}px ke bawah`);
+    if (worst > 0) verticalSpills.push(`${describe(el)} → isinya keluar ${Math.round(worst)}px ke bawah`);
   }
 
   /* Kontrol interaktif: ukuran target sentuh, nama yang bisa dibaca pembaca layar, ukuran huruf input. */
