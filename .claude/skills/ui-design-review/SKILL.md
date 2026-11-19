@@ -50,7 +50,7 @@ Pengecualian yang disengaja: contoh percakapan di hero dan kartu "Demo langsung"
 
    Untuk widget, buka dulu dengan `window.AsistenSPMBWidget.open()` di `demo-wikrama.html`, lalu jalankan skripnya lagi. Skrip ikut memeriksa isi Shadow DOM.
 
-3. **Pemeriksaan visual.** Screenshot tiap halaman per bagian (pakai `scrollIntoView` ke tiap `section`). Kalau `tabs_context` bilang panel browser tersembunyi, screenshot bisa tertinggal satu langkah. Beri jeda 1–2 detik dan ambil ulang sebelum menyimpulkan ada yang salah.
+3. **Pemeriksaan visual.** Screenshot tiap halaman per bagian. Untuk pindah ke tiap bagian, pakai `window.scrollTo({ top, behavior: 'instant' })`, bukan `scrollIntoView` biasa. Website memakai `scroll-behavior: smooth`, jadi scroll lewat skrip berjalan sebagai animasi, dan animasi itu tertahan selama panel browser tersembunyi. Akibatnya `scrollY` tetap 0 dan halaman terlihat seperti tidak bisa di-scroll, padahal pengunjung tidak mengalaminya. Kalau `tabs_context` bilang panel tersembunyi, screenshot juga bisa tertinggal satu langkah. Beri jeda 1–2 detik dan ambil ulang sebelum menyimpulkan ada yang salah.
 
 4. **Keadaan layar.** Cek keadaan kosong, memuat, dan error di playground dan widget tanpa API key asli, supaya tidak memotong saldo Netra user. Caranya ada di bagian "Uji keadaan tanpa saldo". Muat ulang halaman setelah selesai.
 

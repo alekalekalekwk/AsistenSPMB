@@ -46,6 +46,23 @@
       /* Stabilo limau. Margin negatif menetralkan padding, supaya tidak terlihat ada spasi sebelum tanda baca. */
       .mark { @apply -mx-1 rounded bg-lime/70 px-1 [box-decoration-break:clone]; }
     }
+    /* Pola batik kawung, digambar sendiri sebagai ubin SVG 56 piksel.
+       kawung-bg: latar bagian bawah halaman, hanya terlihat di ruang kosong kiri-kanan (memudar ke arah konten,
+       dan tidak tampil sama sekali di layar sempit). kawung-accent: versi teal di sudut kartu ajakan akhir. */
+    .kawung-bg {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56' viewBox='0 0 56 56'%3E%3Cg fill='none' stroke='%2337352f' stroke-opacity='0.1' stroke-width='1'%3E%3Cellipse cx='34.72' cy='34.72' rx='9.5' ry='5.2' transform='rotate(45 34.72 34.72)'/%3E%3Cellipse cx='21.28' cy='34.72' rx='9.5' ry='5.2' transform='rotate(135 21.28 34.72)'/%3E%3Cellipse cx='21.28' cy='21.28' rx='9.5' ry='5.2' transform='rotate(225 21.28 21.28)'/%3E%3Cellipse cx='34.72' cy='21.28' rx='9.5' ry='5.2' transform='rotate(315 34.72 21.28)'/%3E%3Cellipse cx='6.72' cy='6.72' rx='9.5' ry='5.2' transform='rotate(45 6.72 6.72)'/%3E%3Cellipse cx='-6.72' cy='6.72' rx='9.5' ry='5.2' transform='rotate(135 -6.72 6.72)'/%3E%3Cellipse cx='-6.72' cy='-6.72' rx='9.5' ry='5.2' transform='rotate(225 -6.72 -6.72)'/%3E%3Cellipse cx='6.72' cy='-6.72' rx='9.5' ry='5.2' transform='rotate(315 6.72 -6.72)'/%3E%3Cellipse cx='62.72' cy='6.72' rx='9.5' ry='5.2' transform='rotate(45 62.72 6.72)'/%3E%3Cellipse cx='49.28' cy='6.72' rx='9.5' ry='5.2' transform='rotate(135 49.28 6.72)'/%3E%3Cellipse cx='49.28' cy='-6.72' rx='9.5' ry='5.2' transform='rotate(225 49.28 -6.72)'/%3E%3Cellipse cx='62.72' cy='-6.72' rx='9.5' ry='5.2' transform='rotate(315 62.72 -6.72)'/%3E%3Cellipse cx='6.72' cy='62.72' rx='9.5' ry='5.2' transform='rotate(45 6.72 62.72)'/%3E%3Cellipse cx='-6.72' cy='62.72' rx='9.5' ry='5.2' transform='rotate(135 -6.72 62.72)'/%3E%3Cellipse cx='-6.72' cy='49.28' rx='9.5' ry='5.2' transform='rotate(225 -6.72 49.28)'/%3E%3Cellipse cx='6.72' cy='49.28' rx='9.5' ry='5.2' transform='rotate(315 6.72 49.28)'/%3E%3Cellipse cx='62.72' cy='62.72' rx='9.5' ry='5.2' transform='rotate(45 62.72 62.72)'/%3E%3Cellipse cx='49.28' cy='62.72' rx='9.5' ry='5.2' transform='rotate(135 49.28 62.72)'/%3E%3Cellipse cx='49.28' cy='49.28' rx='9.5' ry='5.2' transform='rotate(225 49.28 49.28)'/%3E%3Cellipse cx='62.72' cy='49.28' rx='9.5' ry='5.2' transform='rotate(315 62.72 49.28)'/%3E%3C/g%3E%3Cg fill='%2337352f' fill-opacity='0.1'%3E%3Ccircle cx='28' cy='28' r='1.6'/%3E%3Ccircle cx='34.72' cy='34.72' r='1.1'/%3E%3Ccircle cx='21.28' cy='34.72' r='1.1'/%3E%3Ccircle cx='21.28' cy='21.28' r='1.1'/%3E%3Ccircle cx='34.72' cy='21.28' r='1.1'/%3E%3Ccircle cx='0' cy='0' r='1.6'/%3E%3Ccircle cx='6.72' cy='6.72' r='1.1'/%3E%3Ccircle cx='-6.72' cy='6.72' r='1.1'/%3E%3Ccircle cx='-6.72' cy='-6.72' r='1.1'/%3E%3Ccircle cx='6.72' cy='-6.72' r='1.1'/%3E%3Ccircle cx='56' cy='0' r='1.6'/%3E%3Ccircle cx='62.72' cy='6.72' r='1.1'/%3E%3Ccircle cx='49.28' cy='6.72' r='1.1'/%3E%3Ccircle cx='49.28' cy='-6.72' r='1.1'/%3E%3Ccircle cx='62.72' cy='-6.72' r='1.1'/%3E%3Ccircle cx='0' cy='56' r='1.6'/%3E%3Ccircle cx='6.72' cy='62.72' r='1.1'/%3E%3Ccircle cx='-6.72' cy='62.72' r='1.1'/%3E%3Ccircle cx='-6.72' cy='49.28' r='1.1'/%3E%3Ccircle cx='6.72' cy='49.28' r='1.1'/%3E%3Ccircle cx='56' cy='56' r='1.6'/%3E%3Ccircle cx='62.72' cy='62.72' r='1.1'/%3E%3Ccircle cx='49.28' cy='62.72' r='1.1'/%3E%3Ccircle cx='49.28' cy='49.28' r='1.1'/%3E%3Ccircle cx='62.72' cy='49.28' r='1.1'/%3E%3C/g%3E%3C/svg%3E");
+      background-size: 56px 56px;
+      background-position: center top;
+      -webkit-mask-image: linear-gradient(to right, #000, transparent calc(50% - 31rem), transparent calc(50% + 31rem), #000);
+      mask-image: linear-gradient(to right, #000, transparent calc(50% - 31rem), transparent calc(50% + 31rem), #000);
+    }
+    .kawung-accent {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56' viewBox='0 0 56 56'%3E%3Cg fill='none' stroke='%230f766e' stroke-opacity='0.22' stroke-width='1'%3E%3Cellipse cx='34.72' cy='34.72' rx='9.5' ry='5.2' transform='rotate(45 34.72 34.72)'/%3E%3Cellipse cx='21.28' cy='34.72' rx='9.5' ry='5.2' transform='rotate(135 21.28 34.72)'/%3E%3Cellipse cx='21.28' cy='21.28' rx='9.5' ry='5.2' transform='rotate(225 21.28 21.28)'/%3E%3Cellipse cx='34.72' cy='21.28' rx='9.5' ry='5.2' transform='rotate(315 34.72 21.28)'/%3E%3Cellipse cx='6.72' cy='6.72' rx='9.5' ry='5.2' transform='rotate(45 6.72 6.72)'/%3E%3Cellipse cx='-6.72' cy='6.72' rx='9.5' ry='5.2' transform='rotate(135 -6.72 6.72)'/%3E%3Cellipse cx='-6.72' cy='-6.72' rx='9.5' ry='5.2' transform='rotate(225 -6.72 -6.72)'/%3E%3Cellipse cx='6.72' cy='-6.72' rx='9.5' ry='5.2' transform='rotate(315 6.72 -6.72)'/%3E%3Cellipse cx='62.72' cy='6.72' rx='9.5' ry='5.2' transform='rotate(45 62.72 6.72)'/%3E%3Cellipse cx='49.28' cy='6.72' rx='9.5' ry='5.2' transform='rotate(135 49.28 6.72)'/%3E%3Cellipse cx='49.28' cy='-6.72' rx='9.5' ry='5.2' transform='rotate(225 49.28 -6.72)'/%3E%3Cellipse cx='62.72' cy='-6.72' rx='9.5' ry='5.2' transform='rotate(315 62.72 -6.72)'/%3E%3Cellipse cx='6.72' cy='62.72' rx='9.5' ry='5.2' transform='rotate(45 6.72 62.72)'/%3E%3Cellipse cx='-6.72' cy='62.72' rx='9.5' ry='5.2' transform='rotate(135 -6.72 62.72)'/%3E%3Cellipse cx='-6.72' cy='49.28' rx='9.5' ry='5.2' transform='rotate(225 -6.72 49.28)'/%3E%3Cellipse cx='6.72' cy='49.28' rx='9.5' ry='5.2' transform='rotate(315 6.72 49.28)'/%3E%3Cellipse cx='62.72' cy='62.72' rx='9.5' ry='5.2' transform='rotate(45 62.72 62.72)'/%3E%3Cellipse cx='49.28' cy='62.72' rx='9.5' ry='5.2' transform='rotate(135 49.28 62.72)'/%3E%3Cellipse cx='49.28' cy='49.28' rx='9.5' ry='5.2' transform='rotate(225 49.28 49.28)'/%3E%3Cellipse cx='62.72' cy='49.28' rx='9.5' ry='5.2' transform='rotate(315 62.72 49.28)'/%3E%3C/g%3E%3Cg fill='%230f766e' fill-opacity='0.22'%3E%3Ccircle cx='28' cy='28' r='1.6'/%3E%3Ccircle cx='34.72' cy='34.72' r='1.1'/%3E%3Ccircle cx='21.28' cy='34.72' r='1.1'/%3E%3Ccircle cx='21.28' cy='21.28' r='1.1'/%3E%3Ccircle cx='34.72' cy='21.28' r='1.1'/%3E%3Ccircle cx='0' cy='0' r='1.6'/%3E%3Ccircle cx='6.72' cy='6.72' r='1.1'/%3E%3Ccircle cx='-6.72' cy='6.72' r='1.1'/%3E%3Ccircle cx='-6.72' cy='-6.72' r='1.1'/%3E%3Ccircle cx='6.72' cy='-6.72' r='1.1'/%3E%3Ccircle cx='56' cy='0' r='1.6'/%3E%3Ccircle cx='62.72' cy='6.72' r='1.1'/%3E%3Ccircle cx='49.28' cy='6.72' r='1.1'/%3E%3Ccircle cx='49.28' cy='-6.72' r='1.1'/%3E%3Ccircle cx='62.72' cy='-6.72' r='1.1'/%3E%3Ccircle cx='0' cy='56' r='1.6'/%3E%3Ccircle cx='6.72' cy='62.72' r='1.1'/%3E%3Ccircle cx='-6.72' cy='62.72' r='1.1'/%3E%3Ccircle cx='-6.72' cy='49.28' r='1.1'/%3E%3Ccircle cx='6.72' cy='49.28' r='1.1'/%3E%3Ccircle cx='56' cy='56' r='1.6'/%3E%3Ccircle cx='62.72' cy='62.72' r='1.1'/%3E%3Ccircle cx='49.28' cy='62.72' r='1.1'/%3E%3Ccircle cx='49.28' cy='49.28' r='1.1'/%3E%3Ccircle cx='62.72' cy='49.28' r='1.1'/%3E%3C/g%3E%3C/svg%3E");
+      background-size: 56px 56px;
+      background-position: center;
+      -webkit-mask-image: radial-gradient(ellipse at 100% 100%, #000, transparent 55%), radial-gradient(ellipse at 0 0, #000, transparent 40%);
+      mask-image: radial-gradient(ellipse at 100% 100%, #000, transparent 55%), radial-gradient(ellipse at 0 0, #000, transparent 40%);
+    }
   </style>
 </head>
 <body class="bg-white font-sans text-body antialiased">
@@ -73,19 +90,25 @@
 
   <main>
     <!-- Hero -->
-    <section class="mx-auto max-w-6xl px-4 pt-16 text-center sm:pt-24">
+    <section class="relative overflow-hidden">
+      <!-- Latar bumi: berputar lalu nge-zoom ke Indonesia (digambar oleh skrip globe di akhir halaman). Hanya hiasan. -->
+      <canvas id="hero-globe" aria-hidden="true"
+        class="pointer-events-none absolute inset-x-0 top-0 h-[40rem] w-full [mask-image:linear-gradient(to_bottom,#000_80%,transparent)] sm:h-[46rem]"></canvas>
+      <div class="relative mx-auto max-w-6xl px-4 pt-16 text-center sm:pt-24">
       <p class="inline-flex items-center gap-2 rounded-full border border-line px-3 py-1 text-sm font-medium text-body">
         <span aria-hidden="true">🎓</span>Chatbot SPMB untuk website sekolah
       </p>
-      <h1 class="mx-auto mt-6 max-w-4xl text-[2.6rem] font-extrabold leading-[1.08] tracking-tight text-ink sm:text-6xl lg:text-7xl">
+      <!-- Teks hero diberi "halo" putih tipis (text-shadow) supaya tetap tajam di atas garis peta latar. -->
+      <h1 class="mx-auto mt-6 max-w-4xl [text-shadow:0_0_14px_#fff,0_0_6px_#fff,0_0_2px_#fff] text-[2.6rem] font-extrabold leading-[1.08] tracking-tight text-ink sm:text-6xl lg:text-7xl">
         Jawab calon murid <span class="mark">kapan saja</span>, dari data sekolahmu sendiri.
       </h1>
-      <p class="lead mx-auto mt-6 max-w-2xl">AsistenSPMB menjawab pertanyaan soal pendaftaran, jurusan, dan berkas langsung di website sekolah. Kalau infonya tidak ada, ia jujur bilang belum tahu dan mengarahkan ke CS sekolah.</p>
+      <p class="lead mx-auto mt-6 max-w-2xl [text-shadow:0_0_14px_#fff,0_0_6px_#fff,0_0_2px_#fff]">AsistenSPMB menjawab pertanyaan soal pendaftaran, jurusan, dan berkas langsung di website sekolah. Kalau infonya tidak ada, ia jujur bilang belum tahu dan mengarahkan ke CS sekolah.</p>
       <div class="mt-8 flex flex-wrap justify-center gap-3">
         <a href="demo-wikrama.html" class="btn btn-dark">Coba demo SMK Wikrama →</a>
         <a href="dashboard.html" class="btn btn-light">Buka dashboard</a>
       </div>
-      <p class="mt-4 text-sm text-muted">Rp300 ribu per bulan per sekolah, dibayar tahunan.</p>
+      <p class="mt-4 text-sm text-muted [text-shadow:0_0_14px_#fff,0_0_6px_#fff,0_0_2px_#fff]">Rp300 ribu per bulan per sekolah, dibayar tahunan.</p>
+      <p class="mt-6 inline-flex items-center gap-2 rounded-full bg-white/85 px-3 py-1.5 text-sm font-medium text-body ring-1 ring-line backdrop-blur"><span aria-hidden="true">📍</span>Dimulai dari SMK Wikrama Bogor</p>
 
       <!-- Gambar produk (statis): dashboard sekolah dengan widget chat di atasnya -->
       <figure class="mx-auto mt-16 max-w-5xl text-left">
@@ -148,7 +171,11 @@
         </div>
         <figcaption class="mt-4 text-center text-sm text-muted">Dashboard sekolah dan widget chat di demo SMK Wikrama Bogor. Warna widget mengikuti sekolah.</figcaption>
       </figure>
+      </div>
     </section>
+
+    <div class="relative isolate">
+      <div aria-hidden="true" class="kawung-bg pointer-events-none absolute inset-0 -z-10"></div>
 
     <!-- Untuk siapa -->
     <section aria-labelledby="untuk-siapa-title" class="mx-auto max-w-6xl px-4 pt-24">
@@ -386,12 +413,29 @@
       </div>
     </section>
 
-    <!-- Cerita -->
-    <section aria-labelledby="cerita-title" class="mx-auto max-w-3xl px-4 pt-28 text-center">
-      <p class="text-4xl" aria-hidden="true">🌱</p>
-      <p class="eyebrow mt-4">Cerita di balik AsistenSPMB</p>
-      <h2 id="cerita-title" class="h2 mt-2">Berawal dari Wikrama.</h2>
-      <p class="lead mt-6">AsistenSPMB dikembangkan oleh alumni SMK Wikrama Bogor, bekerja sama dengan sekolahnya sendiri. Demo pertamanya memakai data SPMB SMK Wikrama Bogor, jadi yang kamu coba adalah kebutuhan sekolah yang nyata.</p>
+    <!-- Cerita: peta titik Nusantara. Titik-titiknya dihitung sekali dari data peta asli (world-atlas, Indonesia),
+         lalu disimpan statis di sini, jadi tidak ada beban tambahan saat halaman dibuka. -->
+    <section aria-labelledby="cerita-title" class="mx-auto max-w-6xl px-4 pt-28">
+      <div class="rounded-2xl border border-line bg-white px-6 pb-10 pt-16 text-center sm:px-12 sm:pt-20">
+        <p class="eyebrow">Cerita di balik AsistenSPMB</p>
+        <h2 id="cerita-title" class="h2 mt-2">Berawal dari Wikrama.</h2>
+        <p class="lead mx-auto mt-6 max-w-3xl">AsistenSPMB dikembangkan oleh alumni SMK Wikrama Bogor, bekerja sama dengan sekolahnya sendiri. Demo pertamanya memakai data SPMB SMK Wikrama Bogor, jadi yang kamu coba adalah kebutuhan sekolah yang nyata.</p>
+        <figure class="mx-auto mt-12 max-w-4xl">
+          <div class="relative">
+            <svg viewBox="0 0 960 380" role="img" aria-labelledby="peta-title" class="h-auto w-full">
+              <title id="peta-title">Peta Indonesia dari titik-titik, dengan penanda di Bogor, Jawa Barat</title>
+              <path d="M13.5 22.5h0M13.5 31.5h0M22.5 31.5h0M31.5 31.5h0M40.5 31.5h0M49.5 31.5h0M58.5 31.5h0M22.5 40.5h0M31.5 40.5h0M40.5 40.5h0M49.5 40.5h0M58.5 40.5h0M31.5 49.5h0M40.5 49.5h0M49.5 49.5h0M58.5 49.5h0M67.5 49.5h0M436.5 49.5h0M445.5 49.5h0M454.5 49.5h0M40.5 58.5h0M49.5 58.5h0M58.5 58.5h0M67.5 58.5h0M76.5 58.5h0M274.5 58.5h0M436.5 58.5h0M445.5 58.5h0M454.5 58.5h0M463.5 58.5h0M49.5 67.5h0M58.5 67.5h0M67.5 67.5h0M76.5 67.5h0M85.5 67.5h0M94.5 67.5h0M436.5 67.5h0M445.5 67.5h0M454.5 67.5h0M463.5 67.5h0M634.5 67.5h0M58.5 76.5h0M67.5 76.5h0M76.5 76.5h0M85.5 76.5h0M94.5 76.5h0M103.5 76.5h0M427.5 76.5h0M436.5 76.5h0M445.5 76.5h0M454.5 76.5h0M463.5 76.5h0M31.5 85.5h0M67.5 85.5h0M76.5 85.5h0M85.5 85.5h0M94.5 85.5h0M103.5 85.5h0M112.5 85.5h0M427.5 85.5h0M436.5 85.5h0M445.5 85.5h0M454.5 85.5h0M463.5 85.5h0M472.5 85.5h0M76.5 94.5h0M85.5 94.5h0M94.5 94.5h0M103.5 94.5h0M112.5 94.5h0M121.5 94.5h0M130.5 94.5h0M418.5 94.5h0M427.5 94.5h0M436.5 94.5h0M445.5 94.5h0M454.5 94.5h0M463.5 94.5h0M472.5 94.5h0M85.5 103.5h0M94.5 103.5h0M103.5 103.5h0M112.5 103.5h0M121.5 103.5h0M130.5 103.5h0M139.5 103.5h0M301.5 103.5h0M409.5 103.5h0M418.5 103.5h0M427.5 103.5h0M436.5 103.5h0M445.5 103.5h0M454.5 103.5h0M463.5 103.5h0M472.5 103.5h0M679.5 103.5h0M58.5 112.5h0M85.5 112.5h0M94.5 112.5h0M103.5 112.5h0M112.5 112.5h0M121.5 112.5h0M130.5 112.5h0M139.5 112.5h0M148.5 112.5h0M157.5 112.5h0M301.5 112.5h0M310.5 112.5h0M364.5 112.5h0M373.5 112.5h0M382.5 112.5h0M391.5 112.5h0M400.5 112.5h0M409.5 112.5h0M418.5 112.5h0M427.5 112.5h0M436.5 112.5h0M445.5 112.5h0M454.5 112.5h0M463.5 112.5h0M472.5 112.5h0M481.5 112.5h0M490.5 112.5h0M544.5 112.5h0M616.5 112.5h0M679.5 112.5h0M688.5 112.5h0M697.5 112.5h0M94.5 121.5h0M103.5 121.5h0M112.5 121.5h0M121.5 121.5h0M130.5 121.5h0M139.5 121.5h0M148.5 121.5h0M157.5 121.5h0M166.5 121.5h0M292.5 121.5h0M301.5 121.5h0M310.5 121.5h0M319.5 121.5h0M328.5 121.5h0M337.5 121.5h0M346.5 121.5h0M355.5 121.5h0M364.5 121.5h0M373.5 121.5h0M382.5 121.5h0M391.5 121.5h0M400.5 121.5h0M409.5 121.5h0M418.5 121.5h0M427.5 121.5h0M436.5 121.5h0M445.5 121.5h0M454.5 121.5h0M463.5 121.5h0M472.5 121.5h0M526.5 121.5h0M535.5 121.5h0M544.5 121.5h0M553.5 121.5h0M562.5 121.5h0M571.5 121.5h0M580.5 121.5h0M589.5 121.5h0M598.5 121.5h0M607.5 121.5h0M679.5 121.5h0M688.5 121.5h0M94.5 130.5h0M103.5 130.5h0M112.5 130.5h0M121.5 130.5h0M130.5 130.5h0M139.5 130.5h0M148.5 130.5h0M157.5 130.5h0M166.5 130.5h0M175.5 130.5h0M292.5 130.5h0M301.5 130.5h0M310.5 130.5h0M319.5 130.5h0M328.5 130.5h0M337.5 130.5h0M346.5 130.5h0M355.5 130.5h0M364.5 130.5h0M373.5 130.5h0M382.5 130.5h0M391.5 130.5h0M400.5 130.5h0M409.5 130.5h0M418.5 130.5h0M427.5 130.5h0M436.5 130.5h0M445.5 130.5h0M454.5 130.5h0M463.5 130.5h0M517.5 130.5h0M589.5 130.5h0M598.5 130.5h0M679.5 130.5h0M697.5 130.5h0M103.5 139.5h0M112.5 139.5h0M121.5 139.5h0M130.5 139.5h0M139.5 139.5h0M148.5 139.5h0M157.5 139.5h0M166.5 139.5h0M175.5 139.5h0M202.5 139.5h0M301.5 139.5h0M310.5 139.5h0M319.5 139.5h0M328.5 139.5h0M337.5 139.5h0M346.5 139.5h0M355.5 139.5h0M364.5 139.5h0M373.5 139.5h0M382.5 139.5h0M391.5 139.5h0M400.5 139.5h0M409.5 139.5h0M418.5 139.5h0M427.5 139.5h0M436.5 139.5h0M445.5 139.5h0M454.5 139.5h0M463.5 139.5h0M517.5 139.5h0M679.5 139.5h0M742.5 139.5h0M76.5 148.5h0M112.5 148.5h0M121.5 148.5h0M130.5 148.5h0M139.5 148.5h0M148.5 148.5h0M157.5 148.5h0M166.5 148.5h0M175.5 148.5h0M301.5 148.5h0M310.5 148.5h0M319.5 148.5h0M328.5 148.5h0M337.5 148.5h0M346.5 148.5h0M355.5 148.5h0M364.5 148.5h0M373.5 148.5h0M382.5 148.5h0M391.5 148.5h0M400.5 148.5h0M409.5 148.5h0M418.5 148.5h0M427.5 148.5h0M436.5 148.5h0M445.5 148.5h0M454.5 148.5h0M463.5 148.5h0M517.5 148.5h0M553.5 148.5h0M670.5 148.5h0M769.5 148.5h0M778.5 148.5h0M787.5 148.5h0M85.5 157.5h0M121.5 157.5h0M130.5 157.5h0M139.5 157.5h0M148.5 157.5h0M157.5 157.5h0M166.5 157.5h0M175.5 157.5h0M184.5 157.5h0M310.5 157.5h0M319.5 157.5h0M328.5 157.5h0M337.5 157.5h0M346.5 157.5h0M355.5 157.5h0M364.5 157.5h0M373.5 157.5h0M382.5 157.5h0M391.5 157.5h0M400.5 157.5h0M409.5 157.5h0M418.5 157.5h0M427.5 157.5h0M436.5 157.5h0M445.5 157.5h0M454.5 157.5h0M517.5 157.5h0M526.5 157.5h0M553.5 157.5h0M562.5 157.5h0M571.5 157.5h0M742.5 157.5h0M751.5 157.5h0M760.5 157.5h0M769.5 157.5h0M778.5 157.5h0M787.5 157.5h0M796.5 157.5h0M805.5 157.5h0M85.5 166.5h0M121.5 166.5h0M130.5 166.5h0M139.5 166.5h0M148.5 166.5h0M157.5 166.5h0M166.5 166.5h0M175.5 166.5h0M184.5 166.5h0M193.5 166.5h0M319.5 166.5h0M328.5 166.5h0M337.5 166.5h0M346.5 166.5h0M355.5 166.5h0M364.5 166.5h0M373.5 166.5h0M382.5 166.5h0M391.5 166.5h0M400.5 166.5h0M409.5 166.5h0M418.5 166.5h0M427.5 166.5h0M436.5 166.5h0M445.5 166.5h0M508.5 166.5h0M517.5 166.5h0M526.5 166.5h0M535.5 166.5h0M544.5 166.5h0M553.5 166.5h0M562.5 166.5h0M580.5 166.5h0M589.5 166.5h0M751.5 166.5h0M760.5 166.5h0M769.5 166.5h0M778.5 166.5h0M787.5 166.5h0M796.5 166.5h0M805.5 166.5h0M130.5 175.5h0M139.5 175.5h0M148.5 175.5h0M157.5 175.5h0M166.5 175.5h0M175.5 175.5h0M184.5 175.5h0M193.5 175.5h0M220.5 175.5h0M229.5 175.5h0M319.5 175.5h0M328.5 175.5h0M337.5 175.5h0M346.5 175.5h0M355.5 175.5h0M364.5 175.5h0M373.5 175.5h0M382.5 175.5h0M391.5 175.5h0M400.5 175.5h0M409.5 175.5h0M418.5 175.5h0M427.5 175.5h0M436.5 175.5h0M445.5 175.5h0M508.5 175.5h0M517.5 175.5h0M526.5 175.5h0M535.5 175.5h0M544.5 175.5h0M553.5 175.5h0M616.5 175.5h0M625.5 175.5h0M634.5 175.5h0M643.5 175.5h0M724.5 175.5h0M769.5 175.5h0M778.5 175.5h0M787.5 175.5h0M796.5 175.5h0M805.5 175.5h0M850.5 175.5h0M859.5 175.5h0M877.5 175.5h0M886.5 175.5h0M895.5 175.5h0M103.5 184.5h0M130.5 184.5h0M139.5 184.5h0M148.5 184.5h0M157.5 184.5h0M166.5 184.5h0M175.5 184.5h0M184.5 184.5h0M193.5 184.5h0M202.5 184.5h0M229.5 184.5h0M319.5 184.5h0M328.5 184.5h0M337.5 184.5h0M346.5 184.5h0M355.5 184.5h0M364.5 184.5h0M373.5 184.5h0M382.5 184.5h0M391.5 184.5h0M400.5 184.5h0M409.5 184.5h0M418.5 184.5h0M427.5 184.5h0M436.5 184.5h0M445.5 184.5h0M508.5 184.5h0M517.5 184.5h0M526.5 184.5h0M535.5 184.5h0M544.5 184.5h0M553.5 184.5h0M805.5 184.5h0M859.5 184.5h0M868.5 184.5h0M877.5 184.5h0M886.5 184.5h0M895.5 184.5h0M904.5 184.5h0M913.5 184.5h0M112.5 193.5h0M139.5 193.5h0M148.5 193.5h0M157.5 193.5h0M166.5 193.5h0M175.5 193.5h0M184.5 193.5h0M193.5 193.5h0M202.5 193.5h0M211.5 193.5h0M220.5 193.5h0M238.5 193.5h0M265.5 193.5h0M274.5 193.5h0M319.5 193.5h0M328.5 193.5h0M337.5 193.5h0M346.5 193.5h0M355.5 193.5h0M364.5 193.5h0M373.5 193.5h0M382.5 193.5h0M391.5 193.5h0M400.5 193.5h0M409.5 193.5h0M418.5 193.5h0M427.5 193.5h0M436.5 193.5h0M499.5 193.5h0M508.5 193.5h0M517.5 193.5h0M526.5 193.5h0M544.5 193.5h0M553.5 193.5h0M787.5 193.5h0M796.5 193.5h0M805.5 193.5h0M814.5 193.5h0M850.5 193.5h0M859.5 193.5h0M868.5 193.5h0M877.5 193.5h0M886.5 193.5h0M895.5 193.5h0M904.5 193.5h0M913.5 193.5h0M922.5 193.5h0M931.5 193.5h0M940.5 193.5h0M949.5 193.5h0M148.5 202.5h0M157.5 202.5h0M166.5 202.5h0M175.5 202.5h0M184.5 202.5h0M193.5 202.5h0M202.5 202.5h0M211.5 202.5h0M220.5 202.5h0M229.5 202.5h0M265.5 202.5h0M274.5 202.5h0M355.5 202.5h0M364.5 202.5h0M373.5 202.5h0M382.5 202.5h0M391.5 202.5h0M400.5 202.5h0M409.5 202.5h0M418.5 202.5h0M427.5 202.5h0M436.5 202.5h0M499.5 202.5h0M508.5 202.5h0M517.5 202.5h0M544.5 202.5h0M553.5 202.5h0M562.5 202.5h0M643.5 202.5h0M652.5 202.5h0M661.5 202.5h0M688.5 202.5h0M697.5 202.5h0M706.5 202.5h0M715.5 202.5h0M724.5 202.5h0M733.5 202.5h0M778.5 202.5h0M787.5 202.5h0M796.5 202.5h0M805.5 202.5h0M814.5 202.5h0M823.5 202.5h0M841.5 202.5h0M850.5 202.5h0M859.5 202.5h0M868.5 202.5h0M877.5 202.5h0M886.5 202.5h0M895.5 202.5h0M904.5 202.5h0M913.5 202.5h0M922.5 202.5h0M931.5 202.5h0M940.5 202.5h0M949.5 202.5h0M157.5 211.5h0M166.5 211.5h0M175.5 211.5h0M184.5 211.5h0M193.5 211.5h0M202.5 211.5h0M211.5 211.5h0M220.5 211.5h0M409.5 211.5h0M418.5 211.5h0M427.5 211.5h0M517.5 211.5h0M526.5 211.5h0M544.5 211.5h0M553.5 211.5h0M562.5 211.5h0M652.5 211.5h0M661.5 211.5h0M688.5 211.5h0M697.5 211.5h0M733.5 211.5h0M787.5 211.5h0M796.5 211.5h0M805.5 211.5h0M814.5 211.5h0M823.5 211.5h0M832.5 211.5h0M841.5 211.5h0M850.5 211.5h0M859.5 211.5h0M868.5 211.5h0M877.5 211.5h0M886.5 211.5h0M895.5 211.5h0M904.5 211.5h0M913.5 211.5h0M922.5 211.5h0M931.5 211.5h0M940.5 211.5h0M949.5 211.5h0M166.5 220.5h0M175.5 220.5h0M184.5 220.5h0M193.5 220.5h0M202.5 220.5h0M211.5 220.5h0M220.5 220.5h0M409.5 220.5h0M517.5 220.5h0M526.5 220.5h0M553.5 220.5h0M562.5 220.5h0M571.5 220.5h0M787.5 220.5h0M823.5 220.5h0M832.5 220.5h0M841.5 220.5h0M850.5 220.5h0M859.5 220.5h0M868.5 220.5h0M877.5 220.5h0M886.5 220.5h0M895.5 220.5h0M904.5 220.5h0M913.5 220.5h0M922.5 220.5h0M931.5 220.5h0M940.5 220.5h0M949.5 220.5h0M175.5 229.5h0M184.5 229.5h0M193.5 229.5h0M202.5 229.5h0M211.5 229.5h0M220.5 229.5h0M517.5 229.5h0M526.5 229.5h0M553.5 229.5h0M562.5 229.5h0M580.5 229.5h0M832.5 229.5h0M841.5 229.5h0M850.5 229.5h0M859.5 229.5h0M868.5 229.5h0M877.5 229.5h0M886.5 229.5h0M895.5 229.5h0M904.5 229.5h0M913.5 229.5h0M922.5 229.5h0M931.5 229.5h0M940.5 229.5h0M949.5 229.5h0M184.5 238.5h0M193.5 238.5h0M202.5 238.5h0M211.5 238.5h0M220.5 238.5h0M517.5 238.5h0M571.5 238.5h0M580.5 238.5h0M868.5 238.5h0M877.5 238.5h0M886.5 238.5h0M895.5 238.5h0M904.5 238.5h0M913.5 238.5h0M922.5 238.5h0M931.5 238.5h0M940.5 238.5h0M949.5 238.5h0M193.5 247.5h0M202.5 247.5h0M211.5 247.5h0M220.5 247.5h0M508.5 247.5h0M517.5 247.5h0M526.5 247.5h0M571.5 247.5h0M580.5 247.5h0M886.5 247.5h0M895.5 247.5h0M904.5 247.5h0M913.5 247.5h0M922.5 247.5h0M931.5 247.5h0M940.5 247.5h0M949.5 247.5h0M202.5 256.5h0M814.5 256.5h0M895.5 256.5h0M904.5 256.5h0M913.5 256.5h0M922.5 256.5h0M931.5 256.5h0M940.5 256.5h0M949.5 256.5h0M229.5 265.5h0M238.5 265.5h0M247.5 265.5h0M256.5 265.5h0M814.5 265.5h0M904.5 265.5h0M913.5 265.5h0M922.5 265.5h0M931.5 265.5h0M940.5 265.5h0M949.5 265.5h0M229.5 274.5h0M238.5 274.5h0M247.5 274.5h0M256.5 274.5h0M265.5 274.5h0M274.5 274.5h0M283.5 274.5h0M328.5 274.5h0M814.5 274.5h0M904.5 274.5h0M913.5 274.5h0M922.5 274.5h0M931.5 274.5h0M940.5 274.5h0M247.5 283.5h0M256.5 283.5h0M265.5 283.5h0M274.5 283.5h0M283.5 283.5h0M292.5 283.5h0M301.5 283.5h0M310.5 283.5h0M319.5 283.5h0M328.5 283.5h0M337.5 283.5h0M346.5 283.5h0M355.5 283.5h0M364.5 283.5h0M373.5 283.5h0M382.5 283.5h0M391.5 283.5h0M904.5 283.5h0M913.5 283.5h0M922.5 283.5h0M931.5 283.5h0M940.5 283.5h0M949.5 283.5h0M265.5 292.5h0M274.5 292.5h0M283.5 292.5h0M292.5 292.5h0M301.5 292.5h0M310.5 292.5h0M319.5 292.5h0M328.5 292.5h0M337.5 292.5h0M346.5 292.5h0M355.5 292.5h0M364.5 292.5h0M751.5 292.5h0M895.5 292.5h0M904.5 292.5h0M913.5 292.5h0M922.5 292.5h0M931.5 292.5h0M940.5 292.5h0M949.5 292.5h0M319.5 301.5h0M328.5 301.5h0M337.5 301.5h0M346.5 301.5h0M355.5 301.5h0M364.5 301.5h0M373.5 301.5h0M382.5 301.5h0M391.5 301.5h0M400.5 301.5h0M751.5 301.5h0M886.5 301.5h0M895.5 301.5h0M904.5 301.5h0M913.5 301.5h0M922.5 301.5h0M931.5 301.5h0M940.5 301.5h0M949.5 301.5h0M364.5 310.5h0M391.5 310.5h0M400.5 310.5h0M409.5 310.5h0M418.5 310.5h0M427.5 310.5h0M445.5 310.5h0M481.5 310.5h0M490.5 310.5h0M526.5 310.5h0M535.5 310.5h0M616.5 310.5h0M886.5 310.5h0M895.5 310.5h0M904.5 310.5h0M940.5 310.5h0M949.5 310.5h0M436.5 319.5h0M445.5 319.5h0M454.5 319.5h0M463.5 319.5h0M472.5 319.5h0M481.5 319.5h0M490.5 319.5h0M517.5 319.5h0M526.5 319.5h0M535.5 319.5h0M544.5 319.5h0M553.5 319.5h0M949.5 319.5h0M616.5 328.5h0M499.5 337.5h0M508.5 337.5h0M517.5 337.5h0M526.5 337.5h0M598.5 337.5h0M607.5 337.5h0M616.5 337.5h0M526.5 346.5h0M535.5 346.5h0M598.5 346.5h0M607.5 346.5h0" fill="none" stroke="#37352f" stroke-opacity="0.22" stroke-width="5" stroke-linecap="round" class="max-sm:[stroke-width:7]"/>
+            </svg>
+            <!-- Penanda dan label Bogor berupa HTML (bukan bagian SVG), supaya ukurannya tetap terbaca di layar kecil.
+                 Label ditaruh di bawah penanda, di atas laut, jadi tidak menutupi daratan. -->
+            <span aria-hidden="true" class="absolute size-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-brand ring-[3px] ring-white" style="left:25.82%;top:72.03%">
+              <span class="absolute inset-0 rounded-full bg-brand animate-ping motion-reduce:animate-none"></span>
+            </span>
+            <span class="absolute whitespace-nowrap rounded-full bg-ink px-3 py-1 text-xs font-semibold text-white shadow-sm sm:text-sm" style="left:calc(25.82% - 16px);top:calc(72.03% + 14px)">📍 SMK Wikrama Bogor</span>
+          </div>
+          <figcaption class="mt-4 text-sm text-muted">Setiap titik adalah daratan Indonesia. Titik hijau: Bogor, tempat AsistenSPMB dimulai.</figcaption>
+        </figure>
+      </div>
     </section>
 
     <!-- Harga -->
@@ -490,7 +534,8 @@
 
     <!-- Ajakan akhir -->
     <section class="px-4 py-28">
-      <div class="mx-auto max-w-6xl rounded-2xl bg-soft px-8 py-16 text-center">
+      <div class="relative isolate mx-auto max-w-6xl overflow-hidden rounded-2xl bg-soft px-8 py-16 text-center">
+        <div aria-hidden="true" class="kawung-accent pointer-events-none absolute inset-0 -z-10"></div>
         <p class="text-4xl" aria-hidden="true">💬</p>
         <h2 class="h2 mx-auto mt-4 max-w-2xl">Biarkan calon murid bertanya <span class="mark">kapan saja</span>.</h2>
         <p class="lead mx-auto mt-4 max-w-xl">Coba demonya, lalu bayangkan tombol yang sama di website sekolahmu.</p>
@@ -500,6 +545,7 @@
         </div>
       </div>
     </section>
+    </div>
   </main>
 
   <footer class="border-t border-line">
@@ -523,6 +569,311 @@
       link.href = `https://wa.me/${KONTAK_WHATSAPP}?text=${encodeURIComponent('Halo, saya tertarik dengan AsistenSPMB untuk sekolah kami.')}`;
       link.hidden = false;
     }
+  </script>
+
+  <!-- Globe latar hero: bumi berputar dari Afrika ke timur, lalu nge-zoom ke Indonesia dan menandai Bogor
+       (SMK Wikrama, sekolah pertama). Peta asli dari world-atlas, digambar dengan d3-geo di <canvas>.
+       Kalau gagal dimuat (misalnya offline), kanvas dihapus dan hero tetap tampil normal. -->
+  <script type="module">
+    import { geoOrthographic, geoPath, geoGraticule10 } from 'https://cdn.jsdelivr.net/npm/d3-geo@3.1.1/+esm';
+    import { feature, mesh } from 'https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/+esm';
+
+    const canvas = document.getElementById('hero-globe');
+    const ctx = canvas.getContext('2d');
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    const ATLAS = 'https://cdn.jsdelivr.net/npm/world-atlas@2.0.2';
+    const INDONESIA_ID = '360'; // kode negara ISO 3166-1 numerik
+    const INDONESIA_CENTER = [118, -2.5]; // [bujur, lintang]
+    const BOGOR = [106.79, -6.59];
+    const START_CENTER = [20, 12]; // mulai dari Afrika, lalu berputar ke timur
+    const INTRO_MS = 5400; // satu gerakan utuh: berputar sambil perlahan mendekat ke Indonesia
+    const FADE_MS = 600; // peralihan halus ke gambar akhir yang tajam
+    // Selama animasi kanvas digambar dengan resolusi lebih rendah supaya tetap mulus di layar Retina.
+    // Gambar akhirnya dibuat tajam, lalu disambung dengan crossfade (tanpa "loncat").
+    const ANIM_DPR = Math.min(window.devicePixelRatio || 1, 1.25);
+    const FINAL_DPR = Math.min(window.devicePixelRatio || 1, 2);
+    const COLORS = {
+      ocean: '#ffffff',
+      graticule: 'rgba(55, 53, 47, 0.06)',
+      land: '#f1f0ee',
+      border: 'rgba(55, 53, 47, 0.1)',
+      indonesia: '#d3f9f0',
+      indonesiaLine: 'rgba(15, 118, 110, 0.4)',
+      outline: 'rgba(55, 53, 47, 0.14)',
+      marker: '#0f766e',
+    };
+
+    const projection = geoOrthographic().clipAngle(90).precision(0.4);
+    const path = geoPath(projection, ctx);
+    const graticule = geoGraticule10();
+
+    let size = { w: 0, h: 0, dpr: 0 };
+    let views = null;
+    let coarse = null; // peta 110m: ringan, dipakai saat animasi
+    let detail = null; // peta 50m: lebih tajam, dipakai untuk gambar akhir
+    let finished = false;
+    let finishRun = 0;
+    let markerShown = false;
+    let base = null; // gambar akhir tanpa titik Bogor, supaya denyutnya tidak menggambar ulang seluruh peta
+    let pulseFrame = 0;
+    let visible = true;
+
+    async function loadAtlas(name) {
+      const response = await fetch(`${ATLAS}/${name}.json`);
+      if (!response.ok) throw new Error(`Peta ${name} gagal dimuat (${response.status})`);
+      const topology = await response.json();
+      const countries = topology.objects.countries;
+      return {
+        land: feature(topology, topology.objects.land),
+        borders: mesh(topology, countries, (a, b) => a !== b),
+        indonesia: feature(topology, countries).features.find((country) => country.id === INDONESIA_ID),
+      };
+    }
+
+    // Mengatur ulang ukuran kanvas menghapus isinya, jadi hanya dilakukan kalau ukuran atau resolusinya berubah
+    // (di HP, event resize juga muncul saat address bar browser muncul atau hilang).
+    function resize(dpr) {
+      const rect = canvas.getBoundingClientRect();
+      if (rect.width === size.w && rect.height === size.h && dpr === size.dpr) return false;
+      size = { w: rect.width, h: rect.height, dpr };
+      canvas.width = Math.round(rect.width * dpr);
+      canvas.height = Math.round(rect.height * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      return true;
+    }
+
+    // Kotak teks dan tombol di hero (koordinat kanvas), supaya titik Bogor tidak jatuh di atas tulisan.
+    function obstacles() {
+      const origin = canvas.getBoundingClientRect();
+      const margin = 10;
+      return [...canvas.parentElement.querySelectorAll('h1, p, a')]
+        .filter((el) => !el.closest('figure'))
+        .map((el) => {
+          const rect = el.getBoundingClientRect();
+          return {
+            left: rect.left - origin.left - margin,
+            right: rect.right - origin.left + margin,
+            top: rect.top - origin.top - margin,
+            bottom: rect.bottom - origin.top + margin,
+          };
+        });
+    }
+
+    // Posisi Indonesia yang dicoba berurutan (batas atas dan bawah, dalam pecahan tinggi kanvas).
+    // Pertama: bagian bawah hero, sejajar tombol (bagus di layar lebar). Lalu pita-pita lain dari atas ke bawah.
+    const BANDS = [[0.32, 0.94]];
+    for (let top = 0; top <= 0.75; top += 0.05) BANDS.push([top, top + 0.25]);
+
+    // Posisi kamera awal (seluruh bumi) dan akhir (zoom ke Indonesia).
+    function computeViews(map) {
+      const facingIndonesia = [-INDONESIA_CENTER[0], -INDONESIA_CENTER[1]];
+      projection.rotate(facingIndonesia);
+      const padX = size.w * 0.05;
+      const blocked = obstacles();
+      const fits = ([top, bottom]) => {
+        projection.fitExtent([[padX, size.h * top], [size.w - padX, size.h * bottom]], map.indonesia);
+        const [x, y] = projection(BOGOR);
+        return !blocked.some((box) => x > box.left && x < box.right && y > box.top && y < box.bottom);
+      };
+      // Pakai posisi pertama yang membuat titik Bogor bebas dari teks; kalau tidak ada, pakai posisi pertama.
+      if (!BANDS.some(fits)) fits(BANDS[0]);
+      return {
+        start: { rotate: [-START_CENTER[0], -START_CENTER[1]], scale: Math.min(size.w, size.h) * 0.42, translate: [size.w / 2, size.h * 0.45] },
+        end: { rotate: facingIndonesia, scale: projection.scale(), translate: projection.translate() },
+      };
+    }
+
+    const clamp01 = (value) => Math.min(Math.max(value, 0), 1);
+    const lerp = (a, b, t) => a + (b - a) * t;
+    const easeInOutSine = (t) => -(Math.cos(Math.PI * t) - 1) / 2;
+
+    // Satu gerakan: putaran berjalan di 0–75% waktu, zoom di 30–100%. Keduanya bertumpuk, jadi tidak ada jeda
+    // "berhenti lalu zoom". Skala dinaikkan secara geometris (berlipat), supaya kecepatan zoom terasa rata.
+    function viewAt(progress) {
+      const { start, end } = views;
+      const turn = easeInOutSine(clamp01(progress / 0.75));
+      const zoom = easeInOutSine(clamp01((progress - 0.3) / 0.7));
+      return {
+        rotate: [lerp(start.rotate[0], end.rotate[0], turn), lerp(start.rotate[1], end.rotate[1], turn)],
+        scale: start.scale * (end.scale / start.scale) ** zoom,
+        translate: [lerp(start.translate[0], end.translate[0], zoom), lerp(start.translate[1], end.translate[1], zoom)],
+      };
+    }
+
+    function shape(geometry, fill, stroke, lineWidth = 1) {
+      ctx.beginPath();
+      path(geometry);
+      if (fill) {
+        ctx.fillStyle = fill;
+        ctx.fill();
+      }
+      if (stroke) {
+        ctx.strokeStyle = stroke;
+        ctx.lineWidth = lineWidth;
+        ctx.stroke();
+      }
+    }
+
+    function draw(map, view) {
+      projection.rotate(view.rotate).scale(view.scale).translate(view.translate);
+      ctx.clearRect(0, 0, size.w, size.h);
+      shape({ type: 'Sphere' }, COLORS.ocean);
+      shape(graticule, null, COLORS.graticule, 0.6);
+      shape(map.land, COLORS.land);
+      shape(map.borders, null, COLORS.border, 0.6);
+      shape(map.indonesia, COLORS.indonesia, COLORS.indonesiaLine, 1);
+      shape({ type: 'Sphere' }, null, COLORS.outline, 1);
+    }
+
+    // Titik Bogor. pulse 0..1 menggambar lingkaran yang membesar dan memudar.
+    function drawMarker(pulse = 0, alpha = 1) {
+      const point = projection(BOGOR);
+      if (!point) return;
+      const [x, y] = point;
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      if (pulse > 0) {
+        ctx.beginPath();
+        ctx.arc(x, y, 6 + pulse * 22, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(15, 118, 110, ${0.3 * (1 - pulse)})`;
+        ctx.fill();
+      }
+      ctx.beginPath();
+      ctx.arc(x, y, 6, 0, Math.PI * 2);
+      ctx.fillStyle = COLORS.marker;
+      ctx.fill();
+      ctx.lineWidth = 2.5;
+      ctx.strokeStyle = '#ffffff';
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // Jalankan step(t) dengan t linear 0..1 setiap frame selama duration.
+    function animate(duration, step) {
+      return new Promise((resolve) => {
+        const startTime = performance.now();
+        const frame = (now) => {
+          const t = Math.min((now - startTime) / duration, 1);
+          step(t);
+          if (t < 1) requestAnimationFrame(frame);
+          else resolve();
+        };
+        requestAnimationFrame(frame);
+      });
+    }
+
+    function snapshot() {
+      const copy = document.createElement('canvas');
+      copy.width = canvas.width;
+      copy.height = canvas.height;
+      copy.getContext('2d').drawImage(canvas, 0, 0);
+      return copy;
+    }
+
+    // Tempel gambar (salinan kanvas) memenuhi kanvas, berapa pun resolusi asalnya.
+    function paint(image, alpha = 1) {
+      ctx.save();
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.globalAlpha = alpha;
+      ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+      ctx.restore();
+    }
+
+    function clear() {
+      ctx.save();
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.restore();
+    }
+
+    // Gambar akhir yang tajam (peta detail, resolusi penuh), disambung dari gambar sebelumnya dengan crossfade.
+    async function finish() {
+      const run = ++finishRun;
+      finished = true;
+      cancelAnimationFrame(pulseFrame);
+      const previous = size.w > 0 ? snapshot() : null;
+      resize(FINAL_DPR);
+      const map = detail || coarse;
+      views = computeViews(map);
+      draw(map, views.end);
+      base = snapshot();
+
+      if (previous && !reduceMotion) {
+        const wasShown = markerShown;
+        await animate(FADE_MS, (t) => {
+          if (run !== finishRun) return;
+          const eased = easeInOutSine(t);
+          clear();
+          paint(base);
+          paint(previous, 1 - eased);
+          drawMarker(0, wasShown ? 1 : eased);
+        });
+        if (run !== finishRun) return;
+      }
+
+      clear();
+      paint(base);
+      drawMarker();
+      markerShown = true;
+      if (!reduceMotion) startPulse();
+    }
+
+    function startPulse() {
+      cancelAnimationFrame(pulseFrame);
+      const loop = (now) => {
+        if (visible && base) {
+          clear();
+          paint(base);
+          drawMarker((now % 1800) / 1800);
+        }
+        pulseFrame = requestAnimationFrame(loop);
+      };
+      pulseFrame = requestAnimationFrame(loop);
+    }
+
+    async function start() {
+      resize(reduceMotion ? FINAL_DPR : ANIM_DPR);
+      coarse = await loadAtlas('countries-110m');
+      const detailReady = loadAtlas('countries-50m')
+        .then((map) => {
+          detail = map;
+          if (finished) finish(); // ganti ke peta tajam begitu selesai diunduh
+        })
+        .catch((error) => console.warn(error));
+
+      if (reduceMotion) {
+        // Pengguna yang mematikan animasi langsung melihat Indonesia, tanpa putaran dan denyut.
+        await detailReady;
+        finish();
+        return;
+      }
+
+      views = computeViews(coarse);
+      await animate(INTRO_MS, (progress) => draw(coarse, viewAt(progress)));
+      await finish();
+    }
+
+    new IntersectionObserver(([entry]) => {
+      visible = entry.isIntersecting;
+    }).observe(canvas);
+
+    let resizeTimer = null;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        if (!coarse) return;
+        const rect = canvas.getBoundingClientRect();
+        if (rect.width === size.w && rect.height === size.h) return;
+        if (finished) finish();
+        else if (resize(ANIM_DPR)) views = computeViews(coarse);
+      }, 150);
+    });
+
+    start().catch((error) => {
+      console.warn('Globe latar tidak bisa dimuat:', error);
+      canvas.remove();
+    });
   </script>
 </body>
 </html>
