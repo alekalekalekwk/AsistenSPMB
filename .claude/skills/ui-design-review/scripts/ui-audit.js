@@ -144,6 +144,9 @@
     for (const child of el.children) {
       const childStyle = getComputedStyle(child);
       if (!isVisible(child) || childStyle.position === 'absolute' || childStyle.position === 'fixed') continue;
+      // Anak yang sengaja digeser atau dimiringkan (parallax, animasi melayang) bukan isi yang meluber.
+      const moved = [childStyle.transform, childStyle.translate, childStyle.rotate, childStyle.scale].some((value) => value && value !== 'none');
+      if (moved) continue;
       worst = Math.max(worst, child.getBoundingClientRect().bottom - bottom);
     }
     if (worst > 2) verticalSpills.push(`${describe(el)} → isinya keluar ${Math.round(worst)}px ke bawah`);
