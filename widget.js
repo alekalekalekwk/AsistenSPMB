@@ -42,7 +42,25 @@
   ];
   const DEFAULT_VOICE = 'flux-fitri-id';
   // Hanya suara dari daftar di atas yang dipakai; nilai lain (misalnya data lama) kembali ke suara bawaan.
-  const speakUrl = (voice) => `https://api.deepgram.com/v2/speak?model=${VOICES.some((v) => v.id === voice) ? voice : DEFAULT_VOICE}&encoding=mp3`;
+  // Ekspresi suara (parameter expressivity, masih beta): -2 tenang sampai 2 hidup, bilangan bulat. 0 adalah setelan standar Deepgram.
+  // Makin jauh dari 0, makin besar risiko kata hilang, terulang, atau salah ucap.
+  const EXPRESSIVITY = [
+    { value: -2, name: 'Sangat tenang' },
+    { value: -1, name: 'Tenang' },
+    { value: 0, name: 'Standar' },
+    { value: 1, name: 'Lebih hidup' },
+    { value: 2, name: 'Paling hidup' },
+  ];
+  // Bawaan Sigi: Lebih hidup, dipilih setelah suara-suaranya dibandingkan langsung. Di 0 Fitri terdengar kaku.
+  const DEFAULT_EXPRESSIVITY = 1;
+  // Nilai kosong atau di luar daftar (misalnya data lama) kembali ke bawaan, karena Deepgram menolak nilai yang tidak sah.
+  const cleanExpressivity = (value) => EXPRESSIVITY.find((item) => String(item.value) === String(value))?.value ?? DEFAULT_EXPRESSIVITY;
+  const speakUrl = (voice, expressivity) => {
+    const params = new URLSearchParams({ model: VOICES.some((v) => v.id === voice) ? voice : DEFAULT_VOICE, encoding: 'mp3' });
+    const level = cleanExpressivity(expressivity);
+    if (level !== 0) params.set('expressivity', String(level)); // 0 sama dengan tidak dikirim
+    return `https://api.deepgram.com/v2/speak?${params}`;
+  };
   // Deepgram menutup koneksi yang 10 detik tidak menerima apa pun. Saat rekaman dijeda (Sigi berpikir
   // atau bicara), tidak ada audio yang terkirim, jadi kita kirim KeepAlive lebih sering dari itu.
   const KEEP_ALIVE_MS = 5000;
@@ -88,6 +106,7 @@
       greeting: config.greeting || `Halo! Aku Asisten SPMB ${schoolName}. Ada yang bisa dibantu?`,
       suggestions: config.suggestions || [],
       voice: config.voice || DEFAULT_VOICE, // suara Sigi di telepon, bisa diganti di dashboard
+      expressivity: cleanExpressivity(config.expressivity), // ekspresi suara telepon, bisa diganti di dashboard
       pages,
       documents: [], // { id, name, size, pages, text, addedAt }
       updatedAt: null,
@@ -1123,10 +1142,10 @@
   }
 
   // Meminta suara dari Deepgram. signal dipakai endCall untuk membatalkan unduhan yang belum selesai.
-  async function requestSpeech(apiKey, text, signal, voice) {
+  async function requestSpeech(apiKey, text, signal, voice, expressivity) {
     let response;
     try {
-      response = await fetch(speakUrl(voice), {
+      response = await fetch(speakUrl(voice, expressivity), {
         method: 'POST',
         headers: {
           Authorization: `Token ${apiKey}`,
@@ -1238,7 +1257,7 @@
       if (!blob) return;
       audio = audioFromBlob(blob);
     } else {
-      const response = await requestSpeech(c.deepgramKey, text, c.controller?.signal, c.voice);
+      const response = await requestSpeech(c.deepgramKey, text, c.controller?.signal, c.voice, c.expressivity);
       if (!isLive(c)) return;
       audio = await createAgentAudio(response);
     }
@@ -1266,7 +1285,7 @@
   // Kalau ada yang gagal, kalimat itu dilewati saja: panggilan tetap jalan tanpa kalimat jeda.
   function preloadLines(c) {
     for (const line of [...CHECKING_LINES, STILL_CHECKING_LINE]) {
-      requestSpeech(c.deepgramKey, line, c.controller.signal, c.voice)
+      requestSpeech(c.deepgramKey, line, c.controller.signal, c.voice, c.expressivity)
         .then((response) => response.blob())
         .then((blob) => {
           if (isLive(c)) c.lineAudio.set(line, blob);
@@ -1428,7 +1447,7 @@
     // Key disalin ke objek call, supaya panggilan tetap memakai key yang dipakai saat mulai.
     call = {
       controller: new AbortController(), urls: new Set(), lineAudio: new Map(), finalText: '', interimText: '', turnEnded: false,
-      netraKey: state.apiKey, deepgramKey: state.deepgramKey, voice: school.voice,
+      netraKey: state.apiKey, deepgramKey: state.deepgramKey, voice: school.voice, expressivity: school.expressivity,
     };
     const c = call;
     state.error = '';
@@ -1563,7 +1582,7 @@
     },
     refresh,
     // Dipakai dashboard untuk membaca dan menyimpan data sekolah.
-    data: { key: STORAGE_KEY, voices: VOICES, defaults, load, save, reset, compileContext, systemPrompt: buildSystemPrompt, maxContextChars: MAX_CONTEXT_CHARS },
+    data: { key: STORAGE_KEY, voices: VOICES, expressivities: EXPRESSIVITY, defaults, load, save, reset, compileContext, systemPrompt: buildSystemPrompt, maxContextChars: MAX_CONTEXT_CHARS },
   };
   window.AsistenSPMBWidget = window.SigiWidget; // nama lama, tetap bisa dipakai
 })();

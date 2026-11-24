@@ -140,6 +140,15 @@
               <button id="btn-voice-preview" type="button" class="btn">Dengarkan</button>
             </div>
             <p id="voice-hint" class="hint mt-2">Suara Bahasa Indonesia dari Deepgram, masih Early Access. Dengarkan memakai key Deepgram dan memotong saldo sedikit. Suara baru dipakai mulai panggilan berikutnya.</p>
+            <label for="expressivity" class="field-label mt-4 block">Ekspresi suara</label>
+            <select id="expressivity" aria-describedby="expressivity-hint" class="field mt-2">
+                <option value="-2">Sangat tenang</option>
+                <option value="-1">Tenang</option>
+                <option value="0">Standar</option>
+                <option value="1" selected>Lebih hidup</option>
+                <option value="2">Paling hidup</option>
+            </select>
+            <p id="expressivity-hint" class="hint mt-2">Fitur beta Deepgram. Makin jauh dari Standar, makin besar kemungkinan ada kata yang hilang atau salah ucap, jadi dengarkan dulu.</p>
             <p id="voice-preview-status" role="status" class="hint mt-1 font-semibold text-navy"></p>
           </div>
 
@@ -557,7 +566,25 @@ const VOICES = [
 ];
 const DEFAULT_VOICE = 'flux-fitri-id';
 // Hanya suara dari daftar di atas yang dipakai; nilai lain (misalnya data lama) kembali ke suara bawaan.
-const speakUrl = (voice) => `https://api.deepgram.com/v2/speak?model=${VOICES.some((v) => v.id === voice) ? voice : DEFAULT_VOICE}&encoding=mp3`;
+// Ekspresi suara (parameter expressivity, masih beta): -2 tenang sampai 2 hidup, bilangan bulat. 0 adalah setelan standar Deepgram.
+// Makin jauh dari 0, makin besar risiko kata hilang, terulang, atau salah ucap.
+const EXPRESSIVITY = [
+  { value: -2, name: 'Sangat tenang' },
+  { value: -1, name: 'Tenang' },
+  { value: 0, name: 'Standar' },
+  { value: 1, name: 'Lebih hidup' },
+  { value: 2, name: 'Paling hidup' },
+];
+// Bawaan Sigi: Lebih hidup, dipilih setelah suara-suaranya dibandingkan langsung. Di 0 Fitri terdengar kaku.
+const DEFAULT_EXPRESSIVITY = 1;
+// Nilai kosong atau di luar daftar (misalnya data lama) kembali ke bawaan, karena Deepgram menolak nilai yang tidak sah.
+const cleanExpressivity = (value) => EXPRESSIVITY.find((item) => String(item.value) === String(value))?.value ?? DEFAULT_EXPRESSIVITY;
+const speakUrl = (voice, expressivity) => {
+  const params = new URLSearchParams({ model: VOICES.some((v) => v.id === voice) ? voice : DEFAULT_VOICE, encoding: 'mp3' });
+  const level = cleanExpressivity(expressivity);
+  if (level !== 0) params.set('expressivity', String(level)); // 0 sama dengan tidak dikirim
+  return `https://api.deepgram.com/v2/speak?${params}`;
+};
 
 // Deepgram menutup koneksi yang 10 detik tidak menerima apa pun, misalnya saat rekaman dijeda selama agent bicara.
 const KEEP_ALIVE_MS = 5000;
@@ -617,6 +644,7 @@ const el = {
   toggleKey: document.getElementById('btn-toggle-key'),
   deepgramKey: document.getElementById('deepgram-key'),
   voice: document.getElementById('voice'),
+  expressivity: document.getElementById('expressivity'),
   voicePreview: document.getElementById('btn-voice-preview'),
   voicePreviewStatus: document.getElementById('voice-preview-status'),
   toggleDeepgramKey: document.getElementById('btn-toggle-deepgram-key'),
@@ -1566,10 +1594,10 @@ function describeSpeechError(status) {
 }
 
 // signal dipakai endCall untuk membatalkan unduhan suara yang masih berjalan.
-async function requestSpeech(apiKey, text, signal, voice) {
+async function requestSpeech(apiKey, text, signal, voice, expressivity) {
   let response;
   try {
-    response = await fetch(speakUrl(voice), {
+    response = await fetch(speakUrl(voice, expressivity), {
       method: 'POST',
       headers: {
         Authorization: `Token ${apiKey}`,
@@ -1649,7 +1677,7 @@ async function speak(text, fromCache, session) {
     if (!blob) return;
     audio = new Audio(URL.createObjectURL(blob));
   } else {
-    const response = await requestSpeech(session.deepgramKey, text, session.abort.signal, session.voice);
+    const response = await requestSpeech(session.deepgramKey, text, session.abort.signal, session.voice, session.expressivity);
     if (!isLive(session)) return;
     audio = await createAgentAudio(response);
   }
@@ -1690,7 +1718,7 @@ async function agentSays(text, session) {
 async function preloadLines(session) {
   await Promise.all([...CHECKING_LINES, STILL_CHECKING_LINE].map(async (line) => {
     try {
-      const response = await requestSpeech(session.deepgramKey, line, session.abort.signal, session.voice);
+      const response = await requestSpeech(session.deepgramKey, line, session.abort.signal, session.voice, session.expressivity);
       const blob = await response.blob();
       if (isLive(session)) session.lineAudio.set(line, blob);
     } catch (error) {
@@ -1844,6 +1872,7 @@ async function startCall() {
     deepgramKey,
     model: el.model.value.trim() || DEFAULT_MODEL,
     voice: el.voice.value,
+    expressivity: el.expressivity.value,
     finalText: '',
     interimText: '',
     turnEnded: false,
@@ -2021,7 +2050,7 @@ el.voicePreview.addEventListener('click', async () => {
   el.voicePreview.disabled = true;
   el.voicePreviewStatus.textContent = `Memuat suara ${voice.name}...`;
   try {
-    const response = await requestSpeech(apiKey, PREVIEW_TEXT, undefined, voice.id);
+    const response = await requestSpeech(apiKey, PREVIEW_TEXT, undefined, voice.id, el.expressivity.value);
     const url = URL.createObjectURL(await response.blob());
     previewAudio?.pause();
     previewAudio = new Audio(url);
