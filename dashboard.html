@@ -101,8 +101,8 @@
 
   <!-- Data sekolah dan widget. Widget di pojok kanan bawah dipakai untuk menguji chatbot dengan isi dashboard terbaru. -->
   <!-- ?v=… memaksa browser mengambil versi terbaru, bukan salinan lama dari cache. Naikkan angkanya setiap kali widget.js atau sekolah/wikrama.js diubah. -->
-  <script src="sekolah/wikrama.js?v=20261119-2"></script>
-  <script src="widget.js?v=20261119-2"></script>
+  <script src="sekolah/wikrama.js?v=20261124"></script>
+  <script src="widget.js?v=20261124"></script>
   <script>
 'use strict';
 
@@ -733,6 +733,20 @@ function renderLook() {
     school.voice = voiceSelect.value;
     persist();
   });
+  // Ekspresi suara: seberapa hidup cara Sigi bicara.
+  const expressivitySelect = make('select', 'field');
+  expressivitySelect.id = 'look-expressivity';
+  for (const item of api.data.expressivities) {
+    const option = make('option', '', item.name);
+    option.value = String(item.value);
+    expressivitySelect.append(option);
+  }
+  expressivitySelect.value = String(school.expressivity);
+  expressivitySelect.addEventListener('change', () => {
+    school.expressivity = Number(expressivitySelect.value);
+    persist();
+  });
+  const expressivityHint = make('p', 'mt-1.5 text-xs text-muted', 'Fitur beta Deepgram. Makin jauh dari Standar, makin besar kemungkinan ada kata yang hilang atau salah ucap. Dengarkan dulu di playground.');
   const voiceHint = make('p', 'mt-1.5 text-xs text-muted', 'Dipakai saat calon murid menelepon Sigi. Suara Bahasa Indonesia dari Deepgram, masih Early Access. Coba bandingkan suaranya di playground.');
 
   const resetLook = button('Kembalikan tampilan bawaan', 'btn', () => {
@@ -741,6 +755,7 @@ function renderLook() {
     school.colors = base.colors;
     school.greeting = base.greeting;
     school.voice = base.voice;
+    school.expressivity = base.expressivity;
     school.suggestions = base.suggestions;
     persist({ now: true });
     renderSidebar();
@@ -753,6 +768,7 @@ function renderLook() {
     colorRow('look-accent', 'accent'),
     field('Sapaan pembuka', greeting),
     field('Suara telepon', voiceSelect, voiceHint),
+    field('Ekspresi suara', expressivitySelect, expressivityHint),
     suggestionField,
     resetLook,
   );
