@@ -1,0 +1,5 @@
+.env*
+.claude
+.git
+server.mjs
+konteks-wikrama.txt
