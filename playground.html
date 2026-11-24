@@ -81,6 +81,12 @@
         </div>
 
         <div class="flex-1 space-y-6 p-5 lg:overflow-y-auto">
+          <!-- Tampil hanya kalau halaman dibuka lewat server.mjs dan .env sudah diisi; kolom key di bawahnya disembunyikan. -->
+          <div id="server-key-note" hidden>
+            <p class="field-label">API key Netra</p>
+            <p class="hint mt-2">Dibaca dari file <code class="font-mono text-navy">.env</code> oleh server lokal. Key tidak dikirim ke browser.</p>
+          </div>
+
           <div id="api-key-group">
             <div class="flex items-baseline justify-between gap-2">
               <label for="api-key" class="field-label">API key Netra <span class="text-red-600" aria-hidden="true">*</span></label>
@@ -104,6 +110,11 @@
           </div>
 
           <!-- Tingkat 3 dan 4: key Deepgram untuk tombol mic dan Telepon. Sama seperti key Netra, tidak disimpan di mana pun. -->
+          <div id="server-deepgram-note" class="border-t border-slate-200 pt-6" hidden>
+            <p class="field-label">API key Deepgram</p>
+            <p class="hint mt-2">Dibaca dari file <code class="font-mono text-navy">.env</code> oleh server lokal, untuk mic dan telepon.</p>
+          </div>
+
           <div id="deepgram-key-group" class="border-t border-slate-200 pt-6">
             <div class="flex items-baseline justify-between gap-2">
               <label for="deepgram-key" class="field-label">API key Deepgram</label>
@@ -579,6 +590,10 @@ const EXPRESSIVITY = [
 const DEFAULT_EXPRESSIVITY = 1;
 // Nilai kosong atau di luar daftar (misalnya data lama) kembali ke bawaan, karena Deepgram menolak nilai yang tidak sah.
 const cleanExpressivity = (value) => EXPRESSIVITY.find((item) => String(item.value) === String(value))?.value ?? DEFAULT_EXPRESSIVITY;
+const speakOptions = (voice, expressivity) => ({
+  model: VOICES.some((v) => v.id === voice) ? voice : DEFAULT_VOICE,
+  expressivity: cleanExpressivity(expressivity),
+});
 const speakUrl = (voice, expressivity) => {
   const params = new URLSearchParams({ model: VOICES.some((v) => v.id === voice) ? voice : DEFAULT_VOICE, encoding: 'mp3' });
   const level = cleanExpressivity(expressivity);
@@ -623,6 +638,8 @@ const SAMPLE_QUESTIONS = ['Cara daftarnya gimana?', 'Ada beasiswa nggak?', 'Juru
 // Semua data aplikasi ada di sini. Tampilan selalu digambar ulang dari state ini.
 const state = {
   documents: [], // { name, size, pages, text }
+  serverKey: false, // true kalau server lokal punya key Netra dari .env
+  serverDeepgramKey: false, // sama, untuk key Deepgram
   history: [], // { role: 'user' | 'assistant', content, time, latencyMs?, tokens?, source?, filler? }
   isSending: false,
   error: '',
@@ -641,6 +658,10 @@ let call = null;
 
 const el = {
   apiKey: document.getElementById('api-key'),
+  apiKeyGroup: document.getElementById('api-key-group'),
+  deepgramKeyGroup: document.getElementById('deepgram-key-group'),
+  serverDeepgramNote: document.getElementById('server-deepgram-note'),
+  serverKeyNote: document.getElementById('server-key-note'),
   toggleKey: document.getElementById('btn-toggle-key'),
   deepgramKey: document.getElementById('deepgram-key'),
   voice: document.getElementById('voice'),
@@ -722,24 +743,56 @@ function historyForApi() {
 
 /* Memanggil API Netra */
 
+// Key yang diketik di Pengaturan dipakai lebih dulu, lalu key dari .env kalau ada.
+const netraKey = () => el.apiKey.value.trim() || (state.serverKey ? SERVER_KEY : '');
+const deepgramKey = () => el.deepgramKey.value.trim() || (state.serverDeepgramKey ? SERVER_KEY : '');
+
+// Penanda "pakai key dari server lokal". Symbol, jadi tidak mungkin terkirim sebagai key sungguhan.
+const SERVER_KEY = Symbol('key dari .env');
+const LOCAL_CHAT_URL = '/api/chat';
+const LOCAL_SERVER_DOWN = 'Server lokal Sigi tidak jalan. Nyalakan lagi dengan: node server.mjs';
+
+// Hanya di server lokal (server.mjs). Di GitHub Pages atau website sekolah, key tetap diketik di halaman.
+async function serverKeys() {
+  if (location.protocol !== 'http:' || !['localhost', '127.0.0.1'].includes(location.hostname)) return {};
+  try {
+    const response = await fetch('/api/status', { cache: 'no-store' });
+    return response.ok ? await response.json() : {};
+  } catch {
+    return {};
+  }
+}
+
 function describeApiError(status, data) {
-  const detail = data?.error?.message;
-  if (status === 401 || status === 403) return 'API key ditolak. Periksa lagi API key Anda.';
-  if (status === 402) return 'Saldo atau kuota API habis.';
-  if (status === 429) return 'Terlalu banyak permintaan. Tunggu sebentar, lalu kirim lagi.';
-  if (status >= 500) return 'Server Netra sedang bermasalah. Coba lagi beberapa saat lagi.';
-  return `Permintaan gagal (kode ${status})${detail ? `: ${detail}` : '.'}`;
+  const code = data?.error?.code;
+  const found = [data?.error?.message, data?.error, data?.message, data?.detail].find((item) => typeof item === 'string' && item);
+  const message = (found ?? '').slice(0, 200);
+  // Error dari server lokal (server.mjs), bukan dari Netra.
+  if (code === 'SIGI_NO_KEY' || code === 'SIGI_BAD_KEY') return `${message} Perbaiki file .env, lalu kirim lagi.`;
+  if (code === 'SIGI_NETRA_TIMEOUT') return 'Netra terlalu lama menjawab. Coba kirim lagi.';
+  if (code === 'SIGI_NETRA_UNREACHABLE') return `Tidak bisa terhubung ke server Netra (${message}). Periksa koneksi internet.`;
+  if (typeof code === 'string' && code.startsWith('SIGI_')) return `Server lokal Sigi menolak permintaan: ${message}`;
+  // Kode dan pesan asli Netra ikut ditampilkan, supaya penyebabnya bisa dilacak.
+  const info = `(kode ${status}${message ? `: ${message}` : ''})`;
+  if (status === 403 && (data === null || code === 'NETRA_BLOCKED')) return `Permintaan diblokir sebelum sampai ke Netra ${info}. API key-nya belum tentu bermasalah.`;
+  if (status === 401 || status === 403) return `API key ditolak ${info}. Periksa lagi API key Anda${code === 'NETRA' ? ' di file .env' : ''}.`;
+  if (status === 402) return `Saldo atau kuota API habis ${info}.`;
+  if (status === 429) return `Terlalu banyak permintaan ${info}. Tunggu sebentar, lalu kirim lagi.`;
+  if (status >= 500) return `Server Netra sedang bermasalah ${info}. Coba lagi beberapa saat lagi.`;
+  return `Permintaan gagal ${info}.`;
 }
 
 // signal hanya dipakai telepon: endCall membatalkan permintaan yang jawabannya tidak akan dibacakan lagi.
 async function askAgent(apiKey, model, messages, signal) {
   let response;
   try {
-    response = await fetch(API_URL, {
+    // Key dari .env: server lokal yang menambahkan key-nya, jadi browser tidak pernah memegangnya.
+    const viaServer = apiKey === SERVER_KEY;
+    response = await fetch(viaServer ? LOCAL_CHAT_URL : API_URL, {
       signal,
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${apiKey}`,
+        ...(viaServer ? {} : { Authorization: `Bearer ${apiKey}` }),
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -751,7 +804,9 @@ async function askAgent(apiKey, model, messages, signal) {
       }),
     });
   } catch {
-    throw new Error('Tidak bisa terhubung ke server Netra. Periksa koneksi internet.');
+    throw new Error(apiKey === SERVER_KEY
+      ? LOCAL_SERVER_DOWN
+      : 'Tidak bisa terhubung ke server Netra. Periksa koneksi internet.');
   }
 
   const data = await response.json().catch(() => null);
@@ -1211,7 +1266,7 @@ function createEmptyState() {
   box.append(
     badge,
     make('p', 'mt-4 text-lg font-bold', 'Belum ada percakapan'),
-    make('p', 'mt-1 text-sm leading-relaxed text-slate-600', 'Isi API key di panel Pengaturan, lalu ketik atau ucapkan pertanyaan seolah-olah kamu calon murid atau orang tua. Bisa juga tekan Telepon untuk mengobrol langsung.'),
+    make('p', 'mt-1 text-sm leading-relaxed text-slate-600', `${state.serverKey ? 'Ketik' : 'Isi API key di panel Pengaturan, lalu ketik'} atau ucapkan pertanyaan seolah-olah kamu calon murid atau orang tua. Bisa juga tekan Telepon untuk mengobrol langsung.`),
     make('p', 'meta mt-6', 'Coba tanya:'),
     samples,
   );
@@ -1340,13 +1395,24 @@ async function getMicrophone() {
   }
 }
 
-function openDeepgramSocket(apiKey) {
+// signal: widget ditutup atau panggilan diakhiri selagi menyambung.
+function openDeepgramSocket(apiKey, signal) {
   return new Promise((resolve, reject) => {
-    // Browser tidak bisa menambah header Authorization ke WebSocket, jadi API key dikirim lewat subprotocol.
-    const socket = new WebSocket(DEEPGRAM_LIVE_URL, ['token', apiKey]);
+    // Key dari .env: lewat server lokal yang menambahkan key-nya. Selain itu key dikirim lewat subprotocol,
+    // karena browser tidak bisa menambah header Authorization ke WebSocket.
+    const viaServer = apiKey === SERVER_KEY;
+    const socket = viaServer
+      ? new WebSocket(`ws://${location.host}/api/listen${new URL(DEEPGRAM_LIVE_URL).search}`)
+      : new WebSocket(DEEPGRAM_LIVE_URL, ['token', apiKey]);
+    signal?.addEventListener('abort', () => {
+      reject(new Error('Dibatalkan.')); // tidak berpengaruh kalau sudah tersambung
+      if (socket.readyState === WebSocket.CONNECTING) socket.close();
+    }, { once: true });
     socket.addEventListener('open', () => resolve(socket));
     socket.addEventListener('error', () => {
-      reject(new Error('Gagal tersambung ke Deepgram. Periksa API key Deepgram dan koneksi internet.'));
+      reject(new Error(viaServer
+        ? 'Gagal tersambung ke Deepgram. Pastikan server lokal jalan, lalu lihat penyebabnya di Terminal server.'
+        : 'Gagal tersambung ke Deepgram. Periksa API key Deepgram dan koneksi internet.'));
     });
   });
 }
@@ -1448,7 +1514,7 @@ async function handleMicClick() {
   }
   if (state.voiceStatus !== 'idle' || state.isSending || state.callStatus !== 'off') return;
 
-  const apiKey = el.deepgramKey.value.trim();
+  const apiKey = deepgramKey();
   if (!apiKey) {
     showError('Isi API key Deepgram dulu di panel Pengaturan untuk bertanya lewat suara.');
     el.deepgramKey.focus();
@@ -1482,7 +1548,7 @@ async function handleSubmit(event) {
   if (state.isSending || state.voiceStatus !== 'idle' || state.callStatus !== 'off') return;
 
   const question = el.chatInput.value.trim();
-  const apiKey = el.apiKey.value.trim();
+  const apiKey = netraKey();
   const model = el.model.value.trim() || DEFAULT_MODEL;
 
   if (!question) {
@@ -1586,30 +1652,38 @@ function setCallStatus(status) {
 
 /* Text to speech Deepgram */
 
-function describeSpeechError(status) {
-  if (status === 401 || status === 403) return 'API key Deepgram ditolak. Periksa lagi API key Deepgram.';
-  if (status === 402) return 'Saldo Deepgram habis.';
-  if (status === 429) return 'Terlalu banyak permintaan ke Deepgram. Tunggu sebentar.';
-  return `Suara agent gagal dibuat (kode ${status}).`;
+function describeSpeechError(status, data) {
+  const code = data?.error?.code;
+  const message = typeof data?.error?.message === 'string' ? data.error.message.slice(0, 200) : '';
+  // Error dari server lokal (server.mjs), bukan dari Deepgram.
+  if (code === 'SIGI_NO_KEY' || code === 'SIGI_BAD_KEY') return `${message} Perbaiki file .env, lalu coba lagi.`;
+  if (code === 'SIGI_DEEPGRAM_UNREACHABLE') return `Tidak bisa terhubung ke Deepgram (${message}). Periksa koneksi internet.`;
+  if (typeof code === 'string' && code.startsWith('SIGI_')) return `Server lokal Sigi menolak permintaan: ${message}`;
+  const info = `(kode ${status}${message ? `: ${message}` : ''})`;
+  if (status === 401 || status === 403) return `API key Deepgram ditolak ${info}. ${code === 'DEEPGRAM' ? 'Periksa key-nya di file .env.' : 'Periksa lagi API key Deepgram.'}`;
+  if (status === 402) return `Saldo Deepgram habis ${info}.`;
+  if (status === 429) return `Terlalu banyak permintaan ke Deepgram ${info}. Tunggu sebentar.`;
+  return `Suara agent gagal dibuat ${info}.`;
 }
 
 // signal dipakai endCall untuk membatalkan unduhan suara yang masih berjalan.
 async function requestSpeech(apiKey, text, signal, voice, expressivity) {
   let response;
   try {
-    response = await fetch(speakUrl(voice, expressivity), {
+    const viaServer = apiKey === SERVER_KEY;
+    response = await fetch(viaServer ? '/api/speak' : speakUrl(voice, expressivity), {
       method: 'POST',
       headers: {
-        Authorization: `Token ${apiKey}`,
+        ...(viaServer ? {} : { Authorization: `Token ${apiKey}` }),
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ text }),
+      body: JSON.stringify(viaServer ? { text, ...speakOptions(voice, expressivity) } : { text }),
       signal,
     });
   } catch {
-    throw new Error('Tidak bisa terhubung ke Deepgram. Periksa koneksi internet.');
+    throw new Error(apiKey === SERVER_KEY ? LOCAL_SERVER_DOWN : 'Tidak bisa terhubung ke Deepgram. Periksa koneksi internet.');
   }
-  if (!response.ok) throw new Error(describeSpeechError(response.status));
+  if (!response.ok) throw new Error(describeSpeechError(response.status, apiKey === SERVER_KEY ? await response.json().catch(() => null) : null));
   return response;
 }
 
@@ -1852,14 +1926,14 @@ async function answerCustomer(question) {
 async function startCall() {
   if (state.callStatus !== 'off' || state.isSending || state.voiceStatus !== 'idle') return;
 
-  const netraKey = el.apiKey.value.trim();
-  const deepgramKey = el.deepgramKey.value.trim();
-  if (!netraKey) {
+  const apiKey = netraKey();
+  const speechKey = deepgramKey();
+  if (!apiKey) {
     showError('Isi API key Netra dulu di panel Pengaturan.');
     el.apiKey.focus();
     return;
   }
-  if (!deepgramKey) {
+  if (!speechKey) {
     showError('Isi API key Deepgram dulu di panel Pengaturan untuk menelepon.');
     el.deepgramKey.focus();
     return;
@@ -1868,8 +1942,8 @@ async function startCall() {
   state.error = '';
   // Key dan model dibaca sekali di awal, supaya mengubah kolom Pengaturan tidak mengganggu panggilan yang berjalan.
   const session = {
-    netraKey,
-    deepgramKey,
+    netraKey: apiKey,
+    deepgramKey: speechKey,
     model: el.model.value.trim() || DEFAULT_MODEL,
     voice: el.voice.value,
     expressivity: el.expressivity.value,
@@ -1896,7 +1970,7 @@ async function startCall() {
     // Kalau calon murid menekan Akhiri panggilan selagi menunggu izin mikrofon, mikrofonnya langsung dimatikan lagi.
     if (!isLive(session)) return endCall('', session);
     // Kalau socket gagal dibuka, endCall di catch mematikan track mikrofon yang sudah terbuka.
-    session.socket = await openDeepgramSocket(deepgramKey);
+    session.socket = await openDeepgramSocket(speechKey, session.abort.signal);
     if (!isLive(session)) return endCall('', session);
 
     session.socket.addEventListener('message', handleCallMessage);
@@ -2039,7 +2113,7 @@ const PREVIEW_TEXT = 'Halo, saya Sigi, asisten SPMB SMK Wikrama Bogor. Nah, ada 
 let previewAudio = null;
 
 el.voicePreview.addEventListener('click', async () => {
-  const apiKey = el.deepgramKey.value.trim();
+  const apiKey = deepgramKey();
   if (!apiKey) {
     el.voicePreviewStatus.textContent = 'Isi API key Deepgram dulu untuk mendengarkan contoh suara.';
     el.deepgramKey.focus();
@@ -2069,6 +2143,27 @@ el.voicePreview.addEventListener('click', async () => {
 renderContextInfo();
 renderChatControls();
 renderMessages();
+
+serverKeys().then(({ netra, deepgram }) => {
+  const active = document.activeElement;
+  // Key yang sudah diketik lebih dulu tidak ditimpa.
+  if (netra === true && !el.apiKey.value.trim()) {
+    state.serverKey = true;
+    el.apiKeyGroup.hidden = true;
+    el.serverKeyNote.hidden = false;
+    if (active === el.apiKey) el.chatInput.focus();
+  }
+  if (deepgram === true && !el.deepgramKey.value.trim()) {
+    state.serverDeepgramKey = true;
+    el.deepgramKeyGroup.hidden = true;
+    el.serverDeepgramNote.hidden = false;
+    if (active === el.deepgramKey) el.chatInput.focus();
+  }
+  if (state.serverKey || state.serverDeepgramKey) {
+    state.error = '';
+    renderMessages();
+  }
+});
   </script>
 </body>
 </html>
