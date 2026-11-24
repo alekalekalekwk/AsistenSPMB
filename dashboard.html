@@ -101,8 +101,8 @@
 
   <!-- Data sekolah dan widget. Widget di pojok kanan bawah dipakai untuk menguji chatbot dengan isi dashboard terbaru. -->
   <!-- ?v=… memaksa browser mengambil versi terbaru, bukan salinan lama dari cache. Naikkan angkanya setiap kali widget.js atau sekolah/wikrama.js diubah. -->
-  <script src="sekolah/wikrama.js?v=20261124"></script>
-  <script src="widget.js?v=20261124"></script>
+  <script src="sekolah/wikrama.js?v=20261124e"></script>
+  <script src="widget.js?v=20261124e"></script>
   <script>
 'use strict';
 
@@ -578,7 +578,7 @@ function renderTest() {
   for (const question of questions) list.append(button(question, 'btn', () => api.ask(question)));
   wrap.append(list);
 
-  wrap.append(callout('Mode demo: chatbot meminta API key Netra di kotak kuning. Untuk mencoba tombol mic, isi juga API key Deepgram lewat "Pakai mic". Kedua key hanya disimpan di tab ini dan hilang saat halaman dimuat ulang.', 'mt-8'));
+  wrap.append(callout('Mode demo: kalau key sudah ada di .env dan halaman dibuka lewat server lokal, key tidak perlu diketik. Kalau belum, chatbot meminta API key Netra di kotak kuning. Untuk mencoba tombol mic, isi juga API key Deepgram lewat "Pakai mic". Key yang diketik hanya disimpan di tab ini dan hilang saat halaman dimuat ulang.', 'mt-8'));
 
   const prompt = api.data.systemPrompt(school);
   const details = make('details', 'mt-8 rounded-lg border border-line');

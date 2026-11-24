@@ -25,7 +25,7 @@ Pengecualian yang disengaja: contoh percakapan di hero `index.html` memakai warn
 
 ## Langkah
 
-1. **Buka halaman lewat server lokal.** Pakai preview server `asisten-spmb` (port 8123, konfigurasi di `PTJawaMakmur/.claude/launch.json`) dengan `preview_start`. Kalau tidak ada, jalankan `python3 -m http.server 8123 --bind 127.0.0.1 --directory <folder repo>`. Hindari `file://`, karena `import()` pdf.js dan beberapa fitur browser bisa gagal di sana.
+1. **Buka halaman lewat server lokal.** Pakai preview server `asisten-spmb` (port 8123, konfigurasi di `PTJawaMakmur/.claude/launch.json`) dengan `preview_start`. Kalau tidak ada, jalankan `node server.mjs` dari folder repo. Jangan pakai `python3 -m http.server`, karena file `.env` (API key) bisa ikut terbuka. Hindari `file://`, karena `import()` pdf.js dan beberapa fitur browser bisa gagal di sana.
 
 2. **Pemeriksaan otomatis.** Jalankan `scripts/ui-audit.js` di halaman lewat `javascript_tool`. Karena server lokal melayani folder repo, cara paling ringkas:
 
@@ -128,7 +128,7 @@ window.fetch = async () => {
 };
 ```
 
-Untuk keadaan error, kembalikan `status: 401` dengan body `{ "error": { "message": "uji" } }`. Isi kolom API key dengan nilai uji seperti `kunci-uji-lokal`, jangan key asli. Setelah selesai, pastikan `window.__xss` tetap `undefined` (artinya teks AI tidak dijalankan sebagai HTML), lalu muat ulang halaman.
+Untuk keadaan error, kembalikan `status: 401` dengan body `{ "error": { "message": "uji" } }`. Isi kolom API key dengan nilai uji seperti `kunci-uji-lokal`, jangan key asli. Kalau server membaca `.env` asli, kolom itu tidak muncul, jadi untuk pengujian jalankan `SIGI_ENV_FILE=/dev/null PORT=8124 node server.mjs`, dan pastikan `fetch` palsu di atas sudah terpasang sebelum mengirim chat. Setelah selesai, pastikan `window.__xss` tetap `undefined` (artinya teks AI tidak dijalankan sebagai HTML), lalu muat ulang halaman.
 
 ## Format laporan
 
