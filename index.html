@@ -112,7 +112,7 @@
       </h1>
       <p class="lead mx-auto mt-5 max-w-2xl text-balance max-sm:text-base sm:mt-6 [text-shadow:0_0_14px_#fff,0_0_6px_#fff,0_0_2px_#fff]">Sigi adalah chatbot SPMB untuk website sekolah. Ia menjawab soal pendaftaran, jurusan, dan berkas, dan memberi nomor CS sekolah kalau infonya belum ada.</p>
       <div class="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
-        <a href="login.html#daftar" class="btn btn-primary">Daftar sekolah &amp; dapatkan API Key</a>
+        <a href="login.html#daftar" class="btn btn-primary">Daftarkan sekolah</a>
         <a href="demo-wikrama.html" class="btn btn-light">Coba demo SMK Wikrama</a>
       </div>
       <p class="mt-4 text-sm text-muted [text-shadow:0_0_14px_#fff,0_0_6px_#fff,0_0_2px_#fff]">Rp300 ribu per bulan per sekolah, dibayar tahunan.</p>
@@ -294,7 +294,7 @@
         </figure>
         <dl class="divide-y divide-line border-y border-line">
           <div class="py-5">
-            <dt class="font-bold text-ink">Pasang dengan dua baris kode</dt>
+            <dt class="font-bold text-ink">Pasang dengan satu baris kode</dt>
             <dd class="mt-1 text-muted">Tempel di website sekolah, lalu tombol chat muncul di pojok kanan bawah. Gaya website sekolah tidak terganggu.</dd>
           </div>
           <div class="py-5">
@@ -311,6 +311,26 @@
           </div>
         </dl>
       </div>
+    </section>
+
+    <!-- Lebih dari menjawab: fitur yang membantu panitia menindaklanjuti -->
+    <section id="tindak-lanjut" aria-labelledby="tindak-lanjut-title" class="mx-auto max-w-6xl scroll-mt-20 px-4 pt-28">
+      <h2 id="tindak-lanjut-title" class="h2 max-w-2xl">Bukan cuma menjawab.</h2>
+      <p class="mt-4 max-w-2xl leading-relaxed text-muted sm:text-lg">Panitia bisa langsung menindaklanjuti calon murid yang serius, dan tahu info apa yang paling dicari.</p>
+      <dl class="mt-10 grid grid-cols-[minmax(0,1fr)] gap-x-10 border-t border-line md:grid-cols-3">
+        <div class="border-b border-line py-6">
+          <dt class="font-bold text-ink">Calon pendaftar masuk ke dashboard</dt>
+          <dd class="mt-2 leading-relaxed text-muted">Pengunjung yang tertarik bisa minta dihubungi lewat WhatsApp. Nama dan nomornya masuk ke daftar calon pendaftar, siap di-chat panitia atau diunduh ke Excel.</dd>
+        </div>
+        <div class="border-b border-line py-6">
+          <dt class="font-bold text-ink">Tahu apa yang paling ditanyakan</dt>
+          <dd class="mt-2 leading-relaxed text-muted">Ringkasan percakapan menunjukkan topik terpopuler, pertanyaan yang belum terjawab, dan jam paling ramai, supaya info sekolah bisa dilengkapi.</dd>
+        </div>
+        <div class="border-b border-line py-6">
+          <dt class="font-bold text-ink">Bisa diajak ngobrol pakai suara</dt>
+          <dd class="mt-2 leading-relaxed text-muted">Calon murid bisa menelepon Sigi dari website. Untuk pameran atau open house, ada layar kios dengan maskot yang menjawab langsung. <a href="asisten-wikrama.html" class="font-semibold text-brand-dark underline underline-offset-2">Lihat layar kios</a></dd>
+        </div>
+      </dl>
     </section>
 
     <!-- Dashboard -->
@@ -371,7 +391,7 @@
             </li>
             <li class="grid grid-cols-[2rem_minmax(0,1fr)] py-5">
               <span class="font-bold tabular-nums text-brand">3.</span>
-              <div><p class="font-bold text-ink">Tempel di website sekolah</p><p class="mt-1 text-muted">Dua baris kode, dan tombol Asisten SPMB langsung muncul.</p></div>
+              <div><p class="font-bold text-ink">Tempel di website sekolah</p><p class="mt-1 text-muted">Satu baris kode, dan tombol Asisten SPMB langsung muncul.</p></div>
             </li>
           </ol>
         </div>
@@ -381,10 +401,10 @@
               <span class="font-mono text-xs text-muted">website-sekolah.html</span>
             </div>
             <pre class="overflow-x-auto p-5 font-mono text-[13px] leading-relaxed text-ink"><code><span class="text-muted">&lt;!-- Tempel sebelum &lt;/body&gt; --&gt;</span>
-<span class="text-brand">&lt;script</span> src="sekolah/wikrama.js"<span class="text-brand">&gt;&lt;/script&gt;</span>
-<span class="text-brand">&lt;script</span> src="widget.js" defer<span class="text-brand">&gt;&lt;/script&gt;</span></code></pre>
+<span class="text-brand">&lt;script</span> src="https://sigi-spmb.vercel.app/widget.js"
+        data-key="sg_pk_live_…" defer<span class="text-brand">&gt;&lt;/script&gt;</span></code></pre>
           </div>
-          <p class="mt-3 text-sm text-muted">Baris pertama berisi nama, warna, dan info sekolah. Baris kedua memunculkan tombol chat.</p>
+          <p class="mt-3 text-sm text-muted">Kode lengkap dengan kunci sekolahmu ada di menu Pasang di website pada dashboard. Nama, warna, dan info sekolah diambil otomatis, jadi tidak perlu dipasang ulang setiap info berubah.</p>
         </div>
       </div>
     </section>
@@ -408,8 +428,8 @@
       <h2 id="privasi-title" class="h2 max-w-2xl">Dibuat untuk percakapan dengan anak di bawah umur.</h2>
       <dl class="mt-10 grid gap-x-12 gap-y-8 sm:grid-cols-2">
         <div class="border-t border-line pt-5">
-          <dt class="font-bold text-ink">Tidak meminta data pribadi</dt>
-          <dd class="mt-2 text-muted">Asisten tidak meminta NIK, NISN, nomor KK, password, atau nomor rekening. Pendaftaran tetap lewat situs resmi sekolah.</dd>
+          <dt class="font-bold text-ink">Tidak meminta data sensitif</dt>
+          <dd class="mt-2 text-muted">Asisten tidak meminta NIK, NISN, nomor KK, password, atau nomor rekening. Nama dan nomor WhatsApp hanya dikirim lewat form opsional, setelah pengunjung setuju dihubungi.</dd>
         </div>
         <div class="border-t border-line pt-5">
           <dt class="font-bold text-ink">Data milik sekolah</dt>
@@ -477,18 +497,13 @@
     <section aria-labelledby="rencana-title" class="mx-auto max-w-6xl px-4 pt-28">
       <div class="flex flex-wrap items-end justify-between gap-4">
         <h2 id="rencana-title" class="h2">Yang sedang kami siapkan.</h2>
-        <p class="max-w-sm text-sm text-muted">Fitur di bawah belum tersedia di demo. Urutannya bisa berubah sesuai kebutuhan sekolah.</p>
+        <p class="max-w-sm text-sm text-muted">Fitur di bawah belum tersedia. Urutannya bisa berubah sesuai kebutuhan sekolah.</p>
       </div>
       <dl class="mt-10 divide-y divide-line border-y border-line">
         <div class="grid gap-1 py-5 md:grid-cols-[17rem_minmax(0,1fr)_7rem] md:gap-8">
-          <dt class="font-bold text-ink">Ringkasan percakapan</dt>
-          <dd class="text-sm font-semibold text-brand-dark md:order-last md:text-right">Segera hadir</dd>
-          <dd class="text-muted">Pertanyaan paling populer dan pertanyaan yang belum terjawab, supaya sekolah tahu info apa yang perlu ditambah.</dd>
-        </div>
-        <div class="grid gap-1 py-5 md:grid-cols-[17rem_minmax(0,1fr)_7rem] md:gap-8">
-          <dt class="font-bold text-ink">Dashboard online untuk tim sekolah</dt>
-          <dd class="text-sm font-semibold text-brand-dark md:order-last md:text-right">Segera hadir</dd>
-          <dd class="text-muted">Data tersimpan di server, jadi tim SPMB bisa mengedit dari mana saja dan perubahan langsung tampil di website.</dd>
+          <dt class="font-bold text-ink">QR di layar kios</dt>
+          <dd class="text-sm font-semibold text-muted md:order-last md:text-right">Rencana</dd>
+          <dd class="text-muted">Tamu pameran memindai QR untuk melanjutkan obrolan di HP dan meninggalkan nomor WhatsApp untuk panitia.</dd>
         </div>
         <div class="grid gap-1 py-5 md:grid-cols-[17rem_minmax(0,1fr)_7rem] md:gap-8">
           <dt class="font-bold text-ink">Integrasi WhatsApp</dt>
@@ -524,7 +539,7 @@
         </details>
         <details class="group">
           <summary class="flex cursor-pointer list-none items-center justify-between gap-4 py-5 font-semibold text-ink">Apakah chatbot meminta data pribadi calon murid?<span class="text-xl text-muted transition group-open:rotate-45" aria-hidden="true">+</span></summary>
-          <p class="-mt-2 pb-5 text-muted">Tidak. Asisten diatur untuk tidak meminta NIK, NISN, nomor KK, password, atau nomor rekening. Pendaftaran tetap lewat situs resmi sekolah.</p>
+          <p class="-mt-2 pb-5 text-muted">Asisten diatur untuk tidak meminta NIK, NISN, nomor KK, password, atau nomor rekening. Satu-satunya yang ditawarkan adalah form opsional "minta dihubungi panitia" berisi nama dan nomor WhatsApp, yang baru terkirim kalau pengunjung mencentang persetujuan. Pendaftaran tetap lewat situs resmi sekolah.</p>
         </details>
         <details class="group">
           <summary class="flex cursor-pointer list-none items-center justify-between gap-4 py-5 font-semibold text-ink">Berapa biayanya?<span class="text-xl text-muted transition group-open:rotate-45" aria-hidden="true">+</span></summary>
