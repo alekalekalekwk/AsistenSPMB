@@ -40,6 +40,20 @@
       .label { @apply block text-sm font-semibold text-ink; }
       .callout { @apply flex gap-3 rounded-md bg-callout p-4 text-sm leading-relaxed; }
       .chip { @apply inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium; }
+      .skeleton {
+        display: block;
+        border-radius: 6px;
+        background: linear-gradient(90deg, #eaeae7 25%, #f4f4f1 50%, #eaeae7 75%);
+        background-size: 200% 100%;
+        animation: sigi-shimmer 1.4s ease-in-out infinite;
+      }
+    }
+    @keyframes sigi-shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .skeleton { animation: none; background: #eaeae7; }
     }
   </style>
 </head>
@@ -103,7 +117,7 @@
 
   <!-- Data sekolah dan widget. Widget di pojok kanan bawah dipakai untuk menguji chatbot dengan isi dashboard terbaru. -->
   <!-- ?v=… memaksa browser mengambil versi terbaru, bukan salinan lama dari cache. Naikkan angkanya setiap kali widget.js atau sekolah/wikrama.js diubah. -->
-  <script src="sekolah/wikrama.js?v=20261126c"></script>
+  <script src="sekolah/wikrama.js?v=20261126e"></script>
   <script src="widget.js?v=20261126e"></script>
   <script>
 'use strict';
@@ -145,6 +159,11 @@ let school = api.data.load();
 let serverMode = false;
 let serverKeys = [];
 let lastCreatedSecret = null; // ditampilkan sekali saja tepat setelah Secret Key dibuat
+let pubKeyLoading = false;
+let secretKeyLoading = false;
+const HAS_SERVER_HOST = (location.protocol === 'http:' && ['localhost', '127.0.0.1'].includes(location.hostname))
+  || (location.protocol === 'https:' && location.hostname.endsWith('.vercel.app'));
+let isBootLoading = HAS_SERVER_HOST;
 let current = { view: 'info', id: null };
 
 function fromServerSchool(record) {
@@ -188,10 +207,10 @@ async function syncFromServer(schoolId) {
   const query = schoolId ? `?id=${encodeURIComponent(schoolId)}` : '';
   const response = await fetch(`/api/dashboard/schools${query}`, { cache: 'no-store' });
   if (response.status === 401) {
-    // Server aktif namun pengguna belum login: arahkan ke halaman login sambil menyimpan tujuan.
+    // Server aktif namun pengguna belum login: arahkan ke halaman login sambil menjaga skeleton tetap tampil.
     const target = `dashboard.html${location.hash || ''}`;
     location.replace(`login.html?next=${encodeURIComponent(target)}`);
-    return false;
+    return new Promise(() => {});
   }
   if (!response.ok) return false;
   const data = await response.json();
@@ -227,6 +246,136 @@ function button(label, className, onClick) {
   node.type = 'button';
   node.addEventListener('click', onClick);
   return node;
+}
+
+function skel(className) {
+  const node = make('span', `skeleton ${className}`);
+  node.setAttribute('aria-hidden', 'true');
+  return node;
+}
+
+function renderSidebarSkeleton() {
+  el.schoolAvatar.textContent = '';
+  el.schoolAvatar.style.background = '';
+  el.schoolAvatar.style.color = '';
+  el.schoolAvatar.className = 'skeleton size-7 shrink-0 rounded-md';
+  el.schoolName.replaceChildren(skel('h-4 w-32'));
+  el.schoolModeLabel.replaceChildren(skel('mt-1.5 h-3 w-24'));
+  el.accountEmail.replaceChildren(skel('h-3.5 w-36'));
+
+  const widths = ['w-28', 'w-36', 'w-32', 'w-24', 'w-40', 'w-28'];
+  el.navPages.replaceChildren(...widths.map((w) => {
+    const item = make('li', 'flex min-h-8 items-center px-2');
+    item.append(skel(`h-3.5 ${w}`));
+    return item;
+  }));
+}
+
+function buildAnalyticsSkeleton() {
+  const wrap = make('div', 'space-y-8');
+  wrap.setAttribute('aria-busy', 'true');
+  wrap.append(make('p', 'sr-only', 'Memuat ringkasan percakapan dari database Supabase...'));
+
+  const stats = make('div', 'grid grid-cols-[minmax(0,1fr)] gap-4 border-b border-line pb-6 sm:grid-cols-2 lg:grid-cols-4');
+  for (let i = 0; i < 4; i++) {
+    const col = make('div', 'space-y-2');
+    col.append(skel('h-3.5 w-28'), skel('h-7 w-24'), skel('h-3 w-40'));
+    stats.append(col);
+  }
+  wrap.append(stats);
+
+  const cols = make('div', 'grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-2');
+  for (let c = 0; c < 2; c++) {
+    const box = make('div', 'space-y-3');
+    box.append(skel('h-5 w-44'), skel('h-3.5 w-64'));
+    const list = make('div', 'mt-4 space-y-3 rounded-lg border border-line p-4');
+    for (let r = 0; r < 4; r++) {
+      const row = make('div', 'space-y-1.5');
+      row.append(skel(`h-3.5 ${r % 2 === 0 ? 'w-3/4' : 'w-2/3'}`), skel('h-2 w-full rounded-full'));
+      list.append(row);
+    }
+    box.append(list);
+    cols.append(box);
+  }
+  wrap.append(cols);
+
+  const recent = make('div', 'space-y-3');
+  recent.append(skel('h-5 w-48'));
+  const stack = make('div', 'space-y-2');
+  for (let i = 0; i < 3; i++) {
+    const row = make('div', 'flex items-center justify-between gap-4 rounded-lg border border-line px-4 py-3.5');
+    row.append(skel('h-4 w-56'), skel('h-3.5 w-24'));
+    stack.append(row);
+  }
+  recent.append(stack);
+  wrap.append(recent);
+  return wrap;
+}
+
+function renderBootSkeleton(viewName) {
+  el.breadcrumb.replaceChildren(skel('h-4 w-44'));
+  const wrap = shell();
+  wrap.setAttribute('aria-busy', 'true');
+  if (viewName === 'tampilan' || viewName === 'percakapan') wrap.classList.replace('max-w-3xl', 'max-w-5xl');
+  wrap.append(make('p', 'sr-only', 'Memuat data sekolah dari database Supabase...'));
+
+  const head = make('div', 'space-y-3');
+  head.append(skel('h-9 w-56 rounded-lg'), skel('h-4 w-full max-w-xl'), skel('h-4 w-2/3 max-w-md'));
+  wrap.append(head);
+
+  if (viewName === 'percakapan') {
+    const bar = make('div', 'mt-6 flex flex-wrap gap-3 border-b border-line pb-5');
+    bar.append(skel('h-10 w-44 rounded-md'), skel('h-10 w-40 rounded-md'), skel('h-10 w-28 rounded-md'));
+    wrap.append(bar);
+    const body = make('div', 'mt-6');
+    body.append(buildAnalyticsSkeleton());
+    wrap.append(body);
+    return;
+  }
+
+  if (viewName === 'pasang') {
+    const quota = make('div', 'mt-8 space-y-3 rounded-lg border border-line bg-side/60 p-5');
+    quota.append(skel('h-5 w-40'), skel('h-2 w-full rounded-full'), skel('mt-4 h-4 w-64'));
+    const code = make('div', 'mt-8 space-y-3');
+    code.append(skel('h-6 w-64'), skel('h-24 w-full rounded-lg'), skel('h-10 w-56 rounded-md'));
+    const keys = make('div', 'mt-8 space-y-3 border-t border-line pt-8');
+    keys.append(skel('h-6 w-56'), skel('h-20 w-full rounded-lg'));
+    wrap.append(quota, code, keys);
+    return;
+  }
+
+  if (viewName === 'tampilan') {
+    const grid = make('div', 'mt-8 grid grid-cols-[minmax(0,1fr)] gap-10 lg:grid-cols-[minmax(0,1fr)_20rem]');
+    const left = make('div', 'space-y-5');
+    for (let i = 0; i < 4; i++) {
+      const f = make('div', 'space-y-2');
+      f.append(skel('h-4 w-32'), skel('h-10 w-full rounded-md'));
+      left.append(f);
+    }
+    const right = make('div', 'space-y-3');
+    right.append(skel('h-4 w-20'), skel('h-80 w-full rounded-2xl'));
+    grid.append(left, right);
+    wrap.append(grid);
+    return;
+  }
+
+  if (viewName === 'halaman') {
+    const editor = make('div', 'mt-8 space-y-3');
+    editor.append(skel('h-4 w-full'), skel('h-4 w-11/12'), skel('h-4 w-4/5'), skel('mt-4 h-4 w-full'), skel('h-4 w-3/4'));
+    wrap.append(editor);
+    return;
+  }
+
+  // Default (#/info, #/dokumen, #/uji): statistik + daftar baris tabel
+  const stats = make('div', 'mt-6 flex flex-wrap gap-4');
+  stats.append(skel('h-4 w-20'), skel('h-4 w-16'), skel('h-4 w-44'));
+  const table = make('div', 'mt-8 divide-y divide-line overflow-hidden rounded-lg border border-line');
+  for (let i = 0; i < 6; i++) {
+    const row = make('div', 'flex items-center justify-between gap-4 px-3 py-3');
+    row.append(skel(`h-4 ${i % 2 === 0 ? 'w-44' : 'w-36'}`), skel('h-4 w-16'));
+    table.append(row);
+  }
+  wrap.append(stats, table);
 }
 
 function formatUpdated(time) {
@@ -349,6 +498,11 @@ function setBreadcrumb(items) {
 /* Sidebar */
 
 function renderSidebar() {
+  if (isBootLoading) {
+    renderSidebarSkeleton();
+    return;
+  }
+  el.schoolAvatar.className = 'grid size-7 shrink-0 place-items-center rounded-md text-sm font-bold';
   el.schoolName.textContent = school.schoolName;
   el.schoolAvatar.textContent = (school.schoolName.trim()[0] || 'S').toUpperCase();
   el.schoolAvatar.style.background = school.colors.primary;
@@ -1009,7 +1163,14 @@ function renderInstall() {
     make('p', 'mt-1.5 text-sm leading-relaxed text-muted', 'Cocok untuk sekolah yang belum punya tampilan chatbot. Tempel tepat sebelum tag </body> di HTML atau WordPress sekolah.'),
   );
   const embedSnippet = `<script src="${origin}/widget.js" data-key="${publishableKey}" defer><\/script>`;
-  embedSection.append(codeBlock('website-sekolah.html', embedSnippet));
+  if (pubKeyLoading) {
+    const pubSkel = make('div', 'mt-3 space-y-2.5 rounded-lg border border-line p-4');
+    pubSkel.setAttribute('aria-busy', 'true');
+    pubSkel.append(make('p', 'sr-only', 'Memperbarui Publishable Key di Supabase...'), skel('h-3.5 w-36'), skel('h-5 w-full'));
+    embedSection.append(pubSkel);
+  } else {
+    embedSection.append(codeBlock('website-sekolah.html', embedSnippet));
+  }
 
   const embedActions = make('div', 'mt-3 flex flex-wrap items-center gap-2');
   const testLink = make('a', 'btn btn-primary', 'Uji di halaman embed eksternal ↗');
@@ -1018,7 +1179,8 @@ function renderInstall() {
   testLink.rel = 'noopener';
   const rotateBtn = button('Putar ulang Publishable Key', 'btn', async () => {
     if (!window.confirm('Putar ulang Publishable Key? Key lama langsung berhenti bekerja dan kode <script> di website sekolah harus diperbarui.')) return;
-    rotateBtn.disabled = true;
+    pubKeyLoading = true;
+    renderInstall();
     try {
       const res = await fetch('/api/dashboard/keys', {
         method: 'POST',
@@ -1029,12 +1191,15 @@ function renderInstall() {
         const data = await res.json();
         serverKeys = data.apiKeys || serverKeys;
         setStatus('Publishable Key diperbarui');
-        renderInstall();
+      } else {
+        setStatus('Gagal memperbarui Publishable Key', true);
       }
     } finally {
-      rotateBtn.disabled = false;
+      pubKeyLoading = false;
+      renderInstall();
     }
   });
+  rotateBtn.disabled = pubKeyLoading;
   embedActions.append(testLink, rotateBtn);
   embedSection.append(embedActions);
   wrap.append(embedSection);
@@ -1126,7 +1291,14 @@ function renderInstall() {
   const activeSecret = secretKeys.find((k) => !k.revokedAt);
   const secretCard = make('div', 'mt-4 rounded-lg border border-line p-4');
 
-  if (!activeSecret) {
+  if (secretKeyLoading) {
+    secretCard.setAttribute('aria-busy', 'true');
+    const row = make('div', 'flex items-center justify-between gap-4');
+    const left = make('div', 'space-y-2 flex-1');
+    left.append(skel('h-4 w-40'), skel('h-3.5 w-60 max-w-full'));
+    row.append(left, skel('h-9 w-24 rounded-md'));
+    secretCard.append(make('p', 'sr-only', 'Memproses Secret Key di Supabase...'), row);
+  } else if (!activeSecret) {
     const emptyRow = make('div', 'flex flex-wrap items-center justify-between gap-3');
     const emptyText = make('div', 'min-w-0');
     emptyText.append(
@@ -1134,7 +1306,8 @@ function renderInstall() {
       make('p', 'mt-0.5 text-xs text-muted', 'Buat 1 Secret Key jika sekolah ingin menghubungkan backend atau tampilan chatbot sendiri ke REST API Sigi.'),
     );
     const createSecBtn = button('Buat Secret Key', 'btn btn-primary shrink-0', async () => {
-      createSecBtn.disabled = true;
+      secretKeyLoading = true;
+      renderInstall();
       try {
         const res = await fetch('/api/dashboard/keys', {
           method: 'POST',
@@ -1146,13 +1319,13 @@ function renderInstall() {
           serverKeys = data.apiKeys || serverKeys;
           lastCreatedSecret = { schoolId: school.id, plainKey: data.plainKey };
           setStatus('Secret Key dibuat');
-          renderInstall();
         } else {
           const err = await res.json().catch(() => null);
           setStatus(err?.error?.message || 'Gagal membuat Secret Key', true);
         }
       } finally {
-        createSecBtn.disabled = false;
+        secretKeyLoading = false;
+        renderInstall();
       }
     });
     emptyRow.append(emptyText, createSecBtn);
@@ -1167,7 +1340,8 @@ function renderInstall() {
     const actions = make('div', 'flex flex-wrap items-center gap-2');
     const rotateSecBtn = button('Putar ulang', 'btn', async () => {
       if (!window.confirm('Putar ulang Secret Key? Key lama langsung dicabut dan diganti dengan 1 key baru.')) return;
-      rotateSecBtn.disabled = true;
+      secretKeyLoading = true;
+      renderInstall();
       try {
         const res = await fetch('/api/dashboard/keys', {
           method: 'POST',
@@ -1179,15 +1353,16 @@ function renderInstall() {
           serverKeys = data.apiKeys || serverKeys;
           lastCreatedSecret = { schoolId: school.id, plainKey: data.plainKey };
           setStatus('Secret Key diputar ulang');
-          renderInstall();
         }
       } finally {
-        rotateSecBtn.disabled = false;
+        secretKeyLoading = false;
+        renderInstall();
       }
     });
     const revokeSecBtn = button('Cabut', 'btn btn-danger', async () => {
       if (!window.confirm('Cabut Secret Key ini? Aplikasi sekolah yang memakainya akan langsung terputus.')) return;
-      revokeSecBtn.disabled = true;
+      secretKeyLoading = true;
+      renderInstall();
       try {
         const res = await fetch('/api/dashboard/keys', {
           method: 'DELETE',
@@ -1199,10 +1374,10 @@ function renderInstall() {
           serverKeys = data.apiKeys || serverKeys;
           if (lastCreatedSecret?.schoolId === school.id) lastCreatedSecret = null;
           setStatus('Secret Key dicabut');
-          renderInstall();
         }
       } finally {
-        revokeSecBtn.disabled = false;
+        secretKeyLoading = false;
+        renderInstall();
       }
     });
     actions.append(rotateSecBtn, revokeSecBtn);
@@ -1392,9 +1567,7 @@ function renderConversations() {
   }
 
   function showLoading() {
-    const box = make('div', 'rounded-lg border border-line bg-side p-6 text-sm text-muted');
-    box.textContent = 'Memuat ringkasan percakapan dari server...';
-    body.replaceChildren(box);
+    body.replaceChildren(buildAnalyticsSkeleton());
   }
 
   function renderAnalyticsData(data) {
@@ -1732,8 +1905,13 @@ function route() {
   const [viewName, id] = location.hash.replace(/^#\/?/, '').split('/');
   current = { view: VIEWS[viewName] ? viewName : 'info', id: id || null };
   closeSidebar();
-  VIEWS[current.view]();
-  renderSidebar();
+  if (isBootLoading) {
+    renderBootSkeleton(current.view);
+    renderSidebarSkeleton();
+  } else {
+    VIEWS[current.view]();
+    renderSidebar();
+  }
   el.view.scrollTop = 0;
   window.scrollTo(0, 0);
 }
@@ -1760,15 +1938,22 @@ el.logoutBtn.addEventListener('click', async () => {
   location.href = 'login.html';
 });
 
-setStatus(school.updatedAt ? `Tersimpan ${formatUpdated(school.updatedAt).toLowerCase()}` : 'Data bawaan');
+setStatus(isBootLoading ? 'Memuat dari Supabase…' : (school.updatedAt ? `Tersimpan ${formatUpdated(school.updatedAt).toLowerCase()}` : 'Data bawaan'));
 syncSidebarMode();
 route();
-syncFromServer().then((ok) => {
-  if (ok) {
-    setStatus('Terhubung ke Supabase');
-    route();
-  }
-}).catch(() => {});
+if (HAS_SERVER_HOST) {
+  syncFromServer()
+    .then((ok) => {
+      isBootLoading = false;
+      setStatus(ok ? 'Terhubung ke Supabase' : (school.updatedAt ? `Tersimpan ${formatUpdated(school.updatedAt).toLowerCase()}` : 'Data bawaan'));
+      route();
+    })
+    .catch(() => {
+      isBootLoading = false;
+      setStatus('Mode lokal (server tidak terjangkau)');
+      route();
+    });
+}
   </script>
 </body>
 </html>

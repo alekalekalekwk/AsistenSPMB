@@ -27,6 +27,20 @@
       .btn { @apply inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg px-4 text-sm font-semibold transition disabled:opacity-50; }
       .btn-primary { @apply bg-brand text-white hover:bg-brand-dark; }
       .btn-line { @apply border border-line bg-white text-ink hover:bg-soft; }
+      .skeleton {
+        display: block;
+        border-radius: 8px;
+        background: linear-gradient(90deg, #eaeae7 25%, #f4f4f1 50%, #eaeae7 75%);
+        background-size: 200% 100%;
+        animation: sigi-shimmer 1.4s ease-in-out infinite;
+      }
+    }
+    @keyframes sigi-shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .skeleton { animation: none; background: #eaeae7; }
     }
   </style>
 </head>
@@ -49,7 +63,33 @@
   <main class="flex flex-1 items-center justify-center px-4 py-10">
     <div class="w-full max-w-md">
       <div class="rounded-2xl border border-line bg-white p-6 shadow-[0_16px_44px_-20px_rgba(15,23,42,0.18)] sm:p-8">
-        <h1 id="page-title" class="text-2xl font-extrabold tracking-tight text-ink">Masuk ke Dashboard Sigi</h1>
+        <div id="auth-skeleton" hidden aria-busy="true" aria-live="polite" class="space-y-5">
+          <p id="auth-skeleton-label" class="sr-only">Memeriksa sesi akun dari server...</p>
+          <div aria-hidden="true">
+            <span class="skeleton h-7 w-56"></span>
+            <span class="skeleton mt-2.5 h-3.5 w-full"></span>
+            <span class="skeleton mt-1.5 h-3.5 w-4/5"></span>
+          </div>
+          <span class="skeleton h-12 w-full rounded-xl" aria-hidden="true"></span>
+          <div class="space-y-4 pt-1" aria-hidden="true">
+            <div>
+              <span class="skeleton h-3.5 w-36"></span>
+              <span class="skeleton mt-2 h-11 w-full rounded-lg"></span>
+            </div>
+            <div>
+              <span class="skeleton h-3.5 w-24"></span>
+              <span class="skeleton mt-2 h-11 w-full rounded-lg"></span>
+            </div>
+            <span class="skeleton h-11 w-full rounded-lg"></span>
+          </div>
+          <div class="border-t border-line pt-4" aria-hidden="true">
+            <span class="skeleton h-3 w-52"></span>
+            <span class="skeleton mt-2.5 h-11 w-full rounded-lg"></span>
+          </div>
+        </div>
+
+        <div id="auth-content">
+          <h1 id="page-title" class="text-2xl font-extrabold tracking-tight text-ink">Masuk ke Dashboard Sigi</h1>
         <p id="page-desc" class="mt-1.5 text-sm leading-relaxed text-muted">Kelola info SPMB sekolah, atur tampilan chatbot, dan salin API Key website Anda.</p>
 
         <!-- Tab Masuk / Daftar -->
@@ -97,6 +137,7 @@
           </p>
           <button id="btn-register-submit" type="submit" class="btn btn-primary">Daftar &amp; Buat API Key</button>
         </form>
+        </div>
       </div>
     </div>
   </main>
@@ -104,7 +145,13 @@
   <script>
     'use strict';
 
+    const HAS_SERVER_HOST = (location.protocol === 'http:' && ['localhost', '127.0.0.1'].includes(location.hostname))
+      || (location.protocol === 'https:' && location.hostname.endsWith('.vercel.app'));
+
     const el = {
+      authSkeleton: document.getElementById('auth-skeleton'),
+      authSkeletonLabel: document.getElementById('auth-skeleton-label'),
+      authContent: document.getElementById('auth-content'),
       title: document.getElementById('page-title'),
       desc: document.getElementById('page-desc'),
       tabLogin: document.getElementById('tab-login'),
@@ -163,11 +210,18 @@
       el.regSchool.focus();
     });
 
+    function setCardLoading(loading, message = 'Memeriksa sesi akun dari server...') {
+      el.authSkeletonLabel.textContent = message;
+      el.authSkeleton.hidden = !loading;
+      el.authContent.hidden = loading;
+    }
+
     async function performLogin(email, password, triggerBtn) {
       showError('');
       triggerBtn.disabled = true;
       const original = triggerBtn.textContent;
       triggerBtn.textContent = 'Memeriksa...';
+      let redirecting = false;
       try {
         const res = await fetch('/api/auth/login', {
           method: 'POST',
@@ -179,12 +233,16 @@
           showError(data?.error?.message || `Gagal masuk (kode ${res.status}). Pastikan server Sigi berjalan.`);
           return;
         }
+        redirecting = true;
+        setCardLoading(true, 'Berhasil masuk, membuka dashboard...');
         location.href = nextDestination();
       } catch {
         showError('Tidak bisa terhubung ke server Sigi. Jalankan "node server.mjs" terlebih dahulu.');
       } finally {
-        triggerBtn.disabled = false;
-        triggerBtn.textContent = original;
+        if (!redirecting) {
+          triggerBtn.disabled = false;
+          triggerBtn.textContent = original;
+        }
       }
     }
 
@@ -205,6 +263,7 @@
       el.regSubmit.disabled = true;
       const original = el.regSubmit.textContent;
       el.regSubmit.textContent = 'Menyiapkan workspace...';
+      let redirecting = false;
       try {
         const res = await fetch('/api/auth/register', {
           method: 'POST',
@@ -220,25 +279,39 @@
           showError(data?.error?.message || `Pendaftaran gagal (kode ${res.status}).`);
           return;
         }
+        redirecting = true;
+        setCardLoading(true, 'Workspace sekolah siap, membuka dashboard...');
         location.href = 'dashboard.html#/info';
       } catch {
         showError('Tidak bisa terhubung ke server Sigi. Jalankan "node server.mjs" terlebih dahulu.');
       } finally {
-        el.regSubmit.disabled = false;
-        el.regSubmit.textContent = original;
+        if (!redirecting) {
+          el.regSubmit.disabled = false;
+          el.regSubmit.textContent = original;
+        }
       }
     });
 
     // Jika dibuka dengan #daftar, langsung buka tab pendaftaran.
     if (location.hash === '#daftar') setTab('register');
 
-    // Jika sudah masuk, langsung arahkan ke Dashboard.
-    fetch('/api/auth/me', { cache: 'no-store' })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (data?.authenticated) location.replace(nextDestination());
-      })
-      .catch(() => {});
+    // Jika sudah masuk, tampilkan skeleton selama memeriksa sesi lalu arahkan ke Dashboard tanpa kedip form.
+    if (HAS_SERVER_HOST) {
+      setCardLoading(true, 'Memeriksa sesi akun dari server...');
+      fetch('/api/auth/me', { cache: 'no-store' })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (data?.authenticated) {
+            setCardLoading(true, 'Sesi aktif ditemukan, mengarahkan ke dashboard...');
+            location.replace(nextDestination());
+            return;
+          }
+          setCardLoading(false);
+        })
+        .catch(() => {
+          setCardLoading(false);
+        });
+    }
   </script>
 </body>
 </html>
