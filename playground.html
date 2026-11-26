@@ -49,6 +49,20 @@
       .md strong, .md .md-heading { @apply font-bold; }
       .md code { @apply rounded bg-slate-100 px-1 font-mono text-[0.9em]; }
       .md a { @apply font-semibold text-royal underline underline-offset-2 [overflow-wrap:anywhere]; }
+      .skeleton {
+        display: block;
+        border-radius: 8px;
+        background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+        background-size: 200% 100%;
+        animation: sigi-shimmer 1.4s ease-in-out infinite;
+      }
+    }
+    @keyframes sigi-shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .skeleton { animation: none; background: #e2e8f0; }
     }
   </style>
 </head>
@@ -81,6 +95,26 @@
         </div>
 
         <div class="flex-1 space-y-6 p-5 lg:overflow-y-auto">
+          <div id="server-status-skeleton" hidden aria-busy="true" aria-live="polite" class="space-y-6">
+            <p class="sr-only">Memeriksa konfigurasi kunci dari server Sigi...</p>
+            <div class="space-y-2.5" aria-hidden="true">
+              <div class="flex items-center justify-between gap-2">
+                <span class="skeleton h-4 w-32"></span>
+                <span class="skeleton h-3 w-14"></span>
+              </div>
+              <span class="skeleton h-11 w-full rounded-xl"></span>
+              <span class="skeleton h-3 w-11/12"></span>
+            </div>
+            <div class="space-y-2.5 border-t border-slate-200 pt-6" aria-hidden="true">
+              <div class="flex items-center justify-between gap-2">
+                <span class="skeleton h-4 w-36"></span>
+                <span class="skeleton h-3 w-28"></span>
+              </div>
+              <span class="skeleton h-11 w-full rounded-xl"></span>
+              <span class="skeleton h-3 w-10/12"></span>
+            </div>
+          </div>
+
           <!-- Tampil hanya kalau halaman dibuka lewat server.mjs dan .env sudah diisi; kolom key di bawahnya disembunyikan. -->
           <form id="login-form" hidden>
             <label for="login-password" class="field-label">Password</label>
@@ -678,6 +712,7 @@ const state = {
   connection: 'idle', // hasil permintaan terakhir ke Netra: 'idle' | 'ok' | 'error'
   voiceStatus: 'idle', // 'idle' | 'connecting' | 'recording' | 'transcribing'
   callStatus: 'off', // 'off' | 'connecting' | 'listening' | 'thinking' | 'speaking'
+  isCheckingServer: false,
 };
 
 // Semua yang hidup selama merekam: WebSocket, mikrofon, perekam, timer, dan teks yang sudah terdengar.
@@ -689,6 +724,7 @@ const dictation = {};
 let call = null;
 
 const el = {
+  serverStatusSkeleton: document.getElementById('server-status-skeleton'),
   apiKey: document.getElementById('api-key'),
   apiKeyGroup: document.getElementById('api-key-group'),
   deepgramKeyGroup: document.getElementById('deepgram-key-group'),
@@ -1255,7 +1291,7 @@ function renderDocuments() {
 
 const CONNECTION = {
   idle: { dot: 'bg-slate-400', text: 'Belum ada permintaan ke Netra' },
-  sending: { dot: 'bg-amber-500 animate-pulse', text: 'Menghubungi Netra...' },
+  sending: { dot: 'bg-amber-500', text: 'Menghubungi Netra...' },
   ok: { dot: 'bg-emerald-500', text: 'Netra merespons' },
   error: { dot: 'bg-red-500', text: 'Permintaan terakhir gagal' },
 };
@@ -1357,10 +1393,23 @@ function createEmptyState() {
     samples.append(chip);
   }
 
+  let lead;
+  if (state.isCheckingServer) {
+    lead = make('div', 'mx-auto mt-2.5 flex max-w-xs flex-col items-center gap-2');
+    lead.setAttribute('aria-busy', 'true');
+    const s1 = make('span', 'skeleton h-3.5 w-full');
+    const s2 = make('span', 'skeleton h-3.5 w-4/5');
+    s1.setAttribute('aria-hidden', 'true');
+    s2.setAttribute('aria-hidden', 'true');
+    lead.append(s1, s2, make('span', 'sr-only', 'Memeriksa koneksi server Sigi...'));
+  } else {
+    lead = make('p', 'mt-1 text-sm leading-relaxed text-slate-600', `${state.serverKey ? 'Ketik' : state.needsLogin ? 'Masukkan password di panel Pengaturan, lalu ketik' : 'Isi API key di panel Pengaturan, lalu ketik'} atau ucapkan pertanyaan seolah-olah kamu calon murid atau orang tua. Bisa juga tekan Telepon untuk mengobrol langsung.`);
+  }
+
   box.append(
     badge,
     make('p', 'mt-4 text-lg font-bold', 'Belum ada percakapan'),
-    make('p', 'mt-1 text-sm leading-relaxed text-slate-600', `${state.serverKey ? 'Ketik' : state.needsLogin ? 'Masukkan password di panel Pengaturan, lalu ketik' : 'Isi API key di panel Pengaturan, lalu ketik'} atau ucapkan pertanyaan seolah-olah kamu calon murid atau orang tua. Bisa juga tekan Telepon untuk mengobrol langsung.`),
+    lead,
     make('p', 'meta mt-6', 'Coba tanya:'),
     samples,
   );
@@ -1368,12 +1417,15 @@ function createEmptyState() {
 }
 
 function createLoading() {
-  const bubble = make('div', 'bubble bubble-agent flex items-center gap-3');
-  const dots = make('span', 'flex gap-1');
-  for (const delay of ['[animation-delay:-0.3s]', '[animation-delay:-0.15s]', '']) {
-    dots.append(make('span', `size-1.5 animate-bounce rounded-full bg-navy/40 ${delay}`));
+  const bubble = make('div', 'bubble bubble-agent w-full max-w-sm space-y-2.5 py-3.5');
+  bubble.setAttribute('aria-busy', 'true');
+  bubble.setAttribute('role', 'status');
+  for (const width of ['w-[94%]', 'w-[80%]', 'w-[56%]']) {
+    const line = make('span', `skeleton h-3 ${width}`);
+    line.setAttribute('aria-hidden', 'true');
+    bubble.append(line);
   }
-  bubble.append(dots, make('span', 'text-sm text-slate-600', 'Asisten Wikrama sedang menulis jawaban...'));
+  bubble.append(make('span', 'sr-only', 'Asisten Wikrama sedang menulis jawaban...'));
   const wrapper = make('div', 'flex items-start gap-3');
   wrapper.append(createAvatar(), bubble);
   return wrapper;
@@ -2239,7 +2291,10 @@ el.voicePreview.addEventListener('click', async () => {
   if (state.callStatus !== 'off') return; // jangan menumpuk suara di atas panggilan yang sedang berjalan
   const voice = VOICES.find((item) => item.id === el.voice.value) ?? VOICES[0];
   el.voicePreview.disabled = true;
-  el.voicePreviewStatus.textContent = `Memuat suara ${voice.name}...`;
+  el.voicePreviewStatus.setAttribute('aria-busy', 'true');
+  const previewSkel = make('span', 'skeleton mt-1.5 h-3.5 w-40 rounded-full');
+  previewSkel.setAttribute('aria-hidden', 'true');
+  el.voicePreviewStatus.replaceChildren(previewSkel, make('span', 'sr-only', `Memuat suara ${voice.name}...`));
   try {
     const response = await requestSpeech(apiKey, PREVIEW_TEXT, undefined, voice.id, el.expressivity.value);
     const url = URL.createObjectURL(await response.blob());
@@ -2253,13 +2308,13 @@ el.voicePreview.addEventListener('click', async () => {
       ? 'Browser menahan suara. Klik di mana saja di halaman, lalu coba lagi.'
       : error.message;
   } finally {
+    el.voicePreviewStatus.setAttribute('aria-busy', 'false');
     el.voicePreview.disabled = false;
   }
 });
 
 renderContextInfo();
 renderChatControls();
-renderMessages();
 
 const loginForm = document.getElementById('login-form');
 const loginPassword = document.getElementById('login-password');
@@ -2277,7 +2332,20 @@ loginForm.addEventListener('submit', async (event) => {
 });
 
 async function useServerKeys() {
+  const showSkeleton = hasServerBackend() && !el.apiKey.value.trim() && !el.deepgramKey.value.trim();
+  if (showSkeleton) {
+    state.isCheckingServer = true;
+    el.serverStatusSkeleton.hidden = false;
+    loginForm.hidden = true;
+    el.apiKeyGroup.hidden = true;
+    el.deepgramKeyGroup.hidden = true;
+    el.serverKeyNote.hidden = true;
+    el.serverDeepgramNote.hidden = true;
+    renderMessages();
+  }
   const { login, netra, deepgram } = await serverKeys();
+  state.isCheckingServer = false;
+  el.serverStatusSkeleton.hidden = true;
   const needsLogin = login === true;
   state.needsLogin = needsLogin;
   if (needsLogin) {
@@ -2306,6 +2374,7 @@ async function useServerKeys() {
   if (state.serverKey || state.serverDeepgramKey) state.error = '';
   renderMessages();
 }
+if (!hasServerBackend()) renderMessages();
 useServerKeys();
   </script>
 </body>

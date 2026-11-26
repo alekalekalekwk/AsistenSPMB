@@ -229,6 +229,8 @@
     deepgramFor: 'mic', // 'mic' | 'call': tombol mana yang meminta key Deepgram, untuk tujuan fokus setelah disimpan
     keyPanelOpen: false, // true saat pengguna membuka panel pengaturan API key lewat tombol di header
     history: [], // { role: 'user' | 'assistant', content }
+    isLoadingConfig: IS_EMBED, // true selagi mengambil konfigurasi sekolah dari /api/v1/widget/config
+    isCheckingServer: false, // true selagi mengecek /api/status pada server lokal/Vercel
     isSending: false,
     error: '',
     voiceStatus: 'idle', // 'idle' | 'connecting' | 'recording' | 'transcribing'
@@ -673,11 +675,27 @@
     .copy-btn[data-copied="true"] { color: #15803d; }
     .copy-btn svg { width: 13px; height: 13px; flex-shrink: 0; }
 
-    .typing { display: inline-flex; align-items: center; gap: 5px; height: 22px; padding: 0 2px; }
-    .typing span { width: 6px; height: 6px; border-radius: 999px; background: #64748b; animation: asisten-bounce 1s infinite ease-in-out; }
-    .typing span:nth-child(2) { animation-delay: 0.15s; }
-    .typing span:nth-child(3) { animation-delay: 0.3s; }
-    @keyframes asisten-bounce { 0%, 80%, 100% { transform: translateY(0); opacity: 0.45; } 40% { transform: translateY(-4px); opacity: 1; } }
+    /* Skeleton loading saat mengambil data dari server/database atau menunggu balasan AI */
+    .skel {
+      display: block; border-radius: 7px;
+      background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+      background-size: 200% 100%;
+      animation: sigi-shimmer 1.4s ease-in-out infinite;
+    }
+    .skel-on-primary {
+      display: block; border-radius: 6px;
+      background: linear-gradient(90deg, color-mix(in srgb, var(--on-primary) 18%, transparent) 25%, color-mix(in srgb, var(--on-primary) 34%, transparent) 50%, color-mix(in srgb, var(--on-primary) 18%, transparent) 75%);
+      background-size: 200% 100%;
+      animation: sigi-shimmer 1.4s ease-in-out infinite;
+    }
+    @keyframes sigi-shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+    .skel-reply { display: flex; flex-direction: column; gap: 8px; width: 224px; max-width: 100%; padding: 4px 0; }
+    .skel-line { height: 11px; }
+    .skel-stack { display: flex; flex-direction: column; gap: 10px; }
+    .skel-prompt { height: 44px; border-radius: 13px; border: 1px solid var(--border); background: var(--surface); display: flex; align-items: center; padding: 0 14px; }
 
     .md { white-space: normal; }
     .md > * + * { margin-top: 8px; }
@@ -813,7 +831,9 @@
     }
 
     @media (prefers-reduced-motion: reduce) {
-      .panel, .typing span { animation: none; }
+      .panel, .skel, .skel-on-primary { animation: none; }
+      .skel { background: #e2e8f0; }
+      .skel-on-primary { background: color-mix(in srgb, var(--on-primary) 24%, transparent); }
       .messages { scroll-behavior: auto; }
       .launcher-label, .launcher-btn, .prompt-btn, .prompt-btn svg, .scroll-bottom, .send { transition: none; }
     }
@@ -903,7 +923,17 @@
     root.style.setProperty('--on-primary', school.colors.onPrimary);
     root.style.setProperty('--accent', school.colors.accent);
     root.style.setProperty('--on-accent', school.colors.onAccent);
-    ref.school.textContent = school.schoolName;
+    if (state.isLoadingConfig) {
+      const bar = document.createElement('span');
+      bar.className = 'skel-on-primary';
+      bar.style.width = '118px';
+      bar.style.height = '11px';
+      bar.style.marginTop = '3px';
+      bar.setAttribute('aria-hidden', 'true');
+      ref.school.replaceChildren(bar);
+    } else {
+      ref.school.textContent = school.schoolName;
+    }
     ref.panel.setAttribute('aria-label', `Asisten SPMB ${school.schoolName}`);
   }
   applySchool();
@@ -1191,13 +1221,44 @@
     return box;
   }
 
+  function makeSkel(width, height = '11px', extraClass = 'skel') {
+    const bar = make('span', extraClass);
+    bar.style.width = width;
+    bar.style.height = height;
+    bar.setAttribute('aria-hidden', 'true');
+    return bar;
+  }
+
+  function welcomeSkeleton() {
+    const wrap = make('div', 'welcome');
+    wrap.setAttribute('aria-busy', 'true');
+    wrap.append(make('p', 'sr-only', 'Memuat informasi sekolah dari server Sigi...'));
+
+    const card = make('div', 'welcome-card skel-stack');
+    const head = make('div', 'welcome-badge');
+    head.append(makeSkel('28px', '28px'), makeSkel('150px', '12px'));
+    card.append(head, makeSkel('96%', '12px'), makeSkel('82%', '12px'), makeSkel('58%', '12px'));
+    wrap.append(card);
+
+    const list = make('div', 'prompts');
+    list.append(makeSkel('108px', '11px'));
+    for (const width of ['68%', '56%', '74%']) {
+      const item = make('div', 'skel-prompt');
+      item.append(makeSkel(width, '12px'));
+      list.append(item);
+    }
+    wrap.append(list);
+    return wrap;
+  }
+
   function typingRow() {
     const row = make('div', 'row bot');
     const col = make('div', 'msg-col');
     const bubble = make('div', 'bubble');
-    const dots = make('span', 'typing');
-    dots.append(make('span'), make('span'), make('span'));
-    bubble.append(make('span', 'sr-only', 'Asisten sedang menulis jawaban'), dots);
+    bubble.setAttribute('aria-busy', 'true');
+    const lines = make('div', 'skel-reply');
+    lines.append(makeSkel('94%', '11px'), makeSkel('80%', '11px'), makeSkel('54%', '11px'));
+    bubble.append(make('span', 'sr-only', 'Asisten sedang menulis jawaban'), lines);
     col.append(bubble);
     row.append(miniAvatar(), col);
     return row;
@@ -1272,6 +1333,16 @@
     if (IS_EMBED) {
       ref.keyToggle.hidden = true;
       ref.demo.hidden = true;
+      return;
+    }
+
+    if (state.isCheckingServer) {
+      ref.keyToggle.hidden = true;
+      ref.demo.hidden = false;
+      const skelCard = make('div', 'access-card skel-stack');
+      skelCard.setAttribute('aria-busy', 'true');
+      skelCard.append(make('span', 'sr-only', 'Memeriksa koneksi server Sigi...'), makeSkel('130px', '12px'), makeSkel('88%', '11px'));
+      ref.demo.append(skelCard);
       return;
     }
 
@@ -1396,7 +1467,9 @@
     // Selama telepon, saran pertanyaan disembunyikan karena chat diketik sedang tidak bisa dipakai.
     const showWelcome = state.history.length === 0 && state.callStatus === 'off';
 
-    if (showWelcome) {
+    if (state.isLoadingConfig) {
+      ref.messages.replaceChildren(welcomeSkeleton());
+    } else if (showWelcome) {
       ref.messages.replaceChildren(welcomeBlock(suggestions));
     } else {
       ref.messages.replaceChildren(messageRow('assistant', school.greeting));
@@ -1525,21 +1598,22 @@
     const voice = state.voiceStatus;
     const busy = voice !== 'idle';
     const inCall = state.callStatus !== 'off';
+    const loadingCfg = state.isLoadingConfig;
     const allowVoice = !IS_EMBED || Boolean(school.voiceEnabled);
     ref.mic.hidden = !allowVoice;
     ref.phone.hidden = !allowVoice;
     ref.mic.dataset.recording = String(voice === 'recording');
     ref.mic.setAttribute('aria-label', VOICE[voice].label);
     ref.mic.title = VOICE[voice].label;
-    // Selama telepon, semua tombol chat dimatikan supaya riwayat tidak diubah dari dua jalur sekaligus.
-    ref.mic.disabled = inCall || state.isSending || voice === 'connecting' || voice === 'transcribing';
-    ref.send.disabled = inCall || state.isSending || busy;
-    ref.reset.disabled = inCall || state.history.length === 0 || state.isSending || busy;
-    ref.phone.disabled = inCall || state.isSending || busy;
+    // Selama telepon atau memuat konfigurasi, semua tombol chat dimatikan.
+    ref.mic.disabled = loadingCfg || inCall || state.isSending || voice === 'connecting' || voice === 'transcribing';
+    ref.send.disabled = loadingCfg || inCall || state.isSending || busy;
+    ref.reset.disabled = loadingCfg || inCall || state.history.length === 0 || state.isSending || busy;
+    ref.phone.disabled = loadingCfg || inCall || state.isSending || busy;
     ref.phone.setAttribute('aria-label', CALL[state.callStatus].label);
     ref.phone.title = CALL[state.callStatus].label;
-    // Kolom pertanyaan dikunci selama merekam, supaya ketikan tidak tertimpa teks dari Deepgram.
-    ref.input.readOnly = busy;
+    // Kolom pertanyaan dikunci selama merekam atau memuat konfigurasi.
+    ref.input.readOnly = loadingCfg || busy;
     ref.voiceStatus.hidden = !busy || inCall;
     ref.voiceStatus.textContent = VOICE[voice].text;
     ref.form.hidden = inCall;
@@ -2357,10 +2431,14 @@
     if (!IS_EMBED && (event.key === STORAGE_KEY || event.key === null)) refresh();
   });
 
+  if (!IS_EMBED && hasServerBackend()) state.isCheckingServer = true;
   renderDemo();
   renderMessages();
 
   async function loadEmbedConfig() {
+    state.isLoadingConfig = true;
+    applySchool();
+    renderMessages();
     try {
       const response = await fetch(`${embedApiBase}/api/v1/widget/config`, {
         headers: { 'X-Sigi-Key': embedKey },
@@ -2369,11 +2447,11 @@
       const data = await response.json().catch(() => null);
       if (!response.ok) {
         state.error = describeApiError(response.status, data);
-        renderMessages();
         return;
       }
       school = {
         ...defaults(),
+        id: data.schoolId || '',
         schoolName: data.schoolName || 'Sekolah',
         colors: { ...defaults().colors, ...(data.colors || {}) },
         greeting: data.greeting || defaults().greeting,
@@ -2383,18 +2461,22 @@
         expressivity: cleanExpressivity(data.expressivity),
       };
       state.error = '';
+    } catch {
+      state.error = 'Tidak bisa memuat konfigurasi chatbot Sigi. Periksa koneksi internet.';
+    } finally {
+      state.isLoadingConfig = false;
       applySchool();
       renderControls();
       renderMessages();
-    } catch {
-      state.error = 'Tidak bisa memuat konfigurasi chatbot Sigi. Periksa koneksi internet.';
-      renderMessages();
+      emit('ready', { schoolName: school.schoolName, ok: !state.error, error: state.error });
     }
   }
 
   async function useServerKeys() {
     if (IS_EMBED) return;
+    const wasChecking = state.isCheckingServer;
     const { login, netra, deepgram } = await serverKeys();
+    state.isCheckingServer = false;
     const wasLogin = state.needsLogin;
     state.needsLogin = login === true;
     if (state.needsLogin) {
@@ -2404,7 +2486,7 @@
     // Key yang sudah diketik lebih dulu tidak ditimpa.
     const useNetra = netra === true && !state.apiKey;
     const useDeepgram = deepgram === true && !state.deepgramKey;
-    if (!useNetra && !useDeepgram && !state.needsLogin && !wasLogin) return;
+    if (!wasChecking && !useNetra && !useDeepgram && !state.needsLogin && !wasLogin) return;
     const hadFocus = ref.demo.contains(ref.demo.getRootNode().activeElement);
     if (useNetra) state.apiKey = SERVER_KEY;
     if (useDeepgram) {
