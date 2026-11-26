@@ -19,6 +19,11 @@
     return;
   }
 
+  // Mode kios (asisten-wikrama.html): <script src="widget.js" data-mode="kiosk">. Tombol chat di pojok disembunyikan,
+  // halaman sendiri yang menampilkan percakapan lewat event sigi:* dan memulai telepon lewat SigiWidget.call({ open: false }).
+  // Panel widget baru muncul kalau dibuka (misalnya untuk mengisi password atau API key).
+  const KIOSK = document.currentScript?.dataset.mode === 'kiosk';
+
   const API_URL = 'https://api.netra.sh/v1/chat/completions';
   const MODEL = config.model || 'deepseek/deepseek-v4.1-flash';
   const MAX_CONTEXT_CHARS = 60000;
@@ -491,6 +496,7 @@
   const template = document.createElement('template');
   template.innerHTML = MARKUP;
   shadow.append(style, template.content.cloneNode(true));
+  host.hidden = KIOSK;
   document.body.append(host);
 
   const root = shadow.querySelector('.root');
@@ -855,6 +861,7 @@
 
   function setOpen(isOpen) {
     state.isOpen = isOpen;
+    if (KIOSK) host.hidden = !isOpen;
     root.dataset.open = String(isOpen);
     ref.panel.hidden = !isOpen;
     ref.launcher.setAttribute('aria-expanded', String(isOpen));
@@ -894,6 +901,7 @@
     ref.input.value = '';
     fitInput();
     state.isSending = true;
+    emitState('thinking');
     renderMessages();
     ref.status.textContent = 'Asisten sedang menulis jawaban.';
 
@@ -913,8 +921,23 @@
       ref.status.textContent = error.message;
     } finally {
       state.isSending = false;
+      emitState('idle');
       renderMessages();
     }
+  }
+
+  // Event untuk halaman sekolah (dipakai asisten-wikrama.html). Widget tetap jalan walau tidak ada yang mendengarkan.
+  //   sigi:state    { state: 'idle' | 'listening' | 'thinking' | 'speaking' }
+  //   sigi:heard    { text }     teks yang sedang didengar dari penelepon (berubah terus selama dia bicara)
+  //   sigi:question { text }     pertanyaan final yang akan dijawab
+  //   sigi:say      { text }     kalimat yang mulai diucapkan Sigi (salam, kalimat jeda, atau jawaban)
+  //   sigi:audio    { audio }    elemen audio suara Sigi, misalnya untuk menggerakkan mulut maskot
+  //   sigi:error    { message, needsKey }
+  function emit(name, detail) {
+    window.dispatchEvent(new CustomEvent(`sigi:${name}`, { detail }));
+  }
+  function emitState(value) {
+    emit('state', { state: value });
   }
 
   /* Input suara lewat Deepgram (sama dengan Tingkat 3 di playground) */
@@ -980,6 +1003,7 @@
   // Mengganti status panggilan, lalu menggambar ulang bar panggilan dan semua tombol.
   function setCallStatus(status) {
     state.callStatus = status;
+    emitState(status === 'off' ? 'idle' : status === 'connecting' ? 'thinking' : status);
     renderControls();
     // Kotak kuning ikut digambar ulang: tombol ganti key disembunyikan selama telepon dan kembali sesudahnya.
     renderDemo();
@@ -1345,6 +1369,7 @@
   // Selesai saat audio habis diputar. Audio disimpan di call supaya endCall bisa menghentikannya.
   function playAudio(audio) {
     const c = call;
+    emit('audio', { audio }); // halaman sekolah boleh ikut mendengarkan, misalnya untuk menggerakkan mulut maskot
     return new Promise((resolve, reject) => {
       c.audio = audio;
       c.finishAudio = resolve; // dipanggil endCall, karena audio yang di-pause tidak pernah 'ended'
@@ -1387,6 +1412,7 @@
       releaseAudio(c, audio);
       return;
     }
+    emit('say', { text });
     setCallStatus('speaking');
     await playAudio(audio);
   }
@@ -1451,6 +1477,7 @@
     state.history.push(entry);
     // Semua entri giliran ini (pertanyaan, lalu kalimat jeda kalau ada), berurutan sesudah `before`.
     const turn = [entry];
+    emit('question', { text: question });
     // true kalau ujung riwayat masih persis milik giliran ini (belum dimulai ulang atau ditambah panggilan lain).
     const ownsTail = () => state.history.length === before + turn.length
       && turn.every((message, i) => state.history[before + i] === message);
@@ -1513,6 +1540,7 @@
       // potongan final pertama dari kalimat berikutnya langsung dijawab padahal orangnya masih bicara.
       if (data.is_final && !call.finalText && !call.interimText) call.turnEnded = false;
       renderCallBar();
+      emit('heard', { text: state.callHeard });
     } else if (data.type === 'UtteranceEnd' && (call.finalText || call.interimText)) {
       call.turnEnded = true;
     }
@@ -1542,7 +1570,10 @@
 
     if (!wasOn) return;
     state.callHeard = '';
-    if (message) state.error = message;
+    if (message) {
+      state.error = message;
+      emit('error', { message, needsKey: false });
+    }
     setCallStatus('off'); // menggambar ulang: bar panggilan hilang, form chat dan tombol kembali
     renderMessages();
     ref.status.textContent = message || 'Panggilan selesai.';
@@ -1553,11 +1584,15 @@
     if (state.callStatus !== 'off' || state.isSending || state.voiceStatus !== 'idle') return;
 
     if (!state.apiKey) {
+      if (!state.isOpen) setOpen(true); // mode kios: panel dibuka supaya password atau key bisa diisi
       showError(`Masukkan ${state.needsLogin ? 'password' : 'API key Netra'} dulu di kotak kuning di atas.`);
+      emit('error', { message: state.error, needsKey: true });
       ref.demo.querySelector('input').focus();
       return;
     }
     if (!state.deepgramKey) {
+      if (!state.isOpen) setOpen(true);
+      emit('error', { message: 'Masukkan API key Deepgram dulu di kotak kuning untuk menelepon.', needsKey: true });
       state.deepgramFormOpen = true;
       state.deepgramFor = 'call';
       renderDemo();
@@ -1723,10 +1758,12 @@
       send(question);
     },
     // Untuk tombol "Telepon Sigi" di halaman sekolah: membuka widget lalu langsung menelepon.
-    call: () => {
-      setOpen(true);
+    // { open: false } dipakai halaman kios: telepon berjalan tanpa membuka panel widget.
+    call: ({ open = true } = {}) => {
+      if (open) setOpen(true);
       startCall();
     },
+    hangUp: () => endCall(),
     refresh,
     // Dipakai dashboard untuk membaca dan menyimpan data sekolah.
     data: { key: STORAGE_KEY, voices: VOICES, expressivities: EXPRESSIVITY, defaults, load, save, reset, compileContext, systemPrompt: buildSystemPrompt, maxContextChars: MAX_CONTEXT_CHARS },
