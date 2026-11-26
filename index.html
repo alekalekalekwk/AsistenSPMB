@@ -9,6 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.1.11"></script>
+  <link rel="stylesheet" href="trailer.css?v=20261127a">
   <style type="text/tailwindcss">
     /* Gaya catatan (Notion-like), sama dengan dashboard: putih bersih, teks hitam, kartu abu muda.
        Tanpa emoji, label kecil di atas judul, kata yang distabilo, atau animasi berulang
@@ -358,6 +359,27 @@
         <figcaption class="mt-4 text-center text-sm text-muted">Dashboard sekolah dan widget chat di demo SMK Wikrama Bogor. Warna widget mengikuti sekolah.</figcaption>
       </figure>
       </div>
+    </section>
+
+    <!-- Trailer: animasi HTML di trailer.js, hanya berjalan setelah tombol Putar ditekan. -->
+    <section id="trailer" aria-labelledby="trailer-title" class="mx-auto max-w-5xl scroll-mt-20 px-4 pt-24">
+      <h2 id="trailer-title" class="h2 max-w-2xl">Lihat Sigi bekerja dalam 40 detik.</h2>
+      <div id="sigi-trailer" class="mt-8">
+        <noscript><p class="rounded-xl bg-soft p-6 text-muted">Trailer butuh JavaScript. Naskahnya ada di bawah.</p></noscript>
+      </div>
+      <details class="mt-4 text-sm text-muted">
+        <summary class="inline-flex min-h-11 cursor-pointer items-center font-semibold text-ink">Baca naskah trailer</summary>
+        <ol class="mt-2 max-w-2xl list-decimal space-y-1.5 pl-5 leading-relaxed">
+          <li>Jam 9 malam, orang tua bertanya ke CS sekolah soal jurusan. Pesannya belum dibalas karena CS sudah pulang.</li>
+          <li>Sigi, maskot kijang, menyapa.</li>
+          <li>Di website sekolah, Sigi menjawab: PPLG kalau ingin membuat game, DKV kalau lebih suka desain dan animasi.</li>
+          <li>Sigi menawarkan agar panitia menghubungi lewat WhatsApp. Pengunjung mengisi nama dan nomor, lalu setuju dihubungi.</li>
+          <li>Data itu masuk ke menu Calon pendaftar di dashboard. Panitia klik Chat WhatsApp dan menandainya sudah dihubungi.</li>
+          <li>Di stan pameran, tamu bertanya ke layar kios, dan Sigi menjawab soal ekskul PPLG.</li>
+          <li>Penutup: Sigi, jawab calon murid kapan saja.</li>
+        </ol>
+        <p class="mt-3">Nama dan nomor calon pendaftar di trailer hanya contoh. Jawaban jurusan dan ekskul mengikuti data SPMB SMK Wikrama Bogor.</p>
+      </details>
     </section>
 
     <div class="relative isolate">
@@ -765,6 +787,7 @@
     </div>
   </footer>
 
+  <script src="trailer.js?v=20261127a" defer></script>
   <script>
     // Maskot hero melambai sekali saat dibuka, lalu lagi setiap kali kursor masuk atau maskot disentuh.
     const heroKijang = document.getElementById('hero-kijang');

@@ -1,0 +1,197 @@
+/*
+ * Trailer Sigi di landing (index.html). Digambar dengan HTML + CSS di panggung 960x540, lalu diperkecil
+ * sesuai lebar layar (trailer.js). Hanya berjalan setelah tombol Putar ditekan, bisa dijeda, dan berhenti
+ * sendiri di adegan terakhir, jadi tidak ada animasi yang berulang terus di halaman.
+ */
+.tr-frame {
+  --deep: #042f2e; --teal: #0f766e; --lime: #bef264; --mint: #ccfbf1; --cream: #fbf5ea;
+  --navy: #001e42; --gold: #e3ce0f; --ink: #191918; --muted: #6b6a66; --line: #e9e9e7;
+  position: relative; width: 100%; aspect-ratio: 16 / 9; overflow: hidden;
+  border-radius: 20px; background: var(--deep); color: #fff;
+  font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  box-shadow: 0 30px 70px -30px rgb(4 47 46 / 0.55);
+}
+.tr-stage [hidden] { display: none !important; }
+.tr-stage { position: absolute; left: 0; top: 0; width: 960px; height: 540px; transform-origin: 0 0; }
+.tr-scene { position: absolute; inset: 0; opacity: 0; visibility: hidden; transition: opacity .45s ease, visibility 0s linear .45s; }
+.tr-scene.is-on { opacity: 1; visibility: visible; transition: opacity .45s ease; }
+.tr-frame.is-paused *, .tr-frame.is-paused *::before, .tr-frame.is-paused *::after { animation-play-state: paused !important; }
+
+/* Teks besar di tiap adegan */
+.tr-cap {
+  position: absolute; left: 56px; bottom: 44px; max-width: 520px; margin: 0;
+  font-size: 40px; font-weight: 800; line-height: 1.12; letter-spacing: -0.02em;
+}
+.tr-cap.is-dark { color: var(--deep); }
+
+/* Animasi masuk yang dipicu kelas .is-in (dipasang oleh timeline) */
+.tr-pop { opacity: 0; }
+.tr-pop.is-in { animation: tr-in .5s cubic-bezier(.2,.9,.3,1) both; }
+@keyframes tr-in { from { opacity: 0; transform: translateY(14px) scale(.97); } to { opacity: 1; transform: none; } }
+.tr-slide.is-in { animation: tr-slide .55s cubic-bezier(.2,.9,.3,1) both; }
+@keyframes tr-slide { from { opacity: 0; transform: translateY(-26px); } to { opacity: 1; transform: none; } }
+
+/* Adegan 1: malam, chat ke CS tidak dibalas */
+.tr-s1 { background: radial-gradient(70% 90% at 75% 20%, #12324f 0%, #071526 70%); }
+.tr-phone {
+  position: absolute; left: 96px; top: 40px; width: 270px; height: 460px; border-radius: 34px;
+  background: #0d1117; border: 6px solid #1f2933; padding: 18px 14px; box-sizing: border-box;
+}
+.tr-phone-head { display: flex; align-items: center; gap: 10px; padding-bottom: 12px; border-bottom: 1px solid #253141; }
+.tr-phone-ava { width: 34px; height: 34px; border-radius: 50%; background: #2b3a4c; display: grid; place-items: center; font-size: 13px; font-weight: 700; color: #9fb2c8; }
+.tr-phone-name { font-size: 15px; font-weight: 700; color: #e6edf3; }
+.tr-phone-sub { font-size: 12px; color: #8b9bb0; }
+.tr-msg {
+  margin: 22px 0 0 auto; width: 205px; padding: 10px 12px 8px; border-radius: 14px 14px 4px 14px;
+  background: #1f5f4f; color: #eafff7; font-size: 14px; line-height: 1.4;
+}
+.tr-msg-meta { display: block; margin-top: 4px; text-align: right; font-size: 11px; color: #a7d8c8; }
+.tr-clock { position: absolute; right: 72px; top: 92px; font-size: 120px; font-weight: 800; letter-spacing: -0.04em; color: #e6edf3; font-variant-numeric: tabular-nums; }
+.tr-clock small { display: block; font-size: 22px; font-weight: 600; letter-spacing: 0; color: #8b9bb0; }
+.tr-s1 .tr-cap { left: auto; right: 64px; bottom: 70px; max-width: 420px; text-align: right; }
+
+/* Maskot: satu SVG yang dipindah antar adegan */
+.tr-kijang-slot { position: absolute; }
+.tr-kijang { display: block; width: 100%; height: auto; }
+.tr-kijang .mouth-open, .tr-kijang .thinking-bubble, .tr-kijang .listen-rings, .tr-kijang .success-mark, .tr-kijang .success-sparkles { opacity: 0; }
+.tr-kijang .wave-arm { transform-box: view-box; transform-origin: 352px 385px; }
+.tr-kijang[data-state="greeting"] .wave-arm { animation: tr-wave 1.1s ease-in-out 3; }
+.tr-kijang[data-state="speaking"] .mouth-smile { opacity: 0; }
+.tr-kijang[data-state="speaking"] .mouth-open { opacity: 1; transform-box: fill-box; transform-origin: center; animation: tr-talk .3s ease-in-out 16 alternate; }
+@keyframes tr-wave { 0%,100% { transform: rotate(0); } 25% { transform: rotate(-11deg); } 55% { transform: rotate(7deg); } 78% { transform: rotate(-8deg); } }
+@keyframes tr-talk { from { transform: scaleY(.45) scaleX(.88); } to { transform: scaleY(1.1) scaleX(1.03); } }
+
+/* Adegan 2: kenalan */
+.tr-s2 { background: radial-gradient(120% 70% at 50% 128%, var(--lime) 0 50%, transparent 50.5%), var(--mint); }
+.tr-s2 .tr-kijang-slot { left: 530px; top: 128px; width: 380px; } /* badan menapak di tepi bawah */
+.tr-s2 .tr-cap { color: var(--deep); bottom: auto; top: 150px; max-width: 420px; font-size: 54px; }
+.tr-s2 .tr-sub { position: absolute; left: 56px; top: 290px; max-width: 400px; margin: 0; font-size: 22px; line-height: 1.4; color: #0f4f4a; font-weight: 600; }
+
+/* Adegan 3-4: website sekolah + widget */
+.tr-s3 { background: #e9eef5; }
+.tr-site { position: absolute; left: 40px; top: 36px; width: 560px; height: 468px; border-radius: 14px; overflow: hidden; background: #fff; box-shadow: 0 20px 50px -25px rgb(0 30 66 / .5); }
+.tr-site-bar { height: 34px; display: flex; align-items: center; gap: 8px; padding: 0 14px; background: #f1f4f8; border-bottom: 1px solid #dde3ea; font-size: 12px; color: #6b7686; }
+.tr-site-url { flex: 1; height: 20px; border-radius: 6px; background: #fff; border: 1px solid #dde3ea; padding: 0 10px; line-height: 20px; }
+.tr-site-hero { height: 434px; padding: 54px 40px; box-sizing: border-box; background: var(--navy); }
+.tr-site-hero b { display: block; font-size: 40px; line-height: 1.1; letter-spacing: -0.02em; color: #fff; max-width: 360px; }
+.tr-site-hero span { display: block; margin-top: 16px; font-size: 16px; color: var(--gold); font-weight: 700; }
+.tr-site-hero i { display: block; margin-top: 10px; font-style: normal; font-size: 14px; line-height: 1.5; color: #c9d3e0; max-width: 330px; }
+.tr-widget {
+  position: absolute; right: 40px; top: 24px; width: 330px; height: 492px; border-radius: 22px; overflow: hidden;
+  background: #f8fafc; color: var(--ink); box-shadow: 0 30px 60px -20px rgb(0 30 66 / .45); display: flex; flex-direction: column;
+}
+.tr-w-head { display: flex; align-items: center; gap: 10px; padding: 12px 14px; background: var(--navy); color: #fff; }
+.tr-w-ava { width: 36px; height: 36px; flex-shrink: 0; border-radius: 11px; background: #fff7ea; box-shadow: inset 0 0 0 2px var(--gold); display: grid; place-items: center; }
+.tr-w-ava svg { width: 30px; height: 30px; }
+.tr-w-title { font-size: 14px; font-weight: 700; line-height: 1.2; }
+.tr-w-sub { font-size: 12px; opacity: .85; }
+.tr-w-body { flex: 1; display: flex; flex-direction: column; gap: 10px; padding: 14px; font-size: 13.5px; line-height: 1.5; overflow: hidden; }
+.tr-b-user { align-self: flex-end; max-width: 82%; padding: 9px 13px; border-radius: 15px 15px 5px 15px; background: var(--navy); color: #fff; }
+.tr-b-bot { align-self: flex-start; max-width: 88%; padding: 9px 13px; border-radius: 15px 15px 15px 5px; background: #fff; border: 1px solid #e2e8f0; }
+.tr-b-bot b { color: var(--navy); }
+.tr-dots { display: inline-flex; gap: 4px; padding: 12px 14px; border-radius: 15px; background: #fff; border: 1px solid #e2e8f0; align-self: flex-start; }
+.tr-dots i { width: 7px; height: 7px; border-radius: 50%; background: #94a3b8; animation: tr-dot 1s ease-in-out 4; }
+.tr-dots i:nth-child(2) { animation-delay: .15s; } .tr-dots i:nth-child(3) { animation-delay: .3s; }
+@keyframes tr-dot { 0%,60%,100% { transform: none; opacity: .5; } 30% { transform: translateY(-4px); opacity: 1; } }
+.tr-lead { padding: 12px; border-radius: 14px; background: #fff; border: 1px solid #c7d3e3; }
+.tr-lead p { margin: 0; }
+.tr-lead-t { font-weight: 700; font-size: 13.5px; }
+.tr-lead-d { margin-top: 2px !important; font-size: 12px; color: var(--muted); }
+.tr-field { margin-top: 8px; height: 30px; padding: 0 10px; border-radius: 9px; border: 1px solid #cbd5e1; font-size: 12.5px; line-height: 30px; color: var(--ink); white-space: nowrap; overflow: hidden; }
+.tr-field:empty::before { content: attr(data-ph); color: #94a3b8; }
+.tr-check { display: flex; gap: 7px; margin-top: 9px; font-size: 11.5px; color: #334155; line-height: 1.35; }
+.tr-check i { width: 14px; height: 14px; flex-shrink: 0; border-radius: 4px; border: 1.5px solid #64748b; margin-top: 1px; }
+.tr-check.is-checked i { background: var(--navy); border-color: var(--navy); box-shadow: inset 0 0 0 2.5px #fff; }
+.tr-btn { display: inline-block; margin-top: 10px; padding: 7px 14px; border-radius: 9px; background: var(--navy); color: #fff; font-size: 12.5px; font-weight: 700; }
+.tr-btn.is-pressed { transform: scale(.95); filter: brightness(1.2); }
+.tr-done { display: flex; gap: 8px; align-items: flex-start; }
+.tr-done svg { width: 18px; height: 18px; flex-shrink: 0; color: #15803d; margin-top: 1px; }
+.tr-s3 .tr-cap { left: 40px; bottom: 34px; padding: 14px 20px; border-radius: 14px; background: rgb(4 47 46 / .92); font-size: 30px; max-width: 520px; }
+
+/* Adegan 5: dashboard panitia */
+.tr-s5 { background: var(--deep); }
+.tr-dash { position: absolute; left: 330px; top: 56px; width: 580px; border-radius: 16px; overflow: hidden; background: #fff; color: var(--ink); box-shadow: 0 30px 70px -25px rgb(0 0 0 / .6); }
+.tr-dash-head { display: flex; justify-content: space-between; align-items: center; padding: 16px 22px; border-bottom: 1px solid var(--line); }
+.tr-dash-head b { font-size: 19px; }
+.tr-badge { padding: 4px 9px; border-radius: 7px; background: var(--lime); color: var(--deep); font-size: 12.5px; font-weight: 800; }
+.tr-rows { margin: 0; padding: 0; list-style: none; }
+.tr-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 22px; border-bottom: 1px solid var(--line); font-size: 14px; }
+.tr-row:last-child { border-bottom: 0; }
+.tr-row.is-new { background: #f7fee7; }
+.tr-row b { font-weight: 700; }
+.tr-row small { display: block; margin-top: 2px; font-size: 12px; color: var(--muted); }
+.tr-row em { font-style: normal; color: var(--muted); font-weight: 500; }
+.tr-act { flex-shrink: 0; padding: 6px 11px; border-radius: 8px; border: 1px solid var(--line); font-size: 12.5px; font-weight: 700; }
+.tr-act.is-pressed { background: #ecfccb; border-color: #a3e635; }
+.tr-act.is-status { border: 0; background: var(--mint); color: var(--deep); }
+.tr-cursor { position: absolute; width: 26px; height: 26px; left: 760px; top: 470px; opacity: 0; transition: left .9s cubic-bezier(.4,0,.2,1), top .9s cubic-bezier(.4,0,.2,1), opacity .2s; }
+.tr-cursor.is-on { opacity: 1; }
+.tr-s5 .tr-cap { left: 56px; bottom: auto; top: 120px; max-width: 250px; font-size: 36px; }
+.tr-s5 .tr-sub { position: absolute; left: 56px; top: 330px; max-width: 240px; margin: 0; font-size: 17px; line-height: 1.45; color: rgb(255 255 255 / .75); }
+
+/* Adegan 6: kios di stan pameran */
+.tr-s6 { background: radial-gradient(80% 90% at 30% 100%, #0b2f66 0%, var(--navy) 65%); }
+.tr-s6 .tr-kijang-slot { left: 70px; top: 183px; width: 330px; }
+.tr-kios-bubble {
+  position: absolute; left: 400px; top: 120px; width: 470px; padding: 26px 30px; border-radius: 26px;
+  background: #fff; color: var(--navy); font-size: 30px; font-weight: 800; line-height: 1.22; letter-spacing: -0.01em;
+}
+.tr-kios-bubble::before { content: ""; position: absolute; left: -14px; top: 120px; width: 28px; height: 28px; background: #fff; transform: rotate(45deg); border-radius: 4px; }
+.tr-kios-tamu { position: absolute; left: 400px; top: 64px; margin: 0; font-size: 17px; color: #c9d3e0; }
+.tr-s6 .tr-cap { left: auto; right: 64px; bottom: 44px; max-width: 470px; text-align: left; font-size: 30px; color: var(--gold); }
+
+/* Adegan 7: penutup */
+.tr-s7 { background: var(--lime); color: var(--deep); }
+.tr-s7 .tr-kijang-slot { left: 610px; top: 215px; width: 300px; }
+.tr-end-logo { position: absolute; left: 64px; top: 70px; display: flex; align-items: center; gap: 12px; font-size: 34px; font-weight: 800; letter-spacing: -0.02em; }
+.tr-end-logo span { width: 50px; height: 50px; border-radius: 14px; background: var(--deep); color: #fff; display: grid; place-items: center; }
+.tr-end-logo svg { width: 28px; height: 28px; }
+.tr-end-t { position: absolute; left: 64px; top: 170px; max-width: 520px; margin: 0; font-size: 56px; font-weight: 800; line-height: 1.06; letter-spacing: -0.03em; }
+.tr-end-d { position: absolute; left: 64px; top: 370px; max-width: 470px; margin: 0; font-size: 21px; line-height: 1.45; font-weight: 600; color: #134e4a; }
+
+/* Lapisan sampul dan kontrol (di luar panggung, ukurannya tidak ikut diperkecil) */
+/* Tombol Putar di kiri bawah sampul, sejajar teks, supaya tidak menutupi tulisan atau maskot. */
+.tr-poster { position: absolute; left: 5.8%; bottom: 8%; }
+.tr-poster[hidden] { display: none; }
+.tr-play {
+  display: inline-flex; align-items: center; gap: 10px; min-height: 52px; padding: 0 24px; border: 0; border-radius: 999px;
+  background: #fff; color: var(--deep); font: inherit; font-size: 16px; font-weight: 800; cursor: pointer;
+  box-shadow: 0 14px 34px -12px rgb(0 0 0 / .5);
+}
+.tr-play:hover { background: var(--lime); }
+.tr-play svg { width: 18px; height: 18px; }
+/* Kontrol di bawah bingkai, jadi tidak pernah menutupi teks adegan. */
+.tr-bar {
+  display: flex; align-items: center; gap: 10px; margin-top: 10px;
+  padding: 6px; border-radius: 999px; background: #042f2e;
+  font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+}
+.tr-bar[hidden] { display: none; }
+.tr-ctl {
+  min-width: 44px; min-height: 36px; padding: 0 12px; border: 0; border-radius: 999px; background: rgb(255 255 255 / .14);
+  color: #fff; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer;
+}
+.tr-ctl:hover { background: rgb(255 255 255 / .26); }
+.tr-progress { flex: 1; height: 4px; border-radius: 4px; background: rgb(255 255 255 / .25); overflow: hidden; }
+.tr-progress i { display: block; height: 100%; width: 0; background: #bef264; }
+.tr-frame :focus-visible, .tr-bar :focus-visible { outline: 3px solid #bef264; outline-offset: 2px; }
+
+/* Bingkai sempit (HP): sub-judul disembunyikan, teks besar dibuat lebih besar lagi. */
+.tr-frame.is-small .tr-sub, .tr-frame.is-small .tr-end-d, .tr-frame.is-small .tr-clock small { display: none; }
+.tr-frame.is-small .tr-cap { font-size: 50px; max-width: 600px; }
+.tr-frame.is-small .tr-s3 .tr-cap { font-size: 40px; max-width: 560px; }
+.tr-frame.is-small .tr-s6 .tr-cap { font-size: 38px; }
+.tr-frame.is-small .tr-end-t { font-size: 66px; }
+
+@media (max-width: 640px) {
+  .tr-frame { border-radius: 14px; }
+  /* Di HP tombol Putar pindah ke pojok kanan bawah (di atas bukit/badan maskot), supaya teks sampul tetap terbaca. */
+  .tr-poster { left: auto; right: 10px; bottom: 10px; }
+  .tr-play { min-height: 40px; padding: 0 14px; font-size: 13px; gap: 7px; }
+  .tr-play svg { width: 14px; height: 14px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tr-pop.is-in, .tr-slide.is-in { animation: none; opacity: 1; }
+  .tr-kijang[data-state] .wave-arm, .tr-kijang[data-state] .mouth-open, .tr-dots i { animation: none !important; }
+  .tr-scene, .tr-cursor { transition: none; }
+}
