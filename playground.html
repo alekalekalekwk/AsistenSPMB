@@ -642,9 +642,33 @@ const SMALL_TALK = /^(halo|hai|oke|ok|baik|siap|sip|iya|ya|makasih|terima kasih)
 // Contoh pertanyaan di layar kosong. Diklik hanya mengisi kolom input, belum mengirim.
 const SAMPLE_QUESTIONS = ['Cara daftarnya gimana?', 'Ada beasiswa nggak?', 'Jurusan apa aja yang ada?'];
 
+function createUuid() {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') return crypto.randomUUID();
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
+  });
+}
+
+function getVisitorSessionId() {
+  const key = 'sigi:visitor-session';
+  try {
+    const existing = sessionStorage.getItem(key);
+    if (existing) return existing;
+    const created = createUuid();
+    sessionStorage.setItem(key, created);
+    return created;
+  } catch {
+    return createUuid();
+  }
+}
+
 // Semua data aplikasi ada di sini. Tampilan selalu digambar ulang dari state ini.
 const state = {
   documents: [], // { name, size, pages, text }
+  conversationId: createUuid(),
+  visitorSessionId: getVisitorSessionId(),
+  pendingInputSource: null,
   needsLogin: false, // true di Vercel sebelum password dimasukkan
   serverKey: false, // true kalau server lokal punya key Netra dari .env
   serverDeepgramKey: false, // sama, untuk key Deepgram
@@ -783,17 +807,49 @@ async function serverLogin(password) {
   }
 }
 
-async function serverKeys() {
+function hasServerBackend() {
   const isLocal = location.protocol === 'http:' && ['localhost', '127.0.0.1'].includes(location.hostname);
   const isVercel = location.protocol === 'https:' && location.hostname.endsWith('.vercel.app');
-  if (!isLocal && !isVercel) return {};
+  return isLocal || isVercel;
+}
+
+async function serverKeys() {
+  if (!hasServerBackend()) return {};
   try {
     const response = await fetch('/api/status', { cache: 'no-store' });
     if (response.ok) return await response.json();
   } catch {
     // ditangani di bawah
   }
+  const isVercel = location.protocol === 'https:' && location.hostname.endsWith('.vercel.app');
   return isVercel ? { login: true } : {}; // di Vercel lebih baik minta password daripada minta key
+}
+
+function buildMeta(channel = 'chat', inputSource = 'typed') {
+  return {
+    schoolId: 'wikrama',
+    schoolName: SCHOOL_NAME,
+    periodLabel: '2027-2028',
+    conversationId: state.conversationId,
+    visitorSessionId: state.visitorSessionId,
+    channel,
+    inputSource,
+  };
+}
+
+function sendEvent(eventName, { channel = null, metadata = {} } = {}) {
+  if (!hasServerBackend() || state.needsLogin) return;
+  fetch('/api/events', {
+    method: 'POST',
+    keepalive: true,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      ...buildMeta(channel || 'chat', 'typed'),
+      channel,
+      eventName,
+      metadata,
+    }),
+  }).catch(() => {});
 }
 
 function describeApiError(status, data) {
@@ -820,7 +876,7 @@ function describeApiError(status, data) {
 }
 
 // signal hanya dipakai telepon: endCall membatalkan permintaan yang jawabannya tidak akan dibacakan lagi.
-async function askAgent(apiKey, model, messages, signal) {
+async function askAgent(apiKey, model, messages, signal, meta) {
   let response;
   try {
     // Key dari .env: server lokal yang menambahkan key-nya, jadi browser tidak pernah memegangnya.
@@ -838,6 +894,7 @@ async function askAgent(apiKey, model, messages, signal) {
         // Token penalaran ikut dihitung di max_tokens, jadi batasnya dibuat cukup longgar.
         max_tokens: 2048,
         reasoning: { enabled: true },
+        ...(viaServer && meta ? { meta } : {}),
       }),
     });
   } catch {
@@ -1541,6 +1598,8 @@ function finishRecording() {
   } else {
     // Teks hasil rekaman dikirim lewat form chat, sama seperti pertanyaan yang diketik
     // (termasuk pengecekan API key Netra dan tampilan error).
+    sendEvent('mic_used', { channel: 'mic' });
+    state.pendingInputSource = 'mic';
     el.chatForm.requestSubmit();
   }
 }
@@ -1601,6 +1660,10 @@ async function handleSubmit(event) {
     return;
   }
 
+  const inputSource = state.pendingInputSource || 'typed';
+  state.pendingInputSource = null;
+  const channel = inputSource === 'mic' ? 'mic' : 'chat';
+
   state.error = '';
   state.history.push({ role: 'user', content: question, time: Date.now() });
   el.chatInput.value = '';
@@ -1617,7 +1680,7 @@ async function handleSubmit(event) {
   const startedAt = performance.now();
 
   try {
-    const { content, tokens } = await askAgent(apiKey, model, messages);
+    const { content, tokens } = await askAgent(apiKey, model, messages, undefined, buildMeta(channel, inputSource));
     state.history.push({ role: 'assistant', content, time: Date.now(), latencyMs: performance.now() - startedAt, tokens, source: describeSources() });
     state.connection = 'ok';
     el.chatStatus.textContent = `Asisten Wikrama: ${stripMarkdown(content)}`;
@@ -1931,7 +1994,7 @@ async function answerCustomer(question) {
   ];
   const startedAt = performance.now();
   // signal panggilan ini: endCall membatalkan permintaan Netra yang jawabannya tidak akan dibacakan lagi.
-  const reply = askAgent(session.netraKey, session.model, messages, session.abort.signal);
+  const reply = askAgent(session.netraKey, session.model, messages, session.abort.signal, buildMeta('call', 'call_voice'));
   reply.catch(() => {}); // error-nya ditangani di bawah; ini mencegah peringatan selagi kalimat jeda diucapkan
 
   let waited = false;
@@ -2045,6 +2108,8 @@ async function startCall() {
     renderCallTimer();
 
     preloadLines(session); // sengaja tidak ditunggu, supaya salam pembuka tidak tertunda
+    session.callConnected = true;
+    sendEvent('call_started', { channel: 'call' });
 
     pauseListening();
     const greeting = buildGreeting(SCHOOL_NAME);
@@ -2081,6 +2146,10 @@ function endCall(message = '', session = call) {
   session.lineAudio.clear();
 
   if (!isCurrent) return;
+  if (session.callConnected) {
+    const duration = session.startedAt ? Math.max(0, Math.floor((Date.now() - session.startedAt) / 1000)) : 0;
+    sendEvent('call_ended', { channel: 'call', metadata: { duration_seconds: duration } });
+  }
   // Panggilan berakhir (sengaja atau karena error) sebelum pertanyaan terakhir dijawab: pertanyaan dan kalimat
   // jedanya dibuang. Ini dikerjakan sekarang, sebelum panggilan baru sempat menambah riwayat.
   if (session.turnStart != null) state.history.length = session.turnStart;
@@ -2110,6 +2179,8 @@ el.chatInput.addEventListener('input', fitChatInput);
 
 el.clearButton.addEventListener('click', () => {
   if (state.callStatus !== 'off') return; // riwayat sedang dipakai panggilan
+  sendEvent('conversation_reset', { channel: 'chat' });
+  state.conversationId = createUuid();
   state.history = [];
   state.error = '';
   renderMessages();

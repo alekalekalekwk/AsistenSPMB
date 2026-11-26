@@ -4,6 +4,7 @@
 window.Sigi = {
   id: 'wikrama',
   schoolName: 'SMK Wikrama Bogor',
+  periodLabel: '2027-2028',
   // Warna widget mengikuti identitas sekolah (navy dan kuning emas Wikrama).
   colors: { primary: '#001e42', onPrimary: '#ffffff', accent: '#e3ce0f', onAccent: '#001e42' },
   greeting: 'Halo! Aku Asisten SPMB SMK Wikrama Bogor. Mau tanya soal pendaftaran, jurusan, atau ekskul?',

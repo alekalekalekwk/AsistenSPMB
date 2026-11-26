@@ -11,7 +11,7 @@ import { createServer } from 'node:http';
 import { readFile, realpath, stat } from 'node:fs/promises';
 import { dirname, extname, join, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { checkDeepgram, checkKey, cleanKey, configure, handleApi, handleListen, isCleanKey, keyId, log, oneLine, sendError } from './lib/sigi-api.mjs';
+import { checkDeepgram, checkKey, checkSupabase, cleanKey, configure, handleApi, handleListen, isCleanKey, keyId, log, oneLine, sendError } from './lib/sigi-api.mjs';
 
 const ROOT = await realpath(dirname(fileURLToPath(import.meta.url)));
 const PORT = Number(process.env.PORT) || 8123;
@@ -102,6 +102,7 @@ async function handle(req, res) {
 if (process.argv.includes('--cek')) {
   console.log(`Netra: ${await checkKey()}`);
   console.log(`Deepgram: ${await checkDeepgram()}`);
+  console.log(`Supabase: ${await checkSupabase()}`);
 } else {
   const server = createServer((req, res) => {
     handle(req, res).catch((error) => {
@@ -122,5 +123,10 @@ if (process.argv.includes('--cek')) {
       const key = await readKey(name).catch(() => '');
       console.log(isCleanKey(key) ? `Key ${label} dibaca dari .env (${keyId(key)}).` : `${name} di .env belum diisi atau salah format. Isi, lalu muat ulang halaman.`);
     }
+    const supaUrl = await readKey('SUPABASE_URL').catch(() => '');
+    const supaKey = await readKey('SUPABASE_SERVICE_ROLE_KEY').catch(() => '');
+    console.log(supaUrl && isCleanKey(supaKey)
+      ? `Supabase aktif dari .env (${keyId(supaKey)}).`
+      : 'Supabase di .env belum diisi (percakapan belum dicatat ke database).');
   });
 }

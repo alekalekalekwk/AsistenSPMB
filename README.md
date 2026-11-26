@@ -61,6 +61,7 @@ AsistenSPMB/
 - **Node.js 20 atau lebih baru** (diperlukan oleh `server.mjs` dan `lib/sigi-api.mjs` untuk fitur standar seperti `fetch`, `AbortSignal.any`, dan `Readable.fromWeb`).
 - **API key Netra** (`NETRA_API_KEY`) untuk pemrosesan chat melalui `https://api.netra.sh/v1` (model bawaan: `deepseek/deepseek-v4.1-flash`).
 - **API key Deepgram** (`DEEPGRAM_API_KEY`, opsional) jika ingin mengaktifkan input mikrofon dan fitur telepon suara.
+- **Proyek Supabase** (`SUPABASE_URL` & `SUPABASE_SERVICE_ROLE_KEY`, opsional) jika ingin mengaktifkan pencatatan percakapan dan dashboard analitik (`#/percakapan`).
 
 ## Menjalankan secara Lokal
 
@@ -84,7 +85,11 @@ Server lokal (`server.mjs`) menyajikan seluruh halaman HTML sekaligus bertindak 
    ```env
    NETRA_API_KEY=isi_api_key_netra
    DEEPGRAM_API_KEY=isi_api_key_deepgram
+   SUPABASE_URL=https://proyek-kamu.supabase.co
+   SUPABASE_SERVICE_ROLE_KEY=isi_service_role_key_supabase
    ```
+
+   Untuk mengaktifkan analitik Supabase, buka **SQL Editor** di dashboard Supabase, lalu jalankan seluruh isi file `supabase/schema.sql`.
 
 3. Periksa apakah API key terbaca dan diterima penyedia layanan (tanpa menjalankan AI dan tanpa memotong saldo):
 
@@ -115,6 +120,8 @@ Atur **Environment Variables** berikut pada pengaturan proyek Vercel:
 | :--- | :--- | :--- |
 | `NETRA_API_KEY` | Ya | API key Netra untuk endpoint `/api/chat`. |
 | `DEEPGRAM_API_KEY` | Opsional | API key Deepgram untuk mikrofon (`/api/listen`) dan suara telepon (`/api/speak`). |
+| `SUPABASE_URL` | Opsional | URL proyek Supabase untuk pencatatan percakapan dan analitik `#/percakapan`. |
+| `SUPABASE_SERVICE_ROLE_KEY` | Opsional | Service role key Supabase (hanya dipakai backend; tabel terkunci RLS deny-all untuk publik). |
 | `SIGI_PASSWORD` | Ya | Password masuk halaman Sigi di Vercel, minimal 12 karakter. Jika kosong atau kurang dari 12 karakter, seluruh endpoint API akan menolak permintaan. |
 
 Setelah deploy, pengunjung halaman Sigi di Vercel diminta memasukkan password terlebih dahulu. Sesi masuk disimpan dalam cookie `__Host-sigi` (`HttpOnly`, `Secure`, `SameSite=Strict`) selama 12 jam. Mengubah `SIGI_PASSWORD` otomatis mengakhiri seluruh sesi yang sedang aktif.
@@ -149,10 +156,13 @@ Seluruh endpoint berikut dilayani oleh `server.mjs` (lokal) dan folder `api/` (V
 | `POST` | `/api/chat` | Meneruskan permintaan percakapan ke Netra (`max_tokens` dibatasi maksimal 8192). |
 | `POST` | `/api/speak` | Mengubah teks balasan menjadi audio MP3 melalui Deepgram Flux (`/v2/speak`). |
 | `WS` | `/api/listen` | Proxy WebSocket untuk transkripsi suara langsung melalui Deepgram (`/v1/listen`). |
+| `POST` | `/api/events` | Mencatat event ringan widget (`widget_opened`, klik saran, mulai/selesai telepon) ke Supabase. |
+| `GET` | `/api/analytics` | Mengambil ringkasan percakapan, pertanyaan populer/belum terjawab, dan jam ramai WIB dari Supabase. |
 
 ## Keamanan dan Privasi
 
-- Pada mode server lokal dan Vercel, API key hanya dibaca di backend dan tidak pernah dikirim ke browser. Pengalihan HTTP (`redirect: 'error'`) dinonaktifkan pada permintaan keluar agar key tidak terbawa ke alamat lain.
+- Pada mode server lokal dan Vercel, API key dan `SUPABASE_SERVICE_ROLE_KEY` hanya dibaca di backend dan tidak pernah dikirim ke browser. Seluruh tabel Supabase memakai RLS deny-all untuk `anon`/`authenticated`.
 - Seluruh endpoint API memeriksa header `Host` dan `Origin` (same-origin) untuk mencegah penyalahgunaan saldo dari situs pihak ketiga atau DNS rebinding.
-- Log server hanya mencatat status HTTP, durasi, ID permintaan, sidik jari key (6 karakter hash SHA-256), dan ringkasan error. Isi percakapan dan nilai API key asli tidak pernah dicatat.
+- Log konsol server hanya mencatat status HTTP, durasi, ID permintaan, sidik jari key (6 karakter hash SHA-256), dan ringkasan error.
+- Ketika Supabase aktif, pesan percakapan yang disimpan ke database disensor otomatis dari pola PII (NIK, NISN, nomor KK, nomor rekening, nomor HP, dan email) dan memakai `visitor_session_id` acak tanpa IP address.
 - Aturan sistem melarang asisten meminta data sensitif seperti NIK, NISN, nomor KK, password, atau nomor rekening melalui percakapan. Pendaftaran tetap dilakukan melalui portal resmi sekolah.
