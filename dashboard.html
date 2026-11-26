@@ -158,6 +158,8 @@ if (!api) {
 let school = api.data.load();
 let serverMode = false;
 let serverKeys = [];
+// Akun demo dipakai bersama, jadi server menolak semua perubahan (SIGI_DEMO_READONLY).
+let demoReadOnly = false;
 let lastCreatedSecret = null; // ditampilkan sekali saja tepat setelah Secret Key dibuat
 let pubKeyLoading = false;
 let secretKeyLoading = false;
@@ -220,8 +222,9 @@ async function syncFromServer(schoolId) {
   school = fromServerSchool(data.school);
   api.setSchoolData?.(school);
   el.schoolModeLabel.textContent = `Sigi · ${school.plan === 'active' ? 'Aktif' : 'Trial'} (${school.chatUsed}/${school.chatQuota})`;
+  demoReadOnly = data.user?.isDemo === true;
   if (data.user?.email) {
-    el.accountEmail.textContent = data.user.email;
+    el.accountEmail.textContent = demoReadOnly ? `${data.user.email} (demo, hanya lihat)` : data.user.email;
     el.linkLogin.hidden = true;
     el.logoutBtn.hidden = false;
     el.reset.hidden = true;
@@ -410,6 +413,12 @@ function persist({ now = false } = {}) {
   setStatus('Menyimpan ke database…');
   const run = () => {
     try {
+      if (serverMode && demoReadOnly) {
+        // Perubahan tetap terlihat di tab ini untuk dicoba, tapi tidak dikirim ke database.
+        api.setSchoolData?.(school);
+        setStatus('Akun demo: perubahan tidak disimpan', true);
+        return true;
+      }
       if (serverMode && school.id) {
         api.setSchoolData?.(school);
         fetch('/api/dashboard/school', {
@@ -1115,6 +1124,10 @@ function renderInstall() {
     const fallbackCode = '<script src="sekolah/wikrama.js"><\/script>\n<script src="widget.js" defer><\/script>';
     wrap.append(codeBlock('website-sekolah.html', fallbackCode));
     return;
+  }
+
+  if (demoReadOnly) {
+    wrap.append(callout('Akun demo hanya bisa melihat. Membuat, memutar ulang, atau mencabut API key butuh akun sekolah sendiri. Daftar lewat halaman login.', 'mt-6 bg-amber-50 text-amber-900'));
   }
 
   const origin = location.origin;
@@ -1842,6 +1855,10 @@ function renderConversations() {
       if (requestId !== activeRequest) return;
       const data = await response.json().catch(() => null);
 
+      if (data?.error?.code === 'SIGI_AUTH_REQUIRED') {
+        location.replace(`login.html?next=${encodeURIComponent(`dashboard.html${location.hash || ''}`)}`);
+        return;
+      }
       if (response.status === 401 || data?.error?.code === 'SIGI_LOGIN') {
         body.replaceChildren();
         renderLoginPrompt(body, () => {
