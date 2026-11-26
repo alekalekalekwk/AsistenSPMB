@@ -49,6 +49,14 @@
       .md strong, .md .md-heading { @apply font-bold; }
       .md code { @apply rounded bg-slate-100 px-1 font-mono text-[0.9em]; }
       .md a { @apply font-semibold text-royal underline underline-offset-2 [overflow-wrap:anywhere]; }
+      .md [hidden], .stream-tok[hidden] { display: none; }
+      .row-enter { animation: sigi-bubble-in 180ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+      .stream-tok { animation: sigi-tok-in 160ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+      @keyframes sigi-bubble-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+      @keyframes sigi-tok-in { from { opacity: 0; } to { opacity: 1; } }
+      @media (prefers-reduced-motion: reduce) {
+        .row-enter, .stream-tok { animation: none; }
+      }
     }
   </style>
 </head>
@@ -1293,13 +1301,15 @@ function createCopyButton(text) {
 
 function createBubble(message) {
   const isUser = message.role === 'user';
+  const isRevealing = !isUser && replyReveal?.entry === message;
   const bubble = make('div', isUser ? 'bubble bubble-user' : 'bubble bubble-agent');
   if (isUser) {
     bubble.append(make('p', 'whitespace-pre-wrap break-words', message.content));
   } else {
     // Jawaban asisten ditampilkan sebagai Markdown sederhana, tetap tanpa innerHTML.
     const body = make('div', 'md break-words');
-    body.append(renderMarkdown(message.content));
+    body.append(isRevealing ? replyReveal.fragment : renderMarkdown(message.content));
+    if (isRevealing) replyReveal.bodyEl = body;
     bubble.append(body);
   }
 
@@ -1325,7 +1335,7 @@ function createBubble(message) {
 
   const column = make('div', 'flex min-w-0 flex-1 flex-col items-start');
   column.append(head, bubble, meta);
-  const wrapper = make('div', 'flex items-start gap-3');
+  const wrapper = make('div', `flex items-start gap-3${isRevealing ? ' row-enter' : ''}`);
   wrapper.append(createAvatar(), column);
   return wrapper;
 }
@@ -1383,6 +1393,107 @@ function createError(text) {
   const box = make('div', 'flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-800');
   box.append(icon('alert', 'mt-0.5 size-4 shrink-0'), make('p', '', text));
   return box;
+}
+
+// Animasi muncul bertahap 60fps per potongan kata dengan fade-in halus, selesai <= 3,2 detik (WCAG 2.2.2).
+let replyReveal = null;
+
+const prefersReducedMotion = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
+
+function buildRevealTokens(text) {
+  const fragment = renderMarkdown(text);
+  for (const node of fragment.querySelectorAll('*')) node.hidden = true;
+  const walker = document.createTreeWalker(fragment, NodeFilter.SHOW_TEXT);
+  const textNodes = [];
+  for (let current = walker.nextNode(); current; current = walker.nextNode()) {
+    if (current.nodeValue) textNodes.push(current);
+  }
+  const tokens = [];
+  for (const node of textNodes) {
+    const chunks = node.nodeValue.match(/\S{1,4}\s*|\s+/g) || [node.nodeValue];
+    const box = document.createDocumentFragment();
+    for (const chunk of chunks) {
+      const span = make('span', 'stream-tok', chunk);
+      span.hidden = true;
+      box.append(span);
+      tokens.push(span);
+    }
+    node.replaceWith(box);
+  }
+  return { fragment, tokens };
+}
+
+function revealTokensUntil(stateObj, targetCount) {
+  const { tokens, bodyEl } = stateObj;
+  while (stateObj.shown < targetCount && stateObj.shown < tokens.length) {
+    const tok = tokens[stateObj.shown++];
+    for (let p = tok.parentElement; p && p !== bodyEl && p.hidden; p = p.parentElement) {
+      p.hidden = false;
+    }
+    tok.hidden = false;
+  }
+}
+
+function cancelReveal({ rerender = false } = {}) {
+  if (!replyReveal) return;
+  if (replyReveal.raf) cancelAnimationFrame(replyReveal.raf);
+  clearTimeout(replyReveal.timer);
+  const prevTop = el.chatMessages.scrollTop;
+  const nearBottom = el.chatMessages.scrollHeight - prevTop - el.chatMessages.clientHeight < 96;
+  replyReveal = null;
+  el.chatMessages.style.scrollBehavior = '';
+  if (rerender) {
+    renderMessages();
+    if (!nearBottom) requestAnimationFrame(() => { el.chatMessages.scrollTop = prevTop; });
+  }
+}
+
+function startReplyReveal(entry) {
+  cancelReveal();
+  const text = entry?.content || '';
+  if (state.callStatus !== 'off' || prefersReducedMotion() || text.length < 24) {
+    renderMessages();
+    return;
+  }
+  const { fragment, tokens } = buildRevealTokens(text);
+  if (tokens.length === 0) {
+    renderMessages();
+    return;
+  }
+  const durationMs = Math.min(3000, Math.max(450, text.length * 7.5));
+  const current = {
+    entry,
+    fragment,
+    tokens,
+    shown: 0,
+    bodyEl: null,
+    raf: 0,
+    timer: null,
+  };
+  replyReveal = current;
+  renderMessages();
+  if (!current.bodyEl) {
+    cancelReveal();
+    return;
+  }
+  revealTokensUntil(current, 1);
+  el.chatMessages.style.scrollBehavior = 'auto';
+  const startedAt = performance.now();
+
+  const frame = (now) => {
+    if (replyReveal !== current) return;
+    const elapsed = now - startedAt;
+    const target = Math.min(tokens.length, Math.max(1, Math.floor((elapsed / durationMs) * tokens.length) + 1));
+    const nearBottom = el.chatMessages.scrollHeight - el.chatMessages.scrollTop - el.chatMessages.clientHeight < 96;
+    revealTokensUntil(current, target);
+    if (nearBottom) el.chatMessages.scrollTop = el.chatMessages.scrollHeight;
+    if (current.shown >= tokens.length) {
+      current.timer = setTimeout(() => cancelReveal({ rerender: true }), 170);
+      return;
+    }
+    current.raf = requestAnimationFrame(frame);
+  };
+  current.raf = requestAnimationFrame(frame);
 }
 
 // Tiga keadaan layar: kosong, memuat, dan error. Semuanya dibaca dari state.
@@ -1644,6 +1755,7 @@ function fitChatInput() {
 async function handleSubmit(event) {
   event.preventDefault();
   if (state.isSending || state.voiceStatus !== 'idle' || state.callStatus !== 'off') return;
+  cancelReveal({ rerender: true });
 
   const question = el.chatInput.value.trim();
   const apiKey = netraKey();
@@ -1679,9 +1791,11 @@ async function handleSubmit(event) {
   ];
   const startedAt = performance.now();
 
+  let revealedEntry = null;
   try {
     const { content, tokens } = await askAgent(apiKey, model, messages, undefined, buildMeta(channel, inputSource));
-    state.history.push({ role: 'assistant', content, time: Date.now(), latencyMs: performance.now() - startedAt, tokens, source: describeSources() });
+    revealedEntry = { role: 'assistant', content, time: Date.now(), latencyMs: performance.now() - startedAt, tokens, source: describeSources() };
+    state.history.push(revealedEntry);
     state.connection = 'ok';
     el.chatStatus.textContent = `Asisten Wikrama: ${stripMarkdown(content)}`;
   } catch (error) {
@@ -1693,7 +1807,11 @@ async function handleSubmit(event) {
     state.connection = 'error';
     el.chatStatus.textContent = error.message;
   } finally {
-    setSending(false);
+    state.isSending = false;
+    el.sendLabel.textContent = 'Kirim';
+    el.chatForm.setAttribute('aria-busy', 'false');
+    if (revealedEntry) startReplyReveal(revealedEntry);
+    else renderMessages();
   }
 }
 
@@ -2032,6 +2150,7 @@ async function answerCustomer(question) {
 
 async function startCall() {
   if (state.callStatus !== 'off' || state.isSending || state.voiceStatus !== 'idle') return;
+  cancelReveal();
 
   const apiKey = netraKey();
   const speechKey = deepgramKey();
@@ -2179,6 +2298,7 @@ el.chatInput.addEventListener('input', fitChatInput);
 
 el.clearButton.addEventListener('click', () => {
   if (state.callStatus !== 'off') return; // riwayat sedang dipakai panggilan
+  cancelReveal();
   sendEvent('conversation_reset', { channel: 'chat' });
   state.conversationId = createUuid();
   state.history = [];

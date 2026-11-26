@@ -660,6 +660,11 @@
       background: var(--surface); color: var(--ink);
       box-shadow: 0 1px 2px rgb(15 23 42 / 0.04);
     }
+    .row-enter { animation: sigi-bubble-in 180ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+    @keyframes sigi-bubble-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+    .stream-tok { animation: sigi-tok-in 160ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+    @keyframes sigi-tok-in { from { opacity: 0; } to { opacity: 1; } }
+    .md [hidden], .stream-tok[hidden] { display: none; }
 
     .msg-actions { display: flex; align-items: center; gap: 4px; padding-left: 2px; }
     .copy-btn {
@@ -813,7 +818,7 @@
     }
 
     @media (prefers-reduced-motion: reduce) {
-      .panel, .typing span { animation: none; }
+      .panel, .typing span, .row-enter, .stream-tok { animation: none; }
       .messages { scroll-behavior: auto; }
       .launcher-label, .launcher-btn, .prompt-btn, .prompt-btn svg, .scroll-bottom, .send { transition: none; }
     }
@@ -1125,19 +1130,20 @@
     return button;
   }
 
-  function messageRow(role, text, { allowCopy = false } = {}) {
+  function messageRow(role, text, { allowCopy = false, contentFragment = null, animateEnter = false } = {}) {
     const isUser = role === 'user';
-    const row = make('div', `row ${isUser ? 'user' : 'bot'}`);
+    const row = make('div', `row ${isUser ? 'user' : 'bot'}${animateEnter ? ' row-enter' : ''}`);
     const col = make('div', 'msg-col');
     const bubble = make('div', 'bubble');
     // Label untuk pembaca layar, lalu isinya. Pesan pengguna tetap teks biasa (text node);
     // jawaban asisten ditampilkan sebagai Markdown sederhana lewat renderMarkdown (juga tanpa innerHTML).
     bubble.append(make('span', 'sr-only', isUser ? 'Kamu: ' : 'Asisten: '));
+    let body = null;
     if (isUser) {
       bubble.append(document.createTextNode(text));
     } else {
-      const body = make('div', 'md');
-      body.append(renderMarkdown(text));
+      body = make('div', 'md');
+      body.append(contentFragment || renderMarkdown(text));
       bubble.append(body);
     }
     col.append(bubble);
@@ -1148,7 +1154,7 @@
     }
     if (!isUser) row.append(miniAvatar());
     row.append(col);
-    return row;
+    return { row, body };
   }
 
   function welcomeBlock(suggestions) {
@@ -1391,6 +1397,115 @@
     ref.scrollBottom.hidden = distance < 96;
   }
 
+  // Animasi muncul bertahap 60fps per potongan kata dengan fade-in halus, selesai <= 3,2 detik (WCAG 2.2.2).
+  let replyReveal = null;
+
+  const prefersReducedMotion = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
+
+  function buildRevealTokens(text) {
+    const fragment = renderMarkdown(text);
+    for (const node of fragment.querySelectorAll('*')) node.hidden = true;
+    const walker = document.createTreeWalker(fragment, NodeFilter.SHOW_TEXT);
+    const textNodes = [];
+    for (let current = walker.nextNode(); current; current = walker.nextNode()) {
+      if (current.nodeValue) textNodes.push(current);
+    }
+    const tokens = [];
+    for (const node of textNodes) {
+      const chunks = node.nodeValue.match(/\S{1,4}\s*|\s+/g) || [node.nodeValue];
+      const box = document.createDocumentFragment();
+      for (const chunk of chunks) {
+        const span = make('span', 'stream-tok', chunk);
+        span.hidden = true;
+        box.append(span);
+        tokens.push(span);
+      }
+      node.replaceWith(box);
+    }
+    return { fragment, tokens };
+  }
+
+  function revealTokensUntil(stateObj, targetCount) {
+    const { tokens, bodyEl } = stateObj;
+    while (stateObj.shown < targetCount && stateObj.shown < tokens.length) {
+      const tok = tokens[stateObj.shown++];
+      for (let p = tok.parentElement; p && p !== bodyEl && p.hidden; p = p.parentElement) {
+        p.hidden = false;
+      }
+      tok.hidden = false;
+    }
+  }
+
+  function cancelReveal({ rerender = false } = {}) {
+    if (!replyReveal) return;
+    if (replyReveal.raf) cancelAnimationFrame(replyReveal.raf);
+    clearTimeout(replyReveal.timer);
+    const prevTop = ref.messages.scrollTop;
+    const nearBottom = ref.messages.scrollHeight - prevTop - ref.messages.clientHeight < 96;
+    replyReveal = null;
+    ref.messages.style.scrollBehavior = '';
+    if (rerender) {
+      renderMessages();
+      if (!nearBottom) {
+        requestAnimationFrame(() => {
+          ref.messages.scrollTop = prevTop;
+          updateScrollButton();
+        });
+      }
+    }
+  }
+
+  function startReplyReveal(entry) {
+    cancelReveal();
+    const text = entry?.content || '';
+    if (!state.isOpen || state.callStatus !== 'off' || prefersReducedMotion() || text.length < 24) {
+      renderMessages();
+      return;
+    }
+    const { fragment, tokens } = buildRevealTokens(text);
+    if (tokens.length === 0) {
+      renderMessages();
+      return;
+    }
+    const durationMs = Math.min(3000, Math.max(450, text.length * 7.5));
+    const current = {
+      entry,
+      fragment,
+      tokens,
+      shown: 0,
+      bodyEl: null,
+      raf: 0,
+      timer: null,
+    };
+    replyReveal = current;
+    renderMessages();
+    if (!current.bodyEl) {
+      cancelReveal();
+      return;
+    }
+    revealTokensUntil(current, 1);
+    ref.messages.style.scrollBehavior = 'auto';
+    const startedAt = performance.now();
+
+    const frame = (now) => {
+      if (replyReveal !== current) return;
+      const elapsed = now - startedAt;
+      const target = Math.min(tokens.length, Math.max(1, Math.floor((elapsed / durationMs) * tokens.length) + 1));
+      const nearBottom = ref.messages.scrollHeight - ref.messages.scrollTop - ref.messages.clientHeight < 96;
+      revealTokensUntil(current, target);
+      if (nearBottom) {
+        ref.messages.scrollTop = ref.messages.scrollHeight;
+        updateScrollButton();
+      }
+      if (current.shown >= tokens.length) {
+        current.timer = setTimeout(() => cancelReveal({ rerender: true }), 170);
+        return;
+      }
+      current.raf = requestAnimationFrame(frame);
+    };
+    current.raf = requestAnimationFrame(frame);
+  }
+
   function renderMessages() {
     const suggestions = school.suggestions.filter((question) => question.trim());
     // Selama telepon, saran pertanyaan disembunyikan karena chat diketik sedang tidak bisa dipakai.
@@ -1399,9 +1514,16 @@
     if (showWelcome) {
       ref.messages.replaceChildren(welcomeBlock(suggestions));
     } else {
-      ref.messages.replaceChildren(messageRow('assistant', school.greeting));
+      ref.messages.replaceChildren(messageRow('assistant', school.greeting).row);
       for (const message of state.history) {
-        ref.messages.append(messageRow(message.role, message.content, { allowCopy: message.role === 'assistant' }));
+        const isRevealing = replyReveal?.entry === message;
+        const { row, body } = messageRow(message.role, message.content, {
+          allowCopy: message.role === 'assistant' && !isRevealing,
+          contentFragment: isRevealing ? replyReveal.fragment : null,
+          animateEnter: isRevealing,
+        });
+        if (isRevealing) replyReveal.bodyEl = body;
+        ref.messages.append(row);
       }
     }
     if (state.isSending) ref.messages.append(typingRow());
@@ -1437,6 +1559,7 @@
       if (state.callStatus !== 'off') ref.callEnd.focus();
       else (state.apiKey ? ref.input : (ref.demo.querySelector('input') ?? ref.input)).focus();
     } else {
+      cancelReveal();
       // Widget ditutup saat merekam: mikrofon langsung dimatikan, tanpa mengirim apa pun.
       if (state.voiceStatus !== 'idle') cancelRecording();
       // Widget ditutup saat menelepon: panggilan diakhiri biasa, bukan dianggap error.
@@ -1451,6 +1574,7 @@
     const question = rawQuestion.trim();
     // Selama telepon, pertanyaan diketik diabaikan: riwayat sedang dipakai oleh panggilan.
     if (!question || state.isSending || state.voiceStatus !== 'idle' || state.callStatus !== 'off') return;
+    cancelReveal({ rerender: true });
 
     if (!state.apiKey) {
       ref.input.value = question;
@@ -1478,9 +1602,11 @@
     // Riwayat chat ikut dikirim setiap kali, karena API tidak mengingat percakapan sebelumnya.
     const messages = [{ role: 'system', content: buildSystemPrompt() }, ...state.history];
 
+    let revealedEntry = null;
     try {
       const reply = await askAgent(state.apiKey, messages, buildMeta(channel, inputSource));
-      state.history.push({ role: 'assistant', content: reply });
+      revealedEntry = { role: 'assistant', content: reply };
+      state.history.push(revealedEntry);
       ref.status.textContent = `Asisten: ${stripMarkdown(reply)}`;
     } catch (error) {
       // Pertanyaan yang gagal dikembalikan ke kolom input supaya bisa langsung dikirim ulang.
@@ -1492,7 +1618,8 @@
     } finally {
       state.isSending = false;
       emitState('idle');
-      renderMessages();
+      if (revealedEntry) startReplyReveal(revealedEntry);
+      else renderMessages();
     }
   }
 
@@ -2187,6 +2314,7 @@
 
   async function startCall() {
     if (state.callStatus !== 'off' || state.isSending || state.voiceStatus !== 'idle') return;
+    cancelReveal();
 
     if (!state.apiKey) {
       if (!state.isOpen) setOpen(true); // mode kios: panel dibuka supaya password atau key bisa diisi
@@ -2308,6 +2436,7 @@
   });
 
   ref.reset.addEventListener('click', () => {
+    cancelReveal();
     sendEvent('conversation_reset', { channel: state.callStatus !== 'off' ? 'call' : 'chat' });
     state.conversationId = createUuid();
     state.openedTracked = false;
