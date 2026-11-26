@@ -86,7 +86,7 @@
         <p class="nav-label">Chatbot</p>
         <a href="#/uji" data-nav="uji" class="nav-item">Uji chatbot</a>
         <a href="#/tampilan" data-nav="tampilan" class="nav-item">Tampilan widget</a>
-        <a href="#/pasang" data-nav="pasang" class="nav-item">Pasang &amp; API Key</a>
+        <a href="#/pasang" data-nav="pasang" class="nav-item">Pasang di website</a>
         <a href="#/percakapan" data-nav="percakapan" class="nav-item">Percakapan</a>
         <a href="#/pendaftar" data-nav="pendaftar" class="nav-item">Calon pendaftar</a>
       </nav>
@@ -119,7 +119,7 @@
   <!-- Data sekolah dan widget. Widget di pojok kanan bawah dipakai untuk menguji chatbot dengan isi dashboard terbaru. -->
   <!-- ?v=… memaksa browser mengambil versi terbaru, bukan salinan lama dari cache. Naikkan angkanya setiap kali widget.js atau sekolah/wikrama.js diubah. -->
   <script src="sekolah/wikrama.js?v=20261126e"></script>
-  <script src="widget.js?v=20261126e"></script>
+  <script src="widget.js?v=20261127a"></script>
   <script>
 'use strict';
 
@@ -411,7 +411,7 @@ function setStatus(text, isError = false) {
 // Simpan otomatis sebentar setelah pengguna berhenti mengetik, langsung ke database Supabase.
 function persist({ now = false } = {}) {
   clearTimeout(saveTimer);
-  setStatus('Menyimpan ke database…');
+  setStatus('Menyimpan…');
   const run = () => {
     try {
       if (serverMode && demoReadOnly) {
@@ -451,9 +451,9 @@ function persist({ now = false } = {}) {
               }
               renderSidebar();
             }
-            setStatus('Tersimpan di Supabase');
+            setStatus('Tersimpan');
           })
-          .catch(() => setStatus('Gagal menyimpan ke Supabase', true));
+          .catch(() => setStatus('Gagal menyimpan. Cek koneksi internet, lalu ubah lagi.', true));
         return true;
       }
       api.data.save(school);
@@ -1113,10 +1113,10 @@ function codeBlock(filename, codeText) {
 }
 
 function renderInstall() {
-  setBreadcrumb([{ label: school.schoolName, href: '#/info' }, { label: 'Pasang & API Key' }]);
+  setBreadcrumb([{ label: school.schoolName, href: '#/info' }, { label: 'Pasang di website' }]);
   const wrap = shell();
   wrap.append(pageHeader(
-    'Pasang & API Key',
+    'Pasang di website',
     'Sekolah tidak perlu memberi akses GitHub. Tempel 1 baris skrip widget (Mode Embed) atau panggil REST API Sigi langsung dari chatbot buatan sekolah.',
   ));
 
@@ -1410,7 +1410,7 @@ function renderInstall() {
   restSection.append(codeBlock('contoh-rest-api.sh', curlExample));
 
   wrap.append(restSection);
-  wrap.append(callout('Terhubung langsung ke Supabase: seluruh akun admin, halaman konteks, dokumen PDF, API Key, kuota, dan analitik percakapan tersimpan permanen di database Supabase PostgreSQL.', 'mt-8'));
+  wrap.append(callout('Semua data sekolah (akun, info sekolah, PDF, API key, kuota, dan ringkasan percakapan) tersimpan di server Sigi, jadi aman walau browser ditutup.', 'mt-8'));
 }
 
 /* Halaman: Percakapan (analytics dari Supabase via /api/analytics) */
@@ -2183,14 +2183,14 @@ el.logoutBtn.addEventListener('click', async () => {
   location.href = 'login.html';
 });
 
-setStatus(isBootLoading ? 'Memuat dari Supabase…' : (school.updatedAt ? `Tersimpan ${formatUpdated(school.updatedAt).toLowerCase()}` : 'Data bawaan'));
+setStatus(isBootLoading ? 'Memuat data sekolah…' : (school.updatedAt ? `Tersimpan ${formatUpdated(school.updatedAt).toLowerCase()}` : 'Data bawaan'));
 syncSidebarMode();
 route();
 if (HAS_SERVER_HOST) {
   syncFromServer()
     .then((ok) => {
       isBootLoading = false;
-      setStatus(ok ? 'Terhubung ke Supabase' : (school.updatedAt ? `Tersimpan ${formatUpdated(school.updatedAt).toLowerCase()}` : 'Data bawaan'));
+      setStatus(ok ? 'Semua perubahan tersimpan otomatis' : (school.updatedAt ? `Tersimpan ${formatUpdated(school.updatedAt).toLowerCase()}` : 'Data bawaan'));
       route();
     })
     .catch(() => {

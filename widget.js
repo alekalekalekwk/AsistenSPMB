@@ -424,9 +424,10 @@
   }
 
   const ICONS = {
+    // Kepala maskot kijang Sigi (versi kecil dari assets/kijang/mascot.svg, warna datar tanpa gradient/id).
+    kijang: '<svg viewBox="24 62 432 310" aria-hidden="true"><g fill="none" stroke="#81502F" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"><path d="M190 160 C185 132 181 107 176 78 M181 119 L151 99 M181 119 L183 88"/><path d="M290 160 C295 132 299 107 304 78 M299 119 L329 99 M299 119 L297 88"/></g><path d="M139 192 C105 159 57 153 35 181 C14 207 45 228 83 222 C111 218 132 207 145 199Z" fill="#C07D4E" stroke="#75492F" stroke-width="6"/><path d="M341 192 C375 159 423 153 445 181 C466 207 435 228 397 222 C369 218 348 207 335 199Z" fill="#C07D4E" stroke="#75492F" stroke-width="6"/><path d="M121 190 C94 173 57 177 44 194 C36 205 54 211 80 207 C99 204 114 198 121 190Z" fill="#F2B6A0"/><path d="M359 190 C386 173 423 177 436 194 C444 205 426 211 400 207 C381 204 366 198 359 190Z" fill="#F2B6A0"/><path d="M117 231 C117 159 169 125 240 125 C311 125 363 159 363 231 L359 284 C355 337 310 365 240 365 C170 365 125 337 121 284Z" fill="#D69A66" stroke="#75492F" stroke-width="6" stroke-linejoin="round"/><ellipse cx="190" cy="238" rx="18" ry="23" fill="#241A16"/><ellipse cx="290" cy="238" rx="18" ry="23" fill="#241A16"/><ellipse cx="196" cy="230" rx="7" ry="8.5" fill="#fff"/><ellipse cx="296" cy="230" rx="7" ry="8.5" fill="#fff"/><path d="M169 293 C177 270 204 259 240 259 C276 259 303 270 311 293 C319 319 295 346 263 353 C248 357 232 357 217 353 C185 346 161 319 169 293Z" fill="#FAEBCF" stroke="#E8D1AB" stroke-width="3"/><ellipse cx="240" cy="298" rx="18" ry="12" fill="#3B2920"/><path d="M220 321 C229 336 251 336 260 321" fill="none" stroke="#4B3326" stroke-width="6" stroke-linecap="round"/></svg>',
     chat: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
     close: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>',
-    bot: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>',
     reset: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>',
     key: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4"/><path d="m21 2-9.6 9.6"/><circle cx="7.5" cy="15.5" r="5.5"/></svg>',
     mic: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2.5" width="6" height="12" rx="3"/><path d="M5 11.5a7 7 0 0 0 14 0M12 18.5V22M8 22h8"/></svg>',
@@ -484,7 +485,7 @@
     .launcher-btn:active { transform: scale(0.97); }
     .launcher-btn svg { width: 24px; height: 24px; }
     .launcher-btn .icon-close { display: none; }
-    .root[data-open="true"] .launcher-label { display: none; }
+    .root[data-open="true"] .launcher-label, .launcher-label[hidden] { display: none; }
     .root[data-open="true"] .launcher-btn .icon-chat { display: none; }
     .root[data-open="true"] .launcher-btn .icon-close { display: block; }
 
@@ -509,10 +510,11 @@
       background: var(--primary); color: var(--on-primary);
     }
     .avatar {
-      width: 36px; height: 36px; flex-shrink: 0; display: grid; place-items: center;
-      border-radius: 12px; background: var(--accent); color: var(--on-accent);
+      width: 38px; height: 38px; flex-shrink: 0; display: grid; place-items: center;
+      border-radius: 12px; background: #fff7ea; color: var(--on-accent);
+      box-shadow: inset 0 0 0 2px var(--accent);
     }
-    .avatar svg { width: 19px; height: 19px; }
+    .avatar svg { width: 32px; height: 32px; }
     .header-text { flex: 1; min-width: 0; }
     .title { font-size: 14.5px; font-weight: 700; letter-spacing: -0.01em; line-height: 1.25; }
     .subtitle { font-size: 12px; opacity: 0.88; line-height: 1.3; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
@@ -616,9 +618,9 @@
     }
     .welcome-icon {
       width: 28px; height: 28px; display: grid; place-items: center;
-      border-radius: 9px; background: color-mix(in srgb, var(--primary) 10%, #ffffff); color: var(--primary);
+      border-radius: 9px; background: #fff7ea; border: 1px solid var(--border);
     }
-    .welcome-icon svg { width: 15px; height: 15px; }
+    .welcome-icon svg { width: 24px; height: 24px; }
     .welcome-name { font-size: 12.5px; font-weight: 700; color: var(--ink-secondary); }
     .welcome-text { font-size: 14.5px; line-height: 1.55; color: var(--ink); }
 
@@ -646,10 +648,10 @@
     .row.user { justify-content: flex-end; }
     .mini-avatar {
       width: 28px; height: 28px; flex-shrink: 0; display: grid; place-items: center;
-      border-radius: 10px; background: var(--primary); color: var(--accent);
+      border-radius: 10px; background: #fff7ea; border: 1px solid var(--border);
       margin-bottom: 2px;
     }
-    .mini-avatar svg { width: 15px; height: 15px; }
+    .mini-avatar svg { width: 24px; height: 24px; }
     .msg-col { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; max-width: 84%; min-width: 0; }
     .row.user .msg-col { align-items: flex-end; }
     .bubble {
@@ -673,7 +675,7 @@
 
     .msg-actions { display: flex; align-items: center; gap: 4px; padding-left: 2px; }
     .copy-btn {
-      min-height: 28px; padding: 3px 8px;
+      min-width: 28px; min-height: 28px; padding: 3px 6px; justify-content: center;
       display: inline-flex; align-items: center; gap: 5px;
       border: 0; border-radius: 8px; background: transparent;
       color: var(--ink-muted); font-size: 12px; font-weight: 500;
@@ -894,7 +896,7 @@
       </div>
       <section class="panel" id="asisten-panel" role="dialog" aria-labelledby="asisten-title" hidden data-ref="panel">
         <header class="header">
-          <span class="avatar">${ICONS.bot}</span>
+          <span class="avatar">${ICONS.kijang}</span>
           <div class="header-text">
             <p class="title" id="asisten-title">Asisten SPMB</p>
             <p class="subtitle" data-ref="school"></p>
@@ -957,6 +959,18 @@
   const root = shadow.querySelector('.root');
   const ref = {};
   for (const node of shadow.querySelectorAll('[data-ref]')) ref[node.dataset.ref] = node;
+
+  // Label "Tanya soal SPMB?" cuma sapaan singkat: hilang setelah 8 detik atau saat halaman digulir,
+  // supaya tidak terus menutupi isi website sekolah di pojok kanan bawah.
+  const hideLauncherLabel = () => {
+    ref.launcherLabel.hidden = true;
+    window.removeEventListener('scroll', onFirstScroll);
+  };
+  const onFirstScroll = () => {
+    if (window.scrollY > 40) hideLauncherLabel();
+  };
+  window.addEventListener('scroll', onFirstScroll, { passive: true });
+  setTimeout(hideLauncherLabel, 8000);
 
   ref.powered.href = config?.poweredByUrl || (IS_EMBED ? `${embedApiBase}/index.html` : 'index.html');
 
@@ -1165,7 +1179,7 @@
 
   function miniAvatar() {
     const avatar = make('span', 'mini-avatar');
-    avatar.innerHTML = ICONS.bot; // ikon statis, bukan teks dari AI
+    avatar.innerHTML = ICONS.kijang; // gambar statis, bukan teks dari AI
     return avatar;
   }
 
@@ -1173,9 +1187,10 @@
     const button = make('button', 'copy-btn');
     button.type = 'button';
     button.setAttribute('aria-label', 'Salin jawaban');
+    button.title = 'Salin jawaban';
     const icon = make('span');
     icon.innerHTML = ICONS.copy;
-    const label = make('span', '', 'Salin');
+    const label = make('span', 'sr-only', 'Salin');
     button.append(icon, label);
     let timer = null;
     button.addEventListener('click', async () => {
@@ -1230,7 +1245,7 @@
     const card = make('div', 'welcome-card');
     const badge = make('div', 'welcome-badge');
     const icon = make('span', 'welcome-icon');
-    icon.innerHTML = ICONS.bot;
+    icon.innerHTML = ICONS.kijang;
     badge.append(icon, make('span', 'welcome-name', `Asisten SPMB · ${school.schoolName}`));
     const greeting = make('div', 'welcome-text md');
     greeting.append(renderMarkdown(school.greeting));
@@ -1391,7 +1406,9 @@
     }
 
     const bothFromServer = state.apiKey === SERVER_KEY && state.deepgramKey === SERVER_KEY;
-    const canToggleKeys = !state.needsLogin && Boolean(state.apiKey) && !bothFromServer && state.callStatus === 'off';
+    // Tombol kunci hanya untuk halaman tanpa server (key diketik). Di server lokal/Vercel pengunjung tidak perlu melihatnya;
+    // kalau key Deepgram belum ada, kolomnya tetap muncul sendiri saat tombol mic atau Telepon ditekan.
+    const canToggleKeys = !state.needsLogin && Boolean(state.apiKey) && state.apiKey !== SERVER_KEY && !bothFromServer && state.callStatus === 'off';
     const shouldShowPanel = state.needsLogin || !state.apiKey || state.deepgramFormOpen || (state.keyPanelOpen && canToggleKeys);
 
     ref.keyToggle.hidden = !canToggleKeys;

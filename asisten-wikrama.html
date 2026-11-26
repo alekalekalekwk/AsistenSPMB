@@ -26,12 +26,18 @@
     @keyframes sigi-naik { from { transform: translateY(24px); opacity: 0; } }
     .sigi-maskot { animation: sigi-naik .6s ease-out both; }
     @media (prefers-reduced-motion: reduce) { .sigi-maskot { animation: none; } }
+    /* Mode kios (asisten-wikrama.html?kios=1): layar di stan pameran, jadi tamu tidak bisa keluar ke halaman lain. */
+    [data-kios] .keluar-kios { display: none; }
+    [data-kios] .logo-kios { pointer-events: none; }
   </style>
+  <script>
+    if (new URLSearchParams(location.search).has('kios')) document.documentElement.dataset.kios = '';
+  </script>
 </head>
 <body class="flex min-h-dvh flex-col overflow-x-hidden bg-navy font-sans text-white antialiased">
   <header class="border-b border-white/10">
     <div class="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-4">
-      <a href="demo-wikrama.html" class="flex min-w-0 items-center gap-2.5 sm:gap-3">
+      <a href="demo-wikrama.html" class="logo-kios flex min-w-0 items-center gap-2.5 sm:gap-3">
         <span class="grid size-10 shrink-0 place-items-center rounded-full bg-gold text-navy">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="size-5"><path d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z"/><path d="M22 10v6"/><path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"/></svg>
         </span>
@@ -40,7 +46,7 @@
           <span class="hidden truncate text-xs text-white/70 sm:block">Asisten SPMB · halaman demo Sigi</span>
         </span>
       </a>
-      <a href="demo-wikrama.html" class="inline-flex min-h-11 shrink-0 items-center rounded-full px-4 text-sm font-bold ring-1 ring-white/40 hover:bg-white/10">Kembali</a>
+      <a href="demo-wikrama.html" class="keluar-kios inline-flex min-h-11 shrink-0 items-center rounded-full px-4 text-sm font-bold ring-1 ring-white/40 hover:bg-white/10">Kembali</a>
     </div>
   </header>
 
@@ -269,7 +275,7 @@
 
   <!-- ?v=… memaksa browser mengambil versi terbaru. Naikkan angkanya setiap kali widget.js atau sekolah/wikrama.js diubah. -->
   <script src="sekolah/wikrama.js?v=20261126e"></script>
-  <script src="widget.js?v=20261126e" data-mode="kiosk" defer></script>
+  <script src="widget.js?v=20261127a" data-mode="kiosk" defer></script>
   <script>
     const maskot = document.getElementById('sigi-maskot');
     const statusEl = document.getElementById('status');
