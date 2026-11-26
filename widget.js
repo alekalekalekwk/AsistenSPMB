@@ -237,6 +237,9 @@
     callStatus: 'off', // 'off' | 'connecting' | 'listening' | 'thinking' | 'speaking'
     callHeard: '', // teks yang sedang didengar Deepgram, tampil di bar panggilan
     callSeconds: 0, // lama panggilan
+    // Form "minta dihubungi panitia via WhatsApp". Hanya muncul kalau server Sigi punya database (Supabase).
+    leadsEnabled: false,
+    lead: { status: 'hidden', name: '', whatsapp: '', interest: '', consent: false, error: '' }, // hidden | offer | form | sending | done | dismissed
   };
 
   // Semua yang hidup selama merekam: WebSocket, mikrofon, perekam, timer, dan teks yang sudah terdengar.
@@ -823,6 +826,40 @@
     .footer { padding: 4px 12px 10px; background: var(--surface); color: var(--ink-muted); font-size: 11.5px; text-align: center; }
     .footer a { color: var(--ink-secondary); font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }
 
+    /* Kartu "minta dihubungi panitia via WhatsApp" */
+    .lead {
+      margin-left: 36px; padding: 14px; border-radius: 16px;
+      border: 1px solid color-mix(in srgb, var(--primary) 22%, var(--border));
+      background: var(--surface); box-shadow: 0 2px 10px -4px rgb(15 23 42 / 0.08);
+    }
+    .lead-title { font-size: 13.5px; font-weight: 700; color: var(--ink); line-height: 1.35; }
+    .lead-desc { margin-top: 3px; font-size: 12.5px; color: var(--ink-muted); line-height: 1.45; }
+    .lead-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    .lead-primary {
+      min-height: 40px; padding: 0 14px; border: 0; border-radius: 11px;
+      background: var(--primary); color: var(--on-primary); font-size: 13px; font-weight: 600;
+    }
+    .lead-primary:hover:not(:disabled) { opacity: 0.92; }
+    .lead-primary:disabled { opacity: 0.55; }
+    .lead-secondary {
+      min-height: 40px; padding: 0 12px; border: 1px solid var(--border); border-radius: 11px;
+      background: var(--surface); color: var(--ink-secondary); font-size: 13px; font-weight: 600;
+    }
+    .lead-secondary:hover { background: var(--subtle); }
+    .lead form { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+    .lead label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; color: var(--ink-secondary); }
+    .lead label .lead-optional { font-weight: 500; color: var(--ink-muted); }
+    .lead input[type="text"], .lead input[type="tel"] {
+      height: 42px; padding: 0 12px; border: 1px solid var(--border-strong); border-radius: 11px;
+      background: var(--surface); color: var(--ink); font-size: 13.5px; font-weight: 400;
+    }
+    .lead input[type="text"]:focus, .lead input[type="tel"]:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 16%, transparent); }
+    .lead .lead-consent { flex-direction: row; align-items: flex-start; gap: 8px; font-weight: 500; color: var(--ink-secondary); line-height: 1.45; }
+    .lead .lead-consent input { width: 18px; height: 18px; margin: 1px 0 0; flex-shrink: 0; accent-color: var(--primary); }
+    .lead-error { font-size: 12.5px; font-weight: 600; color: #991b1b; }
+    .lead-done { display: flex; align-items: flex-start; gap: 8px; }
+    .lead-done svg { width: 18px; height: 18px; flex-shrink: 0; margin-top: 1px; color: #15803d; }
+
     @media (max-width: 480px) {
       .panel { inset: 0; width: auto; max-width: none; height: auto; border: 0; border-radius: 0; animation: none; }
       .root[data-open="true"] .launcher { display: none; }
@@ -831,7 +868,8 @@
       .call-pill { padding: 0 10px; font-size: 12px; }
       .icon-btn { width: 34px; }
       /* iPhone otomatis nge-zoom kalau huruf di kolom isian di bawah 16px. */
-      .composer textarea, .access input { font-size: 16px; }
+      .composer textarea, .access input, .lead input[type="text"], .lead input[type="tel"] { font-size: 16px; }
+      .lead { margin-left: 0; }
       .footer { padding-bottom: max(10px, env(safe-area-inset-bottom)); }
     }
 
@@ -1578,6 +1616,9 @@
   }
 
   function renderMessages() {
+    // Kolom form pendaftar yang sedang diisi tetap fokus walau daftar pesan digambar ulang.
+    const active = shadow.activeElement;
+    const leadFocus = active && leadCardEl?.contains(active) ? active.name : '';
     const suggestions = school.suggestions.filter((question) => question.trim());
     // Selama telepon, saran pertanyaan disembunyikan karena chat diketik sedang tidak bisa dipakai.
     const showWelcome = state.history.length === 0 && state.callStatus === 'off';
@@ -1599,8 +1640,15 @@
         ref.messages.append(row);
       }
     }
+    if (!state.isLoadingConfig) {
+      const card = leadCard();
+      if (card) ref.messages.append(card);
+    }
     if (state.isSending) ref.messages.append(typingRow());
     if (state.error) ref.messages.append(errorBanner(state.error));
+    if (leadFocus && leadCardEl?.isConnected) {
+      leadCardEl.querySelector(`[name="${leadFocus}"]`)?.focus();
+    }
 
     renderControls();
     requestAnimationFrame(() => {
@@ -1638,6 +1686,180 @@
       // Widget ditutup saat menelepon: panggilan diakhiri biasa, bukan dianggap error.
       if (state.callStatus !== 'off') endCall();
       ref.launcher.focus();
+    }
+  }
+
+  /* Calon pendaftar: tawaran dihubungi panitia lewat WhatsApp */
+
+  // Ditawarkan setelah dua jawaban, atau lebih cepat kalau pertanyaannya sudah soal daftar, biaya, atau kontak.
+  const LEAD_INTENT = /(daftar|pendaftaran|biaya|brosur|hubungi|kontak|whats ?app|\bwa\b|panitia|beasiswa)/i;
+  let leadCardEl = null;
+  let leadCardStatus = '';
+
+  function maybeOfferLead(question) {
+    if (!state.leadsEnabled || KIOSK || state.lead.status !== 'hidden') return;
+    const answers = state.history.filter((m) => m.role === 'assistant').length;
+    if (answers >= 2 || (answers >= 1 && LEAD_INTENT.test(question))) state.lead.status = 'offer';
+  }
+
+  function setLead(patch) {
+    Object.assign(state.lead, patch);
+    renderMessages();
+  }
+
+  function maskWhatsapp(value) {
+    const digits = value.replace(/\D/g, '');
+    return digits.length > 6 ? `${digits.slice(0, 4)}•••${digits.slice(-3)}` : value;
+  }
+
+  function leadField(labelText, name, { type = 'text', optional = false, autocomplete, inputmode, placeholder } = {}) {
+    const label = make('label');
+    const caption = make('span', '', labelText);
+    if (optional) caption.append(make('span', 'lead-optional', ' (boleh dikosongkan)'));
+    const input = make('input');
+    input.type = type;
+    input.name = name;
+    input.value = state.lead[name];
+    if (autocomplete) input.autocomplete = autocomplete;
+    if (inputmode) input.inputMode = inputmode;
+    if (placeholder) input.placeholder = placeholder;
+    if (!optional) input.required = true;
+    input.addEventListener('input', () => { state.lead[name] = input.value; });
+    label.append(caption, input);
+    return label;
+  }
+
+  // Kartu disimpan dan dipakai ulang selama statusnya sama, supaya isian tidak hilang saat pesan digambar ulang.
+  function leadCard() {
+    const { status } = state.lead;
+    if (!['offer', 'form', 'sending', 'done'].includes(status)) return null;
+    const key = `${status}|${state.lead.error}`;
+    if (leadCardEl && leadCardStatus === key) return leadCardEl;
+    leadCardStatus = key;
+
+    const card = make('section', 'lead');
+    card.setAttribute('aria-label', 'Minta dihubungi panitia SPMB');
+
+    if (status === 'offer') {
+      card.append(
+        make('p', 'lead-title', 'Mau dihubungi panitia lewat WhatsApp?'),
+        make('p', 'lead-desc', `Panitia SPMB ${school.schoolName} bisa kirim info lengkap dan bantu proses daftar.`),
+      );
+      const actions = make('div', 'lead-actions');
+      const yes = make('button', 'lead-primary', 'Boleh, isi data');
+      yes.type = 'button';
+      yes.addEventListener('click', () => {
+        setLead({ status: 'form', error: '' });
+        leadCardEl?.querySelector('input')?.focus();
+      });
+      const no = make('button', 'lead-secondary', 'Nanti saja');
+      no.type = 'button';
+      no.addEventListener('click', () => {
+        setLead({ status: 'dismissed' });
+        ref.input.focus();
+      });
+      actions.append(yes, no);
+      card.append(actions);
+    } else if (status === 'form' || status === 'sending') {
+      card.append(
+        make('p', 'lead-title', 'Data untuk dihubungi panitia'),
+        make('p', 'lead-desc', 'Cukup nama dan nomor WhatsApp. Jangan isi NIK, NISN, atau data pribadi lain.'),
+      );
+      const form = make('form');
+      form.noValidate = true;
+      const consent = make('label', 'lead-consent');
+      const check = make('input');
+      check.type = 'checkbox';
+      check.name = 'consent';
+      check.checked = state.lead.consent;
+      check.addEventListener('change', () => { state.lead.consent = check.checked; });
+      consent.append(check, make('span', '', `Saya setuju nama dan nomor ini dikirim ke panitia SPMB ${school.schoolName} untuk dihubungi.`));
+      const error = state.lead.error ? make('p', 'lead-error', state.lead.error) : null;
+      if (error) error.setAttribute('role', 'alert');
+      const actions = make('div', 'lead-actions');
+      const submit = make('button', 'lead-primary', status === 'sending' ? 'Mengirim...' : 'Kirim');
+      submit.type = 'submit';
+      submit.disabled = status === 'sending';
+      const cancel = make('button', 'lead-secondary', 'Batal');
+      cancel.type = 'button';
+      cancel.disabled = status === 'sending';
+      cancel.addEventListener('click', () => {
+        setLead({ status: 'dismissed', error: '' });
+        ref.input.focus();
+      });
+      actions.append(submit, cancel);
+      form.append(
+        leadField('Nama', 'name', { autocomplete: 'name', placeholder: 'Nama calon murid atau orang tua' }),
+        leadField('Nomor WhatsApp', 'whatsapp', { type: 'tel', autocomplete: 'tel', inputmode: 'tel', placeholder: '0812 3456 7890' }),
+        leadField('Jurusan yang diminati', 'interest', { optional: true }),
+        consent,
+        ...(error ? [error] : []),
+        actions,
+      );
+      form.addEventListener('submit', (event) => {
+        event.preventDefault();
+        submitLead();
+      });
+      card.append(form);
+    } else {
+      const done = make('div', 'lead-done');
+      const icon = make('span');
+      icon.innerHTML = ICONS.check;
+      const text = make('div');
+      text.append(
+        make('p', 'lead-title', `Terima kasih, ${state.lead.name.split(' ')[0]}!`),
+        make('p', 'lead-desc', `Panitia SPMB akan menghubungi lewat WhatsApp ${maskWhatsapp(state.lead.whatsapp)}. Sambil menunggu, silakan lanjut bertanya.`),
+      );
+      done.append(icon, text);
+      card.append(done);
+      card.setAttribute('role', 'status');
+    }
+    leadCardEl = card;
+    return card;
+  }
+
+  async function submitLead() {
+    const { name, whatsapp, interest, consent } = state.lead;
+    // Pemeriksaan cepat di browser; aturan lengkapnya tetap di server.
+    let error = '';
+    if (name.trim().length < 2) error = 'Isi nama dulu, minimal 2 huruf.';
+    else if (!/^(\+?62|0)?8\d{7,12}$/.test(whatsapp.replace(/[\s.-]/g, ''))) error = 'Nomor WhatsApp belum benar. Contoh: 0812 3456 7890.';
+    else if (!consent) error = 'Centang persetujuan dulu supaya panitia boleh menghubungi.';
+    if (error) {
+      setLead({ error });
+      return;
+    }
+    setLead({ status: 'sending', error: '' });
+    const payload = {
+      name: name.trim(),
+      whatsapp: whatsapp.trim(),
+      interest: interest.trim(),
+      consent: true,
+      conversationId: state.conversationId,
+      visitorSessionId: state.visitorSessionId,
+    };
+    try {
+      const response = IS_EMBED
+        ? await fetch(`${embedApiBase}/api/v1/leads`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Sigi-Key': embedKey },
+          body: JSON.stringify(payload),
+        })
+        : await fetch('/api/leads', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...payload, schoolId: config?.id || 'wikrama' }),
+        });
+      const data = await response.json().catch(() => null);
+      if (!response.ok) {
+        setLead({ status: 'form', error: data?.error?.message || `Gagal mengirim (kode ${response.status}). Coba lagi.` });
+        return;
+      }
+      setLead({ status: 'done', error: '' });
+      ref.status.textContent = 'Data terkirim. Panitia akan menghubungi lewat WhatsApp.';
+      emit('lead', { ok: true });
+    } catch {
+      setLead({ status: 'form', error: 'Tidak bisa terhubung ke server Sigi. Periksa koneksi internet.' });
     }
   }
 
@@ -1680,6 +1902,7 @@
       const reply = await askAgent(state.apiKey, messages, buildMeta(channel, inputSource));
       revealedEntry = { role: 'assistant', content: reply };
       state.history.push(revealedEntry);
+      maybeOfferLead(question);
       ref.status.textContent = `Asisten: ${stripMarkdown(reply)}`;
     } catch (error) {
       // Pertanyaan yang gagal dikembalikan ke kolom input supaya bisa langsung dikirim ulang.
@@ -2516,6 +2739,7 @@
     state.openedTracked = false;
     state.history = [];
     state.error = '';
+    if (state.lead.status !== 'done') state.lead = { ...state.lead, status: 'hidden', error: '' };
     renderMessages();
     ref.status.textContent = 'Percakapan dimulai ulang.';
     ref.input.focus();
@@ -2589,6 +2813,7 @@
         voice: data.voice || DEFAULT_VOICE,
         expressivity: cleanExpressivity(data.expressivity),
       };
+      state.leadsEnabled = data.leadsEnabled === true;
       state.error = '';
     } catch {
       state.error = 'Tidak bisa memuat konfigurasi chatbot Sigi. Periksa koneksi internet.';
@@ -2604,8 +2829,9 @@
   async function useServerKeys() {
     if (IS_EMBED) return;
     const wasChecking = state.isCheckingServer;
-    const { login, netra, deepgram } = await serverKeys();
+    const { login, netra, deepgram, supabase } = await serverKeys();
     state.isCheckingServer = false;
+    state.leadsEnabled = supabase === true;
     const wasLogin = state.needsLogin;
     state.needsLogin = login === true;
     if (state.needsLogin) {
@@ -2648,6 +2874,16 @@
       startCall();
     },
     hangUp: () => endCall(),
+    // Untuk tombol "Minta dihubungi panitia" di halaman sekolah: membuka widget langsung ke form.
+    requestContact: () => {
+      if (!state.leadsEnabled || state.lead.status === 'done') {
+        setOpen(true);
+        return;
+      }
+      state.lead.status = 'form';
+      setOpen(true);
+      leadCardEl?.querySelector('input')?.focus();
+    },
     refresh,
     setSchoolData,
     // Dipakai dashboard untuk membaca dan menyimpan data sekolah.

@@ -88,6 +88,7 @@
         <a href="#/tampilan" data-nav="tampilan" class="nav-item">Tampilan widget</a>
         <a href="#/pasang" data-nav="pasang" class="nav-item">Pasang &amp; API Key</a>
         <a href="#/percakapan" data-nav="percakapan" class="nav-item">Percakapan</a>
+        <a href="#/pendaftar" data-nav="pendaftar" class="nav-item">Calon pendaftar</a>
       </nav>
 
       <div class="space-y-2 border-t border-line p-4 text-xs text-muted">
@@ -319,7 +320,7 @@ function renderBootSkeleton(viewName) {
   el.breadcrumb.replaceChildren(skel('h-4 w-44'));
   const wrap = shell();
   wrap.setAttribute('aria-busy', 'true');
-  if (viewName === 'tampilan' || viewName === 'percakapan') wrap.classList.replace('max-w-3xl', 'max-w-5xl');
+  if (viewName === 'tampilan' || viewName === 'percakapan' || viewName === 'pendaftar') wrap.classList.replace('max-w-3xl', 'max-w-5xl');
   wrap.append(make('p', 'sr-only', 'Memuat data sekolah dari database Supabase...'));
 
   const head = make('div', 'space-y-3');
@@ -1908,6 +1909,232 @@ function renderConversations() {
 
 /* Navigasi */
 
+/* Halaman: Calon pendaftar (form WhatsApp di widget, tabel public.leads) */
+
+const LEAD_STATUS_LABELS = { baru: 'Baru', dihubungi: 'Sudah dihubungi', mendaftar: 'Sudah mendaftar', batal: 'Tidak lanjut' };
+const LEAD_SOURCE_LABELS = { widget: 'Website', embed: 'Website', kiosk: 'Kios' };
+const leadsFilter = { status: '', query: '' };
+
+function formatLeadTime(ms) {
+  if (!ms) return '-';
+  return new Intl.DateTimeFormat('id-ID', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Jakarta' }).format(ms);
+}
+
+function formatWhatsapp(value) {
+  // 6281234567890 -> 0812-3456-7890 (lebih mudah dibaca panitia)
+  if (!/^62\d+$/.test(value)) return value;
+  const local = `0${value.slice(2)}`;
+  return local.replace(/^(\d{4})(\d{4})(\d+)$/, '$1-$2-$3');
+}
+
+// Excel Indonesia memakai titik koma sebagai pemisah kolom. Sel yang diawali = + - @ diberi tanda kutip
+// supaya tidak dijalankan sebagai rumus.
+function leadsToCsv(rows) {
+  const cell = (value) => {
+    let text = String(value ?? '');
+    if (/^[=+\-@]/.test(text)) text = `'${text}`;
+    return `"${text.replace(/"/g, '""')}"`;
+  };
+  const header = ['Nama', 'WhatsApp', 'Jurusan diminati', 'Status', 'Sumber', 'Waktu (WIB)'];
+  const lines = rows.map((lead) => [
+    lead.name,
+    formatWhatsapp(lead.whatsapp),
+    lead.interest,
+    LEAD_STATUS_LABELS[lead.status] || lead.status,
+    LEAD_SOURCE_LABELS[lead.source] || lead.source,
+    formatLeadTime(lead.createdAt),
+  ].map(cell).join(';'));
+  return `\ufeff${[header.map(cell).join(';'), ...lines].join('\r\n')}`;
+}
+
+function renderLeads() {
+  setBreadcrumb([{ label: school.schoolName, href: '#/info' }, { label: 'Calon pendaftar' }]);
+  const wrap = shell();
+  wrap.classList.replace('max-w-3xl', 'max-w-5xl');
+  wrap.append(pageHeader('Calon pendaftar', 'Pengunjung yang minta dihubungi panitia lewat WhatsApp dari chatbot. Tandai statusnya setelah dihubungi supaya tim tidak menghubungi dua kali.'));
+
+  if (!serverMode) {
+    wrap.append(callout('Data calon pendaftar disimpan di database Supabase. Jalankan dashboard lewat server lokal (node server.mjs) atau Vercel, lalu masuk dengan akun sekolah.', 'mt-6 bg-amber-50 text-amber-900'));
+    return;
+  }
+
+  let leads = [];
+  let masked = false;
+
+  const toolbar = make('div', 'mt-6 flex flex-wrap items-end gap-3 border-b border-line pb-5');
+  const searchWrap = make('div', 'min-w-0 basis-full sm:basis-auto sm:flex-1');
+  const searchLabel = make('label', 'block text-xs font-semibold text-muted', 'Cari nama, nomor, atau jurusan');
+  searchLabel.htmlFor = 'leads-search';
+  const search = make('input', 'field mt-1');
+  search.id = 'leads-search';
+  search.type = 'search';
+  search.value = leadsFilter.query;
+  searchWrap.append(searchLabel, search);
+
+  const statusWrap = make('div', 'min-w-0 basis-full sm:basis-auto sm:flex-none');
+  const statusLabel = make('label', 'block text-xs font-semibold text-muted', 'Status');
+  statusLabel.htmlFor = 'leads-status';
+  const statusSelect = make('select', 'field mt-1 sm:min-w-[11rem]');
+  statusSelect.id = 'leads-status';
+  for (const [val, text] of [['', 'Semua status'], ...Object.entries(LEAD_STATUS_LABELS)]) {
+    const opt = make('option', '', text);
+    opt.value = val;
+    statusSelect.append(opt);
+  }
+  statusSelect.value = leadsFilter.status;
+  statusWrap.append(statusLabel, statusSelect);
+
+  const exportBtn = button('Unduh Excel (CSV)', 'btn flex-1 sm:flex-none', () => {
+    const rows = filtered();
+    const blob = new Blob([leadsToCsv(rows)], { type: 'text/csv;charset=utf-8' });
+    const link = make('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `calon-pendaftar-${(school.schoolName || 'sekolah').toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+  });
+  exportBtn.disabled = true;
+  const refreshBtn = button('Muat ulang', 'btn flex-1 sm:flex-none', () => load());
+  toolbar.append(searchWrap, statusWrap, exportBtn, refreshBtn);
+  wrap.append(toolbar);
+
+  const body = make('div', 'mt-6');
+  body.setAttribute('aria-live', 'polite');
+  wrap.append(body);
+
+  search.addEventListener('input', () => {
+    leadsFilter.query = search.value;
+    draw();
+  });
+  statusSelect.addEventListener('change', () => {
+    leadsFilter.status = statusSelect.value;
+    draw();
+  });
+
+  function filtered() {
+    const q = leadsFilter.query.trim().toLowerCase();
+    const qDigits = q.replace(/\D/g, '').replace(/^0/, '');
+    return leads.filter((lead) => {
+      if (leadsFilter.status && lead.status !== leadsFilter.status) return false;
+      if (!q) return true;
+      return lead.name.toLowerCase().includes(q)
+        || (lead.interest || '').toLowerCase().includes(q)
+        || (qDigits.length >= 3 && lead.whatsapp.includes(qDigits));
+    });
+  }
+
+  async function changeStatus(lead, select) {
+    const previous = lead.status;
+    select.disabled = true;
+    setStatus('Menyimpan status…');
+    try {
+      const res = await fetch('/api/dashboard/leads', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ schoolId: school.id, id: lead.id, status: select.value }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(data?.error?.message || `HTTP ${res.status}`);
+      lead.status = data.lead.status;
+      setStatus('Status tersimpan');
+    } catch (error) {
+      select.value = previous;
+      setStatus(`Gagal menyimpan status: ${error.message}`, true);
+    } finally {
+      select.disabled = demoReadOnly;
+      draw();
+    }
+  }
+
+  function leadRow(lead) {
+    const row = make('li', 'grid grid-cols-[minmax(0,1fr)] gap-3 py-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center');
+    const info = make('div', 'min-w-0');
+    const top = make('p', 'flex flex-wrap items-baseline gap-x-2');
+    top.append(make('span', 'font-semibold text-ink', lead.name));
+    if (lead.interest) top.append(make('span', 'text-sm text-muted', `minat ${lead.interest}`));
+    info.append(
+      top,
+      make('p', 'mt-0.5 text-sm text-muted', `${formatWhatsapp(lead.whatsapp)} · ${LEAD_SOURCE_LABELS[lead.source] || lead.source} · ${formatLeadTime(lead.createdAt)}`),
+    );
+
+    const actions = make('div', 'flex flex-wrap items-center gap-2');
+    if (!masked) {
+      const wa = make('a', 'btn', 'Chat WhatsApp');
+      const greeting = `Halo Kak ${lead.name.split(' ')[0]}, kami panitia SPMB ${school.schoolName}. Terima kasih sudah bertanya lewat asisten di website kami.`;
+      wa.href = `https://wa.me/${lead.whatsapp}?text=${encodeURIComponent(greeting)}`;
+      wa.target = '_blank';
+      wa.rel = 'noopener';
+      actions.append(wa);
+    }
+    const select = make('select', 'field min-w-[10rem] disabled:bg-side disabled:text-muted sm:w-auto');
+    select.setAttribute('aria-label', `Status ${lead.name}`);
+    for (const [val, text] of Object.entries(LEAD_STATUS_LABELS)) {
+      const opt = make('option', '', text);
+      opt.value = val;
+      select.append(opt);
+    }
+    select.value = lead.status;
+    select.disabled = demoReadOnly;
+    select.addEventListener('change', () => changeStatus(lead, select));
+    actions.append(select);
+
+    row.append(info, actions);
+    return row;
+  }
+
+  function draw() {
+    const rows = filtered();
+    exportBtn.disabled = rows.length === 0;
+    const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    const stats = make('dl', 'grid grid-cols-[minmax(0,1fr)] gap-4 border-b border-line pb-6 sm:grid-cols-3');
+    for (const [label, value] of [
+      ['Total calon pendaftar', leads.length],
+      ['Belum dihubungi', leads.filter((l) => l.status === 'baru').length],
+      ['Masuk 7 hari terakhir', leads.filter((l) => (l.createdAt || 0) >= weekAgo).length],
+    ]) {
+      const col = make('div');
+      col.append(make('dt', 'text-xs font-semibold text-muted', label), make('dd', 'mt-1 text-2xl font-bold tabular-nums', numberFormat.format(value)));
+      stats.append(col);
+    }
+    const parts = [stats];
+    if (masked) parts.push(callout('Akun demo: nama dan nomor disamarkan, dan status tidak bisa diubah. Masuk dengan akun sekolah untuk melihat data lengkap.', 'mt-6 bg-amber-50 text-amber-900'));
+    if (leads.length === 0) {
+      parts.push(callout('Belum ada calon pendaftar. Chatbot menawarkan "dihubungi lewat WhatsApp" setelah pengunjung bertanya soal pendaftaran, biaya, atau kontak, atau setelah dua jawaban.', 'mt-6'));
+    } else if (rows.length === 0) {
+      parts.push(make('p', 'mt-6 text-sm text-muted', 'Tidak ada yang cocok dengan pencarian atau status ini.'));
+    } else {
+      const list = make('ul', 'mt-2 divide-y divide-line');
+      list.append(...rows.map(leadRow));
+      parts.push(list);
+    }
+    body.replaceChildren(...parts);
+  }
+
+  async function load() {
+    body.replaceChildren(buildAnalyticsSkeleton());
+    try {
+      const res = await fetch(`/api/dashboard/leads?school=${encodeURIComponent(school.id)}`, { cache: 'no-store' });
+      const data = await res.json().catch(() => null);
+      if (data?.error?.code === 'SIGI_AUTH_REQUIRED') {
+        location.replace(`login.html?next=${encodeURIComponent('dashboard.html#/pendaftar')}`);
+        return;
+      }
+      if (!res.ok) throw new Error(data?.error?.message || `Server mengembalikan kode ${res.status}.`);
+      leads = Array.isArray(data.leads) ? data.leads : [];
+      masked = data.masked === true;
+      draw();
+    } catch (error) {
+      const box = make('div');
+      box.append(make('p', 'font-semibold', 'Data calon pendaftar belum bisa dimuat.'), make('p', 'mt-1 break-words', error.message));
+      body.replaceChildren(callout(box, 'bg-red-50 text-red-900'));
+    }
+  }
+
+  load();
+}
+
 const VIEWS = {
   info: renderInfo,
   halaman: () => renderPage(current.id),
@@ -1916,6 +2143,7 @@ const VIEWS = {
   tampilan: renderLook,
   pasang: renderInstall,
   percakapan: renderConversations,
+  pendaftar: renderLeads,
 };
 
 function route() {
