@@ -1,21 +1,36 @@
 /*
- * Widget Sigi (versi demo)
+ * Widget Sigi
  *
- * Cara pasang di website sekolah, cukup dua baris sebelum </body>:
- *   <script src="sekolah/wikrama.js"></script>  -> nama, warna, dan info sekolah
- *   <script src="widget.js" defer></script>     -> tombol chat di pojok kanan bawah
+ * Cara pasang versi produksi (1 baris sebelum </body>, tanpa akses GitHub sekolah):
+ *   <script src="https://sigi.domain/widget.js" data-key="sg_pk_live_..." defer></script>
  *
- * Catatan demo: API key Netra (jawaban) dan Deepgram (suara) dibaca dari .env kalau halaman dibuka lewat server.mjs.
- * Selain itu, kedua key diketik di dalam widget dan hanya disimpan di memori tab ini.
- * Untuk dipakai pengunjung sungguhan, kedua key harus dipindah ke server.
+ * Cara pasang versi demo lokal (tetap didukung):
+ *   <script src="sekolah/wikrama.js"></script>
+ *   <script src="widget.js" defer></script>
  */
 (() => {
   'use strict';
 
-  // window.Sigi: data sekolah. Nama lama window.AsistenSPMB tetap diterima supaya pemasangan lama tidak rusak.
-  const config = window.Sigi || window.AsistenSPMB;
-  if (!config || !(config.pages || config.context)) {
-    console.warn('Sigi: data sekolah belum dimuat. Pasang file sekolah/*.js sebelum widget.js.');
+  const currentScript = document.currentScript;
+  const embedKey = (currentScript?.dataset?.key || window.SigiConfig?.key || '').trim();
+  const embedApiBase = (() => {
+    const explicit = (currentScript?.dataset?.api || window.SigiConfig?.api || '').trim();
+    if (explicit) return explicit.replace(/\/+$/, '');
+    if (currentScript?.src) {
+      try {
+        return new URL(currentScript.src, location.href).origin;
+      } catch {
+        // fallback ke origin halaman saat ini
+      }
+    }
+    return location.origin;
+  })();
+  const IS_EMBED = Boolean(embedKey);
+
+  // window.Sigi: data sekolah untuk mode demo lokal. Mode embed (data-key) mengambil konfigurasi dari server Sigi.
+  const config = IS_EMBED ? null : (window.Sigi || window.AsistenSPMB);
+  if (!IS_EMBED && (!config || !(config.pages || config.context))) {
+    console.warn('Sigi: tambahkan atribut data-key="sg_pk_..." pada tag <script> widget.js, atau muat file sekolah/*.js sebelumnya.');
     return;
   }
 
@@ -25,7 +40,7 @@
   const KIOSK = document.currentScript?.dataset.mode === 'kiosk';
 
   const API_URL = 'https://api.netra.sh/v1/chat/completions';
-  const MODEL = config.model || 'deepseek/deepseek-v4.1-flash';
+  const MODEL = config?.model || 'deepseek/deepseek-v4.1-flash';
   const MAX_CONTEXT_CHARS = 60000;
 
   // Input suara: speech to text langsung lewat WebSocket Deepgram, pengaturannya sama dengan playground (Tingkat 3).
@@ -103,9 +118,23 @@
   /* Data sekolah. Bawaannya dari sekolah/*.js; kalau sekolah sudah mengedit lewat dashboard,
      versi dashboard (disimpan di localStorage browser ini, mode demo) yang dipakai. */
 
-  const STORAGE_KEY = `sigi:sekolah:${config.id || 'default'}`;
+  const STORAGE_KEY = `sigi:sekolah:${config?.id || 'default'}`;
 
   function defaults() {
+    if (IS_EMBED) {
+      return {
+        schoolName: 'Asisten Sekolah',
+        colors: { primary: '#0f766e', onPrimary: '#ffffff', accent: '#bef264', onAccent: '#0b1f1d' },
+        greeting: 'Halo! Ada yang bisa dibantu seputar pendaftaran sekolah?',
+        suggestions: [],
+        voiceEnabled: false,
+        voice: DEFAULT_VOICE,
+        expressivity: DEFAULT_EXPRESSIVITY,
+        pages: [],
+        documents: [],
+        updatedAt: null,
+      };
+    }
     const pages = config.pages
       ? config.pages.map((page, i) => ({ id: `p${i + 1}`, title: page.title, body: page.body.trim(), updatedAt: null }))
       : [{ id: 'p1', title: 'Info sekolah', body: config.context.trim(), updatedAt: null }];
@@ -115,6 +144,7 @@
       colors: { primary: '#0f766e', onPrimary: '#ffffff', accent: '#bef264', onAccent: '#0b1f1d', ...config.colors },
       greeting: config.greeting || `Halo! Aku Asisten SPMB ${schoolName}. Ada yang bisa dibantu?`,
       suggestions: config.suggestions || [],
+      voiceEnabled: true,
       voice: config.voice || DEFAULT_VOICE, // suara Sigi di telepon, bisa diganti di dashboard
       expressivity: cleanExpressivity(config.expressivity), // ekspresi suara telepon, bisa diganti di dashboard
       pages,
@@ -125,6 +155,7 @@
 
   function load() {
     const base = defaults();
+    if (IS_EMBED) return base;
     try {
       const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
       if (saved && typeof saved === 'object') return { ...base, ...saved, colors: { ...base.colors, ...saved.colors } };
@@ -196,6 +227,7 @@
     deepgramKey: '', // untuk mic dan telepon, juga hanya di memori atau SERVER_KEY
     deepgramFormOpen: false, // kolom key Deepgram baru ditampilkan saat dibutuhkan
     deepgramFor: 'mic', // 'mic' | 'call': tombol mana yang meminta key Deepgram, untuk tujuan fokus setelah disimpan
+    keyPanelOpen: false, // true saat pengguna membuka panel pengaturan API key lewat tombol di header
     history: [], // { role: 'user' | 'assistant', content }
     isSending: false,
     error: '',
@@ -231,12 +263,18 @@
 
   /* Memanggil API Netra */
 
-  // Penanda "pakai key dari server lokal". Symbol, jadi tidak mungkin terkirim sebagai key sungguhan.
+  // Penanda "pakai key dari server lokal" atau "mode embed data-key". Symbol, jadi tidak pernah terkirim sebagai key mentah.
   const SERVER_KEY = Symbol('key dari .env');
+  const EMBED_KEY = Symbol('mode embed data-key');
   const LOCAL_CHAT_URL = '/api/chat';
   const LOCAL_SERVER_DOWN = location.protocol === 'https:'
     ? 'Tidak bisa terhubung ke server Sigi. Periksa koneksi internet.'
     : 'Server lokal Sigi tidak jalan. Nyalakan lagi dengan: node server.mjs';
+
+  if (IS_EMBED) {
+    state.apiKey = EMBED_KEY;
+    state.deepgramKey = EMBED_KEY;
+  }
 
   // Hanya di server lokal (server.mjs) dan Vercel. Di GitHub Pages atau website sekolah, key tetap diketik di halaman.
   // Menukar password dengan cookie sesi (hanya di Vercel). Mengembalikan pesan error, atau '' kalau berhasil.
@@ -271,9 +309,9 @@
 
   function buildMeta(channel = 'chat', inputSource = 'typed') {
     return {
-      schoolId: config.id || 'wikrama',
-      schoolName: school.schoolName || config.schoolName || 'Sekolah',
-      periodLabel: config.periodLabel || '2027-2028',
+      schoolId: config?.id || school.id || 'wikrama',
+      schoolName: school.schoolName || config?.schoolName || 'Sekolah',
+      periodLabel: config?.periodLabel || '2027-2028',
       conversationId: state.conversationId,
       visitorSessionId: state.visitorSessionId,
       channel,
@@ -282,7 +320,7 @@
   }
 
   function sendEvent(eventName, { channel = null, metadata = {} } = {}) {
-    if (!hasServerBackend() || state.needsLogin) return;
+    if (IS_EMBED || !hasServerBackend() || state.needsLogin) return;
     fetch('/api/events', {
       method: 'POST',
       keepalive: true,
@@ -308,7 +346,7 @@
       useServerKeys(); // menampilkan kolom password lagi, riwayat chat tetap ada
       return data.error.message;
     }
-    if (typeof code === 'string' && code.startsWith('SIGI_')) return `Server Sigi menolak permintaan: ${message}`;
+    if (typeof code === 'string' && code.startsWith('SIGI_')) return message || 'Permintaan ditolak oleh server Sigi.';
     // Kode dan pesan asli Netra ikut ditampilkan, supaya penyebabnya bisa dilacak.
     const info = `(kode ${status}${message ? `: ${message}` : ''})`;
     if (status === 403 && (data === null || code === 'NETRA_BLOCKED')) return `Permintaan diblokir sebelum sampai ke Netra ${info}. API key-nya belum tentu bermasalah.`;
@@ -319,28 +357,43 @@
     return `Permintaan gagal ${info}.`;
   }
 
-  async function askAgent(apiKey, messages, meta) {
+  async function askAgent(apiKey, messages, meta = null, { mode = 'chat' } = {}) {
     let response;
     try {
-      // Key dari .env: server lokal yang menambahkan key-nya, jadi browser tidak pernah memegangnya.
-      const viaServer = apiKey === SERVER_KEY;
-      response = await fetch(viaServer ? LOCAL_CHAT_URL : API_URL, {
-        method: 'POST',
-        headers: {
-          ...(viaServer ? {} : { Authorization: `Bearer ${apiKey}` }),
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: MODEL,
-          messages,
-          // Token penalaran ikut dihitung di max_tokens, jadi batasnya dibuat cukup longgar.
-          max_tokens: 2048,
-          reasoning: { enabled: true },
-          ...(viaServer && meta ? { meta } : {}),
-        }),
-      });
+      if (apiKey === EMBED_KEY) {
+        // Mode embed: kirim hanya riwayat user/assistant. System prompt dan konteks dirakit di server Sigi.
+        const publicMessages = messages.filter((m) => m.role === 'user' || m.role === 'assistant');
+        response = await fetch(`${embedApiBase}/api/v1/chat`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Sigi-Key': embedKey },
+          body: JSON.stringify({
+            messages: publicMessages,
+            mode,
+            conversationId: state.conversationId,
+            visitorSessionId: state.visitorSessionId,
+          }),
+        });
+      } else {
+        // Key dari .env: server lokal yang menambahkan key-nya, jadi browser tidak pernah memegangnya.
+        const viaServer = apiKey === SERVER_KEY;
+        response = await fetch(viaServer ? LOCAL_CHAT_URL : API_URL, {
+          method: 'POST',
+          headers: {
+            ...(viaServer ? {} : { Authorization: `Bearer ${apiKey}` }),
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: MODEL,
+            messages,
+            // Token penalaran ikut dihitung di max_tokens, jadi batasnya dibuat cukup longgar.
+            max_tokens: 2048,
+            reasoning: { enabled: true },
+            ...(viaServer && meta ? { meta } : {}),
+          }),
+        });
+      }
     } catch {
-      throw new Error(apiKey === SERVER_KEY
+      throw new Error(apiKey === SERVER_KEY || apiKey === EMBED_KEY
         ? LOCAL_SERVER_DOWN
         : 'Tidak bisa terhubung ke server Netra. Periksa koneksi internet.');
     }
@@ -348,7 +401,9 @@
     const data = await response.json().catch(() => null);
     if (!response.ok) throw new Error(describeApiError(response.status, data));
 
-    const reply = data?.choices?.[0]?.message?.content?.trim();
+    const reply = apiKey === EMBED_KEY
+      ? data?.reply?.trim()
+      : data?.choices?.[0]?.message?.content?.trim();
     if (!reply) throw new Error('Asisten tidak mengirim jawaban. Coba kirim ulang pertanyaannya.');
     return reply;
   }
@@ -368,11 +423,17 @@
     close: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>',
     bot: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>',
     reset: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>',
+    key: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4"/><path d="m21 2-9.6 9.6"/><circle cx="7.5" cy="15.5" r="5.5"/></svg>',
     mic: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2.5" width="6" height="12" rx="3"/><path d="M5 11.5a7 7 0 0 0 14 0M12 18.5V22M8 22h8"/></svg>',
     stop: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>',
-    send: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.714 3.048a.498.498 0 0 0-.683.627l2.843 7.627a2 2 0 0 1 0 1.396l-2.842 7.627a.498.498 0 0 0 .682.627l18-8.5a.5.5 0 0 0 0-.904z"/><path d="M6 12h16"/></svg>',
+    send: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg>',
     phone: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>',
     phoneOff: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.42 19.42 0 0 1-3.33-2.67m-2.67-3.34a19.79 19.79 0 0 1-3.07-8.63A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91"/><path d="M22 2 2 22"/></svg>',
+    copy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>',
+    check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>',
+    chevronRight: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>',
+    chevronDown: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>',
+    alert: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>',
   };
 
   const STYLE = `
@@ -381,8 +442,16 @@
     p { margin: 0; }
     .root {
       /* --primary, --on-primary, --accent, --on-accent diisi dari data sekolah oleh applySchool(). */
+      --surface: #ffffff;
+      --canvas: #f8fafc;
+      --subtle: #f1f5f9;
+      --border: #e2e8f0;
+      --border-strong: #cbd5e1;
+      --ink: #0f172a;
+      --ink-secondary: #334155;
+      --ink-muted: #526071;
       font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-      font-size: 14px; line-height: 1.5; color: #0f172a;
+      font-size: 14px; line-height: 1.5; color: var(--ink);
       -webkit-font-smoothing: antialiased;
     }
     button, input, textarea { font: inherit; color: inherit; }
@@ -391,108 +460,362 @@
     :focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
     .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 
-    .launcher { position: fixed; right: 20px; bottom: 20px; z-index: 2147483000; display: flex; align-items: center; gap: 12px; }
-    .launcher-label { background: #fff; border: 1px solid #e2e8f0; border-radius: 999px; padding: 10px 16px; font-weight: 600; font-size: 13px; box-shadow: 0 8px 24px rgb(15 23 42 / 0.14); }
-    .launcher-btn { width: 60px; height: 60px; border: 0; border-radius: 999px; background: var(--primary); color: var(--accent); display: grid; place-items: center; box-shadow: 0 12px 30px rgb(15 23 42 / 0.28); transition: transform 0.15s ease; }
-    .launcher-btn:hover { transform: scale(1.05); }
-    .launcher-btn svg { width: 26px; height: 26px; }
+    .launcher { position: fixed; right: 20px; bottom: 20px; z-index: 2147483000; display: flex; align-items: center; gap: 10px; }
+    .launcher-label {
+      padding: 10px 16px; border: 1px solid var(--border); border-radius: 999px;
+      background: var(--surface); color: var(--ink); font-weight: 600; font-size: 13px;
+      box-shadow: 0 10px 28px -8px rgb(15 23 42 / 0.16), 0 2px 6px rgb(15 23 42 / 0.06);
+      cursor: pointer; transition: transform 0.16s ease, box-shadow 0.16s ease;
+    }
+    .launcher-label:hover { transform: translateY(-1px); box-shadow: 0 14px 30px -8px rgb(15 23 42 / 0.2), 0 2px 8px rgb(15 23 42 / 0.08); }
+    .launcher-btn {
+      width: 56px; height: 56px; border: 0; border-radius: 999px;
+      background: var(--primary); color: var(--accent);
+      display: grid; place-items: center;
+      box-shadow: 0 14px 32px -6px rgb(15 23 42 / 0.32), 0 4px 10px -2px rgb(15 23 42 / 0.14);
+      transition: transform 0.16s ease, box-shadow 0.16s ease;
+    }
+    .launcher-btn:hover { transform: translateY(-1px) scale(1.03); box-shadow: 0 18px 36px -6px rgb(15 23 42 / 0.36); }
+    .launcher-btn:active { transform: scale(0.97); }
+    .launcher-btn svg { width: 24px; height: 24px; }
     .launcher-btn .icon-close { display: none; }
     .root[data-open="true"] .launcher-label { display: none; }
     .root[data-open="true"] .launcher-btn .icon-chat { display: none; }
     .root[data-open="true"] .launcher-btn .icon-close { display: block; }
 
-    .panel { position: fixed; right: 20px; bottom: 92px; z-index: 2147483000; width: 384px; max-width: calc(100vw - 40px); height: min(640px, calc(100vh - 120px)); display: flex; flex-direction: column; overflow: hidden; background: #fff; border: 1px solid #e2e8f0; border-radius: 20px; box-shadow: 0 24px 60px rgb(15 23 42 / 0.28); }
+    .panel {
+      position: fixed; right: 20px; bottom: 88px; z-index: 2147483000;
+      width: 400px; max-width: calc(100vw - 32px); height: min(650px, calc(100vh - 112px));
+      display: flex; flex-direction: column; overflow: hidden;
+      background: var(--surface); border: 1px solid rgb(15 23 42 / 0.09); border-radius: 22px;
+      box-shadow: 0 24px 64px -16px rgb(15 23 42 / 0.24), 0 6px 18px -6px rgb(15 23 42 / 0.1);
+      transform-origin: bottom right;
+      animation: sigi-panel-in 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+    }
     .panel[hidden] { display: none; }
+    @keyframes sigi-panel-in {
+      from { opacity: 0; transform: translateY(8px) scale(0.985); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
 
-    .header { display: flex; align-items: center; gap: 8px; padding: 10px 8px 10px 16px; background: var(--primary); color: var(--on-primary); }
-    .avatar { width: 40px; height: 40px; flex-shrink: 0; display: grid; place-items: center; border-radius: 999px; background: var(--accent); color: var(--on-accent); }
-    .avatar svg { width: 20px; height: 20px; }
+    .header {
+      display: flex; align-items: center; gap: 10px;
+      padding: 12px 10px 12px 16px;
+      background: var(--primary); color: var(--on-primary);
+    }
+    .avatar {
+      width: 36px; height: 36px; flex-shrink: 0; display: grid; place-items: center;
+      border-radius: 12px; background: var(--accent); color: var(--on-accent);
+    }
+    .avatar svg { width: 19px; height: 19px; }
     .header-text { flex: 1; min-width: 0; }
-    .title { font-size: 15px; font-weight: 700; }
-    .subtitle { display: flex; align-items: center; gap: 6px; font-size: 12px; opacity: 0.85; }
-    .subtitle span:last-child { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-    .icon-btn { width: 44px; height: 44px; flex-shrink: 0; display: grid; place-items: center; border: 0; border-radius: 10px; background: transparent; color: inherit; }
-    /* Di header berlatar warna sekolah, cincin fokus warna sekolah tidak terlihat, jadi pakai warna teks header. */
+    .title { font-size: 14.5px; font-weight: 700; letter-spacing: -0.01em; line-height: 1.25; }
+    .subtitle { font-size: 12px; opacity: 0.88; line-height: 1.3; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+    .header-actions { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
     .header :focus-visible { outline-color: var(--on-primary); }
-    .icon-btn:hover { background: rgb(255 255 255 / 0.14); }
+
+    .call-pill {
+      min-height: 44px; padding: 0 11px; flex-shrink: 0;
+      display: inline-flex; align-items: center; gap: 5px;
+      border: 1px solid color-mix(in srgb, var(--on-primary) 24%, transparent);
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--on-primary) 12%, transparent);
+      color: var(--on-primary); font-size: 12.5px; font-weight: 600;
+      transition: background 0.14s ease, border-color 0.14s ease;
+    }
+    .call-pill:hover:not(:disabled) {
+      background: color-mix(in srgb, var(--on-primary) 22%, transparent);
+      border-color: color-mix(in srgb, var(--on-primary) 36%, transparent);
+    }
+    .call-pill:disabled { opacity: 0.45; }
+    .call-pill[hidden], .mic[hidden] { display: none; }
+    .call-pill svg { width: 15px; height: 15px; flex-shrink: 0; }
+
+    .icon-btn {
+      width: 36px; height: 44px; flex-shrink: 0; display: grid; place-items: center;
+      border: 0; border-radius: 10px; background: transparent; color: inherit;
+      transition: background 0.14s ease, opacity 0.14s ease;
+    }
+    .icon-btn:hover:not(:disabled) { background: color-mix(in srgb, var(--on-primary) 14%, transparent); }
+    .icon-btn[aria-expanded="true"] { background: color-mix(in srgb, var(--on-primary) 20%, transparent); }
     .icon-btn:disabled { opacity: 0.4; background: transparent; }
-    .icon-btn svg { width: 18px; height: 18px; }
+    .icon-btn[hidden] { display: none; }
+    .icon-btn svg { width: 17px; height: 17px; }
 
-    .demo { padding: 10px 14px; background: #fffbeb; border-bottom: 1px solid #fde68a; color: #78350f; font-size: 12px; }
-    .demo form { display: flex; gap: 8px; margin-top: 8px; }
-    .demo input { flex: 1; min-width: 0; height: 44px; padding: 0 10px; border: 1px solid #fcd34d; border-radius: 10px; background: #fff; font-size: 13px; }
-    .demo input:focus { outline: 2px solid #b45309; outline-offset: 0; }
-    .demo button[type="submit"] { height: 44px; padding: 0 14px; border: 0; border-radius: 10px; background: #78350f; color: #fff; font-size: 13px; font-weight: 600; }
-    .demo-ready { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-    .demo-ready + .demo-ready, .demo-ready + p, .demo form + p { margin-top: 6px; }
-    .link-btn { min-height: 32px; padding: 4px; border: 0; background: none; color: #78350f; font-size: 12px; font-weight: 700; text-decoration: underline; }
+    /* Panel akses/API key adaptif: bersih dan menyatu, tersembunyi otomatis saat siap. */
+    .access {
+      padding: 12px 14px; background: var(--canvas); border-bottom: 1px solid var(--border);
+    }
+    .access[hidden] { display: none; }
+    .access-card {
+      padding: 12px; border: 1px solid var(--border); border-radius: 14px;
+      background: var(--surface); box-shadow: 0 1px 3px rgb(15 23 42 / 0.04);
+    }
+    .access-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .access-title { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 700; color: var(--ink); }
+    .access-title svg { width: 15px; height: 15px; color: var(--primary); flex-shrink: 0; }
+    .access-desc { margin-top: 4px; font-size: 12px; color: var(--ink-muted); line-height: 1.45; }
+    .access-close {
+      width: 32px; height: 32px; margin: -4px -4px -4px 0; flex-shrink: 0;
+      display: grid; place-items: center; border: 0; border-radius: 8px;
+      background: transparent; color: var(--ink-muted);
+    }
+    .access-close:hover { background: var(--subtle); color: var(--ink); }
+    .access-close svg { width: 15px; height: 15px; }
+    .access form { display: flex; gap: 8px; margin-top: 10px; }
+    .access input {
+      flex: 1; min-width: 0; height: 44px; padding: 0 12px;
+      border: 1px solid var(--border-strong); border-radius: 11px;
+      background: var(--surface); color: var(--ink); font-size: 13.5px;
+      transition: border-color 0.14s ease, box-shadow 0.14s ease;
+    }
+    .access input::placeholder { color: var(--ink-muted); }
+    .access input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 16%, transparent); }
+    .access button[type="submit"] {
+      height: 44px; padding: 0 15px; flex-shrink: 0; border: 0; border-radius: 11px;
+      background: var(--primary); color: var(--on-primary); font-size: 13px; font-weight: 600;
+      transition: opacity 0.14s ease;
+    }
+    .access button[type="submit"]:hover:not(:disabled) { opacity: 0.92; }
+    .access button[type="submit"]:disabled { opacity: 0.55; }
+    .access-row {
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      padding: 6px 0; font-size: 12.5px; color: var(--ink-secondary);
+    }
+    .access-row + .access-row { border-top: 1px solid var(--border); margin-top: 4px; padding-top: 8px; }
+    .access-row-block { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+    .link-btn {
+      min-height: 36px; padding: 0 10px; flex-shrink: 0;
+      border: 1px solid var(--border); border-radius: 9px;
+      background: var(--canvas); color: var(--ink); font-size: 12px; font-weight: 600;
+    }
+    .link-btn:hover { background: var(--subtle); border-color: var(--border-strong); }
 
-    .messages { flex: 1; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; padding: 16px; background: #f8fafc; }
+    /* Area percakapan */
+    .messages-wrap { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; background: var(--canvas); }
+    .messages {
+      flex: 1; display: flex; flex-direction: column; gap: 14px;
+      overflow-y: auto; padding: 16px; scroll-behavior: smooth;
+    }
+
+    /* Welcome card saat percakapan belum dimulai */
+    .welcome {
+      display: flex; flex-direction: column; gap: 14px;
+    }
+    .welcome-card {
+      padding: 16px; border: 1px solid var(--border); border-radius: 18px;
+      background: var(--surface); box-shadow: 0 2px 10px -4px rgb(15 23 42 / 0.06);
+    }
+    .welcome-badge {
+      display: inline-flex; align-items: center; gap: 8px; margin-bottom: 10px;
+    }
+    .welcome-icon {
+      width: 28px; height: 28px; display: grid; place-items: center;
+      border-radius: 9px; background: color-mix(in srgb, var(--primary) 10%, #ffffff); color: var(--primary);
+    }
+    .welcome-icon svg { width: 15px; height: 15px; }
+    .welcome-name { font-size: 12.5px; font-weight: 700; color: var(--ink-secondary); }
+    .welcome-text { font-size: 14.5px; line-height: 1.55; color: var(--ink); }
+
+    .prompts { display: flex; flex-direction: column; gap: 8px; }
+    .prompts-label { font-size: 12px; font-weight: 600; color: var(--ink-muted); padding: 0 2px; }
+    .prompt-btn {
+      width: 100%; min-height: 44px; padding: 10px 14px;
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      border: 1px solid var(--border); border-radius: 13px;
+      background: var(--surface); color: var(--ink);
+      font-size: 13.5px; font-weight: 500; text-align: left;
+      box-shadow: 0 1px 2px rgb(15 23 42 / 0.03);
+      transition: background 0.14s ease, border-color 0.14s ease, transform 0.12s ease;
+    }
+    .prompt-btn:hover {
+      background: color-mix(in srgb, var(--primary) 5%, #ffffff);
+      border-color: color-mix(in srgb, var(--primary) 34%, var(--border));
+    }
+    .prompt-btn:active { transform: scale(0.99); }
+    .prompt-btn svg { width: 16px; height: 16px; flex-shrink: 0; color: var(--ink-muted); transition: transform 0.14s ease, color 0.14s ease; }
+    .prompt-btn:hover svg { color: var(--primary); transform: translateX(2px); }
+
+    /* Gelembung percakapan */
     .row { display: flex; align-items: flex-end; gap: 8px; }
     .row.user { justify-content: flex-end; }
-    .mini-avatar { width: 28px; height: 28px; flex-shrink: 0; display: grid; place-items: center; border-radius: 999px; background: var(--primary); color: var(--accent); }
+    .mini-avatar {
+      width: 28px; height: 28px; flex-shrink: 0; display: grid; place-items: center;
+      border-radius: 10px; background: var(--primary); color: var(--accent);
+      margin-bottom: 2px;
+    }
     .mini-avatar svg { width: 15px; height: 15px; }
-    .bubble { position: relative; max-width: 82%; padding: 10px 14px; border-radius: 18px; white-space: pre-wrap; overflow-wrap: anywhere; }
-    .row.user .bubble { border-bottom-right-radius: 6px; background: var(--primary); color: var(--on-primary); }
-    .row.bot .bubble { border: 1px solid #e2e8f0; border-bottom-left-radius: 6px; background: #fff; }
-    .chips { display: flex; flex-wrap: wrap; gap: 8px; padding-left: 36px; }
-    .chip { min-height: 44px; padding: 6px 14px; border: 1px solid var(--primary); border-radius: 999px; background: #fff; color: var(--primary); font-size: 13px; font-weight: 600; }
-    .chip:hover { background: color-mix(in srgb, var(--primary) 8%, #fff); }
-    .typing { display: inline-flex; align-items: center; gap: 4px; height: 21px; }
-    .typing span { width: 6px; height: 6px; border-radius: 999px; background: #94a3b8; animation: asisten-bounce 1s infinite ease-in-out; }
+    .msg-col { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; max-width: 84%; min-width: 0; }
+    .row.user .msg-col { align-items: flex-end; }
+    .bubble {
+      position: relative; max-width: 100%; padding: 10px 14px;
+      border-radius: 16px; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.55;
+    }
+    .row.user .bubble {
+      border-bottom-right-radius: 5px;
+      background: var(--primary); color: var(--on-primary);
+    }
+    .row.bot .bubble {
+      border: 1px solid var(--border); border-bottom-left-radius: 5px;
+      background: var(--surface); color: var(--ink);
+      box-shadow: 0 1px 2px rgb(15 23 42 / 0.04);
+    }
+
+    .msg-actions { display: flex; align-items: center; gap: 4px; padding-left: 2px; }
+    .copy-btn {
+      min-height: 28px; padding: 3px 8px;
+      display: inline-flex; align-items: center; gap: 5px;
+      border: 0; border-radius: 8px; background: transparent;
+      color: var(--ink-muted); font-size: 12px; font-weight: 500;
+      transition: background 0.14s ease, color 0.14s ease;
+    }
+    .copy-btn:hover { background: var(--subtle); color: var(--ink); }
+    .copy-btn[data-copied="true"] { color: #15803d; }
+    .copy-btn svg { width: 13px; height: 13px; flex-shrink: 0; }
+
+    .typing { display: inline-flex; align-items: center; gap: 5px; height: 22px; padding: 0 2px; }
+    .typing span { width: 6px; height: 6px; border-radius: 999px; background: #64748b; animation: asisten-bounce 1s infinite ease-in-out; }
     .typing span:nth-child(2) { animation-delay: 0.15s; }
     .typing span:nth-child(3) { animation-delay: 0.3s; }
-    @keyframes asisten-bounce { 0%, 80%, 100% { transform: translateY(0); opacity: 0.5; } 40% { transform: translateY(-4px); opacity: 1; } }
+    @keyframes asisten-bounce { 0%, 80%, 100% { transform: translateY(0); opacity: 0.45; } 40% { transform: translateY(-4px); opacity: 1; } }
+
     .md { white-space: normal; }
     .md > * + * { margin-top: 8px; }
     .md ul, .md ol { margin: 0; padding-left: 20px; }
     .md li + li, .md li > ul, .md li > ol { margin-top: 4px; }
     .md strong, .md .md-heading { font-weight: 700; }
-    .md code { padding: 1px 5px; border-radius: 6px; background: #f1f5f9; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.9em; }
+    .md code { padding: 1px 5px; border-radius: 6px; background: var(--subtle); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.9em; }
     .md a { color: var(--primary); font-weight: 600; text-decoration: underline; text-underline-offset: 2px; overflow-wrap: anywhere; }
-    .error { padding: 10px 12px; border: 1px solid #fecaca; border-radius: 14px; background: #fef2f2; color: #991b1b; font-size: 13px; }
 
-    .composer { display: flex; align-items: flex-end; gap: 8px; padding: 10px 12px; border-top: 1px solid #e2e8f0; background: #fff; }
-    .composer textarea { flex: 1; min-width: 0; min-height: 44px; max-height: 120px; padding: 11px 12px; border: 1px solid #cbd5e1; border-radius: 14px; background: #fff; line-height: 1.4; resize: none; }
-    .composer textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent); }
-    .mic { width: 44px; height: 44px; flex-shrink: 0; display: grid; place-items: center; border: 1px solid #cbd5e1; border-radius: 14px; background: #fff; color: var(--primary); }
-    .mic:hover { background: #f8fafc; }
-    .mic svg { width: 20px; height: 20px; }
+    .error {
+      display: flex; align-items: flex-start; gap: 8px;
+      padding: 10px 12px; border: 1px solid #fecaca; border-radius: 13px;
+      background: #fef2f2; color: #991b1b; font-size: 13px; line-height: 1.45;
+    }
+    .error svg { width: 16px; height: 16px; flex-shrink: 0; margin-top: 2px; }
+
+    /* Tombol gulir cepat ke pesan terbaru */
+    .scroll-bottom {
+      position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%);
+      min-height: 36px; padding: 0 13px;
+      display: inline-flex; align-items: center; gap: 5px;
+      border: 1px solid var(--border-strong); border-radius: 999px;
+      background: var(--surface); color: var(--ink);
+      font-size: 12px; font-weight: 600;
+      box-shadow: 0 8px 20px -4px rgb(15 23 42 / 0.16), 0 2px 6px rgb(15 23 42 / 0.08);
+      transition: background 0.14s ease, transform 0.14s ease;
+    }
+    .scroll-bottom:hover { background: var(--canvas); transform: translateX(-50%) translateY(-1px); }
+    .scroll-bottom[hidden] { display: none; }
+    .scroll-bottom svg { width: 15px; height: 15px; }
+
+    /* Composer terpadu bergaya kapsul */
+    .voice-status {
+      display: flex; align-items: center; gap: 7px;
+      padding: 8px 14px 2px; background: var(--surface);
+      border-top: 1px solid var(--border);
+      color: var(--ink-secondary); font-size: 12px; font-weight: 600;
+    }
+    .voice-status[hidden] { display: none; }
+    .voice-status + .composer { border-top: 0; padding-top: 6px; }
+
+    .composer { padding: 10px 12px 6px; border-top: 1px solid var(--border); background: var(--surface); }
+    .composer-box {
+      display: flex; align-items: flex-end; gap: 4px;
+      padding: 4px 4px 4px 14px;
+      border: 1px solid var(--border-strong); border-radius: 18px;
+      background: var(--canvas);
+      transition: border-color 0.14s ease, background 0.14s ease, box-shadow 0.14s ease;
+    }
+    .composer-box:focus-within {
+      background: var(--surface); border-color: var(--primary);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 16%, transparent);
+    }
+    .composer textarea {
+      flex: 1; min-width: 0; min-height: 44px; max-height: 120px;
+      padding: 11px 4px 11px 0; border: 0; background: transparent;
+      color: var(--ink); line-height: 1.45; resize: none; outline: none;
+    }
+    .composer textarea::placeholder { color: var(--ink-muted); }
+
+    .mic {
+      width: 40px; height: 44px; flex-shrink: 0; display: grid; place-items: center;
+      border: 0; border-radius: 13px; background: transparent; color: var(--ink-secondary);
+      transition: background 0.14s ease, color 0.14s ease;
+    }
+    .mic:hover:not(:disabled) { background: var(--subtle); color: var(--primary); }
+    .mic svg { width: 19px; height: 19px; }
     .mic .icon-stop { display: none; }
-    /* Selama merekam: tombol memakai warna utama sekolah, dan ikon mic diganti ikon kotak (berhenti). */
-    .mic[data-recording="true"] { border-color: var(--primary); background: var(--primary); color: var(--on-primary); }
+    /* Selama merekam: merah tua kontras tinggi agar jelas sedang merekam dan mudah dihentikan. */
+    .mic[data-recording="true"] { background: #b91c1c; color: #ffffff; }
+    .mic[data-recording="true"]:hover:not(:disabled) { background: #991b1b; color: #ffffff; }
     .mic[data-recording="true"] .icon-mic { display: none; }
     .mic[data-recording="true"] .icon-stop { display: block; }
-    .mic:disabled { border-color: #e2e8f0; background: #f1f5f9; color: #94a3b8; }
-    .voice-status { padding: 8px 14px 0; background: #fff; color: #334155; font-size: 12px; font-weight: 600; }
-    .voice-status[hidden] { display: none; }
-    .send { width: 44px; height: 44px; flex-shrink: 0; display: grid; place-items: center; border: 0; border-radius: 14px; background: var(--accent); color: var(--on-accent); }
-    .send svg { width: 18px; height: 18px; }
-    .send:disabled { background: #e2e8f0; color: #94a3b8; }
-    /* Atribut hidden kalah oleh display: flex, jadi perlu ditegaskan. */
+    .mic:disabled { color: #94a3b8; background: transparent; }
+
+    .send {
+      width: 44px; height: 44px; flex-shrink: 0; display: grid; place-items: center;
+      border: 0; border-radius: 13px; background: var(--accent); color: var(--on-accent);
+      transition: filter 0.14s ease, transform 0.12s ease;
+    }
+    .send:hover:not(:disabled) { filter: brightness(0.95); }
+    .send:active:not(:disabled) { transform: scale(0.96); }
+    .send svg { width: 19px; height: 19px; }
+    .send:disabled { background: var(--border); color: #64748b; }
     .composer[hidden], .call-bar[hidden], .call-heard[hidden] { display: none; }
 
-    /* Bar panggilan: menggantikan form pertanyaan selama telepon berjalan. Sengaja tanpa animasi. */
-    .call-bar { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; border-top: 1px solid #e2e8f0; background: #fff; }
+    /* Bar panggilan suara modern */
+    .call-bar { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px 6px; border-top: 1px solid var(--border); background: var(--surface); }
+    .call-card {
+      display: flex; flex-direction: column; gap: 10px;
+      padding: 12px; border-radius: 16px;
+      border: 1px solid color-mix(in srgb, var(--primary) 18%, var(--border));
+      background: color-mix(in srgb, var(--primary) 5%, #ffffff);
+    }
     .call-row { display: flex; align-items: center; gap: 10px; }
+    .call-badge {
+      width: 38px; height: 38px; flex-shrink: 0; display: grid; place-items: center;
+      border-radius: 12px; background: var(--primary); color: var(--accent);
+    }
+    .call-badge svg { width: 18px; height: 18px; }
     .call-info { flex: 1; min-width: 0; }
-    .call-state { color: #0f172a; font-size: 13px; font-weight: 700; line-height: 1.35; }
-    .call-time { color: #475569; font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
-    .call-heard { max-height: 66px; overflow-y: auto; padding: 8px 12px; border-radius: 12px; background: color-mix(in srgb, var(--primary) 8%, #fff); color: #0f172a; font-size: 13px; overflow-wrap: anywhere; }
+    .call-state { color: var(--ink); font-size: 13px; font-weight: 700; line-height: 1.35; }
+    .call-time { color: var(--ink-muted); font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; margin-top: 1px; }
+    .call-heard {
+      max-height: 68px; overflow-y: auto; padding: 8px 11px;
+      border: 1px solid var(--border); border-radius: 11px;
+      background: var(--surface); color: var(--ink); font-size: 13px; overflow-wrap: anywhere;
+    }
     /* Merah tua di atas putih: kontras sekitar 6,5:1, jadi tetap terbaca walau warna sekolah apa pun. */
-    .call-end { min-height: 44px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 0 14px; border: 0; border-radius: 999px; background: #b91c1c; color: #fff; font-size: 13px; font-weight: 700; }
+    .call-end {
+      min-height: 44px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center;
+      gap: 6px; padding: 0 14px; border: 0; border-radius: 999px;
+      background: #b91c1c; color: #ffffff; font-size: 13px; font-weight: 700;
+      transition: background 0.14s ease;
+    }
     .call-end:hover { background: #991b1b; }
-    .call-end svg { width: 18px; height: 18px; flex-shrink: 0; }
-    .call-note { color: #64748b; font-size: 11px; }
-    .footer { padding: 0 12px 10px; background: #fff; color: #64748b; font-size: 11px; text-align: center; }
-    .footer a { color: inherit; font-weight: 700; }
+    .call-end svg { width: 17px; height: 17px; flex-shrink: 0; }
+    .call-note { color: var(--ink-muted); font-size: 11.5px; padding: 0 2px; }
+
+    .footer { padding: 4px 12px 10px; background: var(--surface); color: var(--ink-muted); font-size: 11.5px; text-align: center; }
+    .footer a { color: var(--ink-secondary); font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }
 
     @media (max-width: 480px) {
-      .panel { inset: 0; width: auto; max-width: none; height: auto; border: 0; border-radius: 0; }
+      .panel { inset: 0; width: auto; max-width: none; height: auto; border: 0; border-radius: 0; animation: none; }
       .root[data-open="true"] .launcher { display: none; }
       .launcher-label { display: none; }
+      .header { padding: 10px 8px 10px 12px; gap: 8px; }
+      .call-pill { padding: 0 10px; font-size: 12px; }
+      .icon-btn { width: 34px; }
       /* iPhone otomatis nge-zoom kalau huruf di kolom isian di bawah 16px. */
-      .composer textarea, .demo input { font-size: 16px; }
+      .composer textarea, .access input { font-size: 16px; }
+      .footer { padding-bottom: max(10px, env(safe-area-inset-bottom)); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .panel, .typing span { animation: none; }
+      .messages { scroll-behavior: auto; }
+      .launcher-label, .launcher-btn, .prompt-btn, .prompt-btn svg, .scroll-bottom, .send { transition: none; }
     }
   `;
 
@@ -501,7 +824,7 @@
   const MARKUP = `
     <div class="root" data-open="false">
       <div class="launcher">
-        <span class="launcher-label" aria-hidden="true">Tanya soal SPMB?</span>
+        <span class="launcher-label" aria-hidden="true" data-ref="launcherLabel">Tanya soal SPMB?</span>
         <button class="launcher-btn" type="button" aria-expanded="false" aria-controls="asisten-panel" aria-label="Buka Asisten SPMB" data-ref="launcher">
           <span class="icon-chat">${ICONS.chat}</span><span class="icon-close">${ICONS.close}</span>
         </button>
@@ -511,34 +834,45 @@
           <span class="avatar">${ICONS.bot}</span>
           <div class="header-text">
             <p class="title" id="asisten-title">Asisten SPMB</p>
-            <p class="subtitle"><span data-ref="school"></span></p>
+            <p class="subtitle" data-ref="school"></p>
           </div>
-          <button class="icon-btn" type="button" aria-label="Telepon Sigi" title="Telepon Sigi" data-ref="phone">${ICONS.phone}</button>
-          <button class="icon-btn" type="button" aria-label="Mulai percakapan baru" title="Mulai percakapan baru" data-ref="reset">${ICONS.reset}</button>
-          <button class="icon-btn" type="button" aria-label="Tutup Asisten SPMB" title="Tutup" data-ref="close">${ICONS.close}</button>
+          <div class="header-actions">
+            <button class="call-pill" type="button" aria-label="Telepon Sigi" title="Telepon Sigi" data-ref="phone">${ICONS.phone}<span>Telepon</span></button>
+            <button class="icon-btn" type="button" aria-label="Pengaturan kunci API" title="Pengaturan kunci API" aria-expanded="false" hidden data-ref="keyToggle">${ICONS.key}</button>
+            <button class="icon-btn" type="button" aria-label="Mulai percakapan baru" title="Mulai percakapan baru" data-ref="reset">${ICONS.reset}</button>
+            <button class="icon-btn" type="button" aria-label="Tutup Asisten SPMB" title="Tutup" data-ref="close">${ICONS.close}</button>
+          </div>
         </header>
-        <div class="demo" data-ref="demo"></div>
-        <div class="messages" data-ref="messages"></div>
+        <div class="access" data-ref="demo" hidden></div>
+        <div class="messages-wrap">
+          <div class="messages" data-ref="messages"></div>
+          <button class="scroll-bottom" type="button" hidden data-ref="scrollBottom" aria-label="Gulir ke pesan terbaru">${ICONS.chevronDown}<span>Pesan terbaru</span></button>
+        </div>
         <p class="sr-only" role="status" aria-live="polite" data-ref="status"></p>
         <p class="voice-status" data-ref="voiceStatus" hidden></p>
         <form class="composer" data-ref="form">
-          <label class="sr-only" for="asisten-input">Tulis pertanyaan</label>
-          <textarea id="asisten-input" rows="1" placeholder="Tulis pertanyaan..." data-ref="input"></textarea>
-          <!-- type="button": tanpa ini, tombol di dalam form dianggap tombol kirim. -->
-          <button class="mic" type="button" aria-label="Rekam suara" data-ref="mic"><span class="icon-mic">${ICONS.mic}</span><span class="icon-stop">${ICONS.stop}</span></button>
-          <button class="send" type="submit" aria-label="Kirim pertanyaan" data-ref="send">${ICONS.send}</button>
+          <div class="composer-box">
+            <label class="sr-only" for="asisten-input">Tulis pertanyaan</label>
+            <textarea id="asisten-input" rows="1" placeholder="Tulis pertanyaan..." data-ref="input"></textarea>
+            <!-- type="button": tanpa ini, tombol di dalam form dianggap tombol kirim. -->
+            <button class="mic" type="button" aria-label="Rekam suara" data-ref="mic"><span class="icon-mic">${ICONS.mic}</span><span class="icon-stop">${ICONS.stop}</span></button>
+            <button class="send" type="submit" aria-label="Kirim pertanyaan" data-ref="send">${ICONS.send}</button>
+          </div>
         </form>
         <div class="call-bar" data-ref="callBar" hidden>
-          <div class="call-row">
-            <div class="call-info">
-              <!-- Hanya status yang diumumkan pembaca layar. Lama panggilan dan teks yang terdengar
-                   sengaja di luar area ini, supaya tidak dibacakan setiap detik. -->
-              <p class="call-state" role="status" aria-live="polite" data-ref="callState"></p>
-              <p class="call-time"><span class="sr-only">Lama panggilan </span><span data-ref="callTime">0:00</span></p>
+          <div class="call-card">
+            <div class="call-row">
+              <span class="call-badge">${ICONS.phone}</span>
+              <div class="call-info">
+                <!-- Hanya status yang diumumkan pembaca layar. Lama panggilan dan teks yang terdengar
+                     sengaja di luar area ini, supaya tidak dibacakan setiap detik. -->
+                <p class="call-state" role="status" aria-live="polite" data-ref="callState"></p>
+                <p class="call-time"><span class="sr-only">Lama panggilan </span><span data-ref="callTime">0:00</span></p>
+              </div>
+              <button class="call-end" type="button" data-ref="callEnd">${ICONS.phoneOff}<span>Akhiri</span></button>
             </div>
-            <button class="call-end" type="button" data-ref="callEnd">${ICONS.phoneOff}<span>Akhiri panggilan</span></button>
+            <p class="call-heard" data-ref="callHeard" hidden></p>
           </div>
-          <p class="call-heard" data-ref="callHeard" hidden></p>
           <p class="call-note">Suara kamu dikirim ke Deepgram untuk diubah jadi teks.</p>
         </div>
         <p class="footer">Jawaban dibuat AI dari info sekolah · Didukung <a data-ref="powered" target="_blank" rel="noopener">Sigi</a></p>
@@ -561,7 +895,7 @@
   const ref = {};
   for (const node of shadow.querySelectorAll('[data-ref]')) ref[node.dataset.ref] = node;
 
-  ref.powered.href = config.poweredByUrl || 'index.html';
+  ref.powered.href = config?.poweredByUrl || (IS_EMBED ? `${embedApiBase}/index.html` : 'index.html');
 
   // Nama dan warna sekolah dipasang ulang setiap kali data berubah (misalnya setelah disimpan di dashboard).
   function applySchool() {
@@ -730,15 +1064,71 @@
       .replace(/^\s*[-*•]\s+/gm, '');
   }
 
+  // Teks rapi untuk disalin pengguna (tanpa simbol Markdown, tautan tetap disertakan).
+  function copyableText(text) {
+    return text
+      .replace(/\[([^\]\n]+)\]\((https?:\/\/[^)\s]+)\)/g, '$1 ($2)')
+      .replace(/\[([^\]\n]+)\]\(([^)\s]+)\)/g, '$1')
+      .replace(/\*\*([^*\n]+?)\*\*/g, '$1')
+      .replace(/`([^`\n]+)`/g, '$1')
+      .replace(/(?<![\w*])\*(?!\s)([^*\n]+?)\*(?![\w*])/g, '$1')
+      .replace(/^\s*#{1,6}\s+/gm, '');
+  }
+
+  async function copyToClipboard(text) {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      return;
+    }
+    const helper = document.createElement('textarea');
+    helper.value = text;
+    helper.style.position = 'fixed';
+    helper.style.opacity = '0';
+    document.body.append(helper);
+    helper.select();
+    document.execCommand('copy');
+    helper.remove();
+  }
+
   function miniAvatar() {
     const avatar = make('span', 'mini-avatar');
     avatar.innerHTML = ICONS.bot; // ikon statis, bukan teks dari AI
     return avatar;
   }
 
-  function messageRow(role, text) {
+  function copyButton(text) {
+    const button = make('button', 'copy-btn');
+    button.type = 'button';
+    button.setAttribute('aria-label', 'Salin jawaban');
+    const icon = make('span');
+    icon.innerHTML = ICONS.copy;
+    const label = make('span', '', 'Salin');
+    button.append(icon, label);
+    let timer = null;
+    button.addEventListener('click', async () => {
+      try {
+        await copyToClipboard(copyableText(text));
+        clearTimeout(timer);
+        button.dataset.copied = 'true';
+        icon.innerHTML = ICONS.check;
+        label.textContent = 'Tersalin';
+        ref.status.textContent = 'Jawaban disalin.';
+        timer = setTimeout(() => {
+          delete button.dataset.copied;
+          icon.innerHTML = ICONS.copy;
+          label.textContent = 'Salin';
+        }, 2000);
+      } catch {
+        ref.status.textContent = 'Tidak bisa menyalin jawaban.';
+      }
+    });
+    return button;
+  }
+
+  function messageRow(role, text, { allowCopy = false } = {}) {
     const isUser = role === 'user';
     const row = make('div', `row ${isUser ? 'user' : 'bot'}`);
+    const col = make('div', 'msg-col');
     const bubble = make('div', 'bubble');
     // Label untuk pembaca layar, lalu isinya. Pesan pengguna tetap teks biasa (text node);
     // jawaban asisten ditampilkan sebagai Markdown sederhana lewat renderMarkdown (juga tanpa innerHTML).
@@ -750,25 +1140,73 @@
       body.append(renderMarkdown(text));
       bubble.append(body);
     }
+    col.append(bubble);
+    if (!isUser && allowCopy) {
+      const actions = make('div', 'msg-actions');
+      actions.append(copyButton(text));
+      col.append(actions);
+    }
     if (!isUser) row.append(miniAvatar());
-    row.append(bubble);
+    row.append(col);
     return row;
+  }
+
+  function welcomeBlock(suggestions) {
+    const wrap = make('div', 'welcome');
+    const card = make('div', 'welcome-card');
+    const badge = make('div', 'welcome-badge');
+    const icon = make('span', 'welcome-icon');
+    icon.innerHTML = ICONS.bot;
+    badge.append(icon, make('span', 'welcome-name', `Asisten SPMB · ${school.schoolName}`));
+    const greeting = make('div', 'welcome-text md');
+    greeting.append(renderMarkdown(school.greeting));
+    card.append(badge, greeting);
+    wrap.append(card);
+
+    if (suggestions.length > 0) {
+      const list = make('div', 'prompts');
+      list.append(make('p', 'prompts-label', 'Pertanyaan populer'));
+      for (const question of suggestions) {
+        const btn = make('button', 'prompt-btn');
+        btn.type = 'button';
+        const arrow = make('span');
+        arrow.innerHTML = ICONS.chevronRight;
+        btn.append(make('span', '', question), arrow);
+        btn.addEventListener('click', () => {
+          sendEvent('suggestion_clicked', { channel: 'chat', metadata: { label: question } });
+          send(question, 'suggestion_chip');
+        });
+        list.append(btn);
+      }
+      wrap.append(list);
+    }
+    return wrap;
+  }
+
+  function errorBanner(message) {
+    const box = make('div', 'error');
+    const icon = make('span');
+    icon.innerHTML = ICONS.alert;
+    box.append(icon, make('span', '', message));
+    return box;
   }
 
   function typingRow() {
     const row = make('div', 'row bot');
+    const col = make('div', 'msg-col');
     const bubble = make('div', 'bubble');
     const dots = make('span', 'typing');
     dots.append(make('span'), make('span'), make('span'));
     bubble.append(make('span', 'sr-only', 'Asisten sedang menulis jawaban'), dots);
-    row.append(miniAvatar(), bubble);
+    col.append(bubble);
+    row.append(miniAvatar(), col);
     return row;
   }
 
   /* Tampilan */
 
-  // Kolom API key di kotak kuning mode demo. Dipakai untuk key Netra dan key Deepgram.
-  function keyForm(placeholder, label, onSave) {
+  // Kolom password / API key di panel akses adaptif.
+  function keyForm(placeholder, label, buttonLabel, onSave) {
     const form = make('form');
     const input = make('input');
     input.type = 'password';
@@ -776,7 +1214,7 @@
     input.spellcheck = false;
     input.placeholder = placeholder;
     input.setAttribute('aria-label', label);
-    const save = make('button', '', 'Pakai');
+    const save = make('button', '', buttonLabel);
     save.type = 'submit';
     form.append(input, save);
     form.addEventListener('submit', async (event) => {
@@ -791,16 +1229,34 @@
       save.textContent = 'Sebentar';
       await onSave(key);
       save.disabled = false;
-      save.textContent = 'Pakai';
+      save.textContent = buttonLabel;
     });
     return form;
   }
 
+  function accessHeader(titleText, onClose) {
+    const head = make('div', 'access-head');
+    const title = make('p', 'access-title');
+    const icon = make('span');
+    icon.innerHTML = ICONS.key;
+    title.append(icon, make('span', '', titleText));
+    head.append(title);
+    if (onClose) {
+      const close = make('button', 'access-close');
+      close.type = 'button';
+      close.setAttribute('aria-label', 'Tutup pengaturan kunci');
+      close.innerHTML = ICONS.close;
+      close.addEventListener('click', onClose);
+      head.append(close);
+    }
+    return head;
+  }
+
   function readyRow(text, buttonText, onClick) {
-    const row = make('div', 'demo-ready');
+    const row = make('div', 'access-row');
     row.append(make('span', '', text));
     // Selama telepon, key tidak boleh diganti: tombolnya tidak ditampilkan sama sekali, supaya
-    // key yang sedang dipakai panggilan tidak dikosongkan dan fokus tidak lompat ke kotak kuning.
+    // key yang sedang dipakai panggilan tidak dikosongkan.
     if (buttonText && state.callStatus === 'off') {
       const button = make('button', 'link-btn', buttonText);
       button.type = 'button';
@@ -813,59 +1269,101 @@
   function renderDemo() {
     ref.demo.replaceChildren();
 
+    if (IS_EMBED) {
+      ref.keyToggle.hidden = true;
+      ref.demo.hidden = true;
+      return;
+    }
+
+    const bothFromServer = state.apiKey === SERVER_KEY && state.deepgramKey === SERVER_KEY;
+    const canToggleKeys = !state.needsLogin && Boolean(state.apiKey) && !bothFromServer && state.callStatus === 'off';
+    const shouldShowPanel = state.needsLogin || !state.apiKey || state.deepgramFormOpen || (state.keyPanelOpen && canToggleKeys);
+
+    ref.keyToggle.hidden = !canToggleKeys;
+    ref.keyToggle.setAttribute('aria-expanded', String(shouldShowPanel && canToggleKeys));
+    ref.demo.hidden = !shouldShowPanel;
+    if (!shouldShowPanel) return;
+
+    const card = make('div', 'access-card');
+
     if (state.needsLogin) {
-      ref.demo.append(
-        make('p', '', 'Mode demo: masukkan password untuk memakai Sigi.'),
-        keyForm('Password', 'Password mode demo', async (password) => {
+      card.append(
+        accessHeader('Masuk ke mode demo'),
+        make('p', 'access-desc', 'Masukkan password untuk mulai menggunakan Sigi.'),
+        keyForm('Masukkan password', 'Password mode demo', 'Masuk', async (password) => {
           const error = await serverLogin(password);
           if (error) {
             showError(error);
             return;
           }
           state.error = '';
+          state.keyPanelOpen = false;
           await useServerKeys();
         }),
       );
+      ref.demo.append(card);
       return;
     }
 
-    // Key Netra: untuk jawaban asisten.
-    if (state.apiKey === SERVER_KEY) {
-      ref.demo.append(readyRow('Mode demo · API key dibaca dari server'));
-    } else if (state.apiKey) {
-      ref.demo.append(readyRow('Mode demo · API key aktif di tab ini', 'Ganti key', () => {
-        state.apiKey = '';
-        renderDemo();
-        ref.demo.querySelector('input').focus();
-      }));
-    } else {
-      ref.demo.append(
-        make('p', '', 'Mode demo: masukkan API key Netra untuk mencoba. Key hanya disimpan di tab ini.'),
-        keyForm('Tempel API key Netra', 'API key Netra untuk mode demo', (key) => {
+    const canClose = Boolean(state.apiKey);
+    const closePanel = canClose ? () => {
+      state.keyPanelOpen = false;
+      state.deepgramFormOpen = false;
+      renderDemo();
+      ref.input.focus();
+    } : null;
+
+    if (!state.apiKey) {
+      card.append(
+        accessHeader('Aktifkan Asisten', null),
+        make('p', 'access-desc', 'Mode demo: masukkan API key Netra untuk mencoba. Key hanya disimpan di tab ini.'),
+        keyForm('Tempel API key Netra', 'API key Netra untuk mode demo', 'Pakai', (key) => {
           state.apiKey = key;
           state.error = '';
+          state.keyPanelOpen = false;
           renderDemo();
           renderMessages();
           ref.input.focus();
         }),
       );
+      ref.demo.append(card);
+      return;
     }
 
-    // Key Deepgram: untuk tombol mic dan Telepon. Kolomnya baru muncul saat dibutuhkan, supaya kotak ini tetap pendek.
+    // Jika Netra sudah aktif dan hanya diminta key Deepgram (atau user membuka pengaturan key).
+    card.append(accessHeader(state.deepgramFormOpen && !state.keyPanelOpen ? 'Aktifkan fitur suara' : 'Pengaturan kunci API', closePanel));
+
+    if (state.keyPanelOpen) {
+      if (state.apiKey === SERVER_KEY) {
+        card.append(readyRow('Chat Netra · dibaca dari server'));
+      } else {
+        card.append(readyRow('Chat Netra · aktif di tab ini', 'Ganti', () => {
+          state.apiKey = '';
+          state.keyPanelOpen = false;
+          renderDemo();
+          ref.demo.querySelector('input')?.focus();
+        }));
+      }
+    }
+
     if (state.deepgramKey === SERVER_KEY) {
-      ref.demo.append(readyRow('Suara aktif · key Deepgram dibaca dari server'));
+      if (state.keyPanelOpen) card.append(readyRow('Suara Deepgram · dibaca dari server'));
     } else if (state.deepgramKey) {
-      ref.demo.append(readyRow('Suara aktif · key Deepgram di tab ini', 'Ganti key Deepgram', () => {
-        state.deepgramKey = '';
-        state.deepgramFormOpen = true;
-        state.deepgramFor = 'mic';
-        renderDemo();
-        ref.demo.querySelector('[data-deepgram] input').focus();
-      }));
+      if (state.keyPanelOpen) {
+        card.append(readyRow('Suara Deepgram · aktif di tab ini', 'Ganti', () => {
+          state.deepgramKey = '';
+          state.deepgramFormOpen = true;
+          state.deepgramFor = 'mic';
+          renderDemo();
+          ref.demo.querySelector('[data-deepgram] input')?.focus();
+        }));
+      }
     } else if (state.deepgramFormOpen) {
-      const form = keyForm('Tempel API key Deepgram', 'API key Deepgram untuk mic dan telepon', (key) => {
+      const wrap = state.keyPanelOpen ? make('div', 'access-row-block') : card;
+      const form = keyForm('Tempel API key Deepgram', 'API key Deepgram untuk mic dan telepon', 'Pakai', (key) => {
         state.deepgramKey = key;
         state.deepgramFormOpen = false;
+        state.keyPanelOpen = false;
         state.error = '';
         renderDemo();
         renderMessages();
@@ -873,45 +1371,46 @@
         (state.deepgramFor === 'call' ? ref.phone : ref.mic).focus();
       });
       form.dataset.deepgram = '';
-      ref.demo.append(make('p', '', 'Untuk mic dan telepon, masukkan API key Deepgram. Key juga hanya disimpan di tab ini.'), form);
-    } else if (state.apiKey) {
-      ref.demo.append(readyRow('Mau bertanya lewat suara?', 'Pakai mic', () => {
+      wrap.append(make('p', 'access-desc', 'Untuk mic dan telepon, masukkan API key Deepgram. Key hanya disimpan di tab ini.'), form);
+      if (wrap !== card) card.append(wrap);
+    } else if (state.keyPanelOpen) {
+      card.append(readyRow('Suara & telepon belum aktif', 'Tambah key', () => {
         state.deepgramFormOpen = true;
         state.deepgramFor = 'mic';
         renderDemo();
-        ref.demo.querySelector('[data-deepgram] input').focus();
+        ref.demo.querySelector('[data-deepgram] input')?.focus();
       }));
     }
+
+    ref.demo.append(card);
+  }
+
+  function updateScrollButton() {
+    const el = ref.messages;
+    const distance = el.scrollHeight - el.scrollTop - el.clientHeight;
+    ref.scrollBottom.hidden = distance < 96;
   }
 
   function renderMessages() {
-    ref.messages.replaceChildren(messageRow('assistant', school.greeting));
-
     const suggestions = school.suggestions.filter((question) => question.trim());
     // Selama telepon, saran pertanyaan disembunyikan karena chat diketik sedang tidak bisa dipakai.
-    if (state.history.length === 0 && suggestions.length > 0 && state.callStatus === 'off') {
-      const chips = make('div', 'chips');
-      for (const question of suggestions) {
-        const chip = make('button', 'chip', question);
-        chip.type = 'button';
-        chip.addEventListener('click', () => {
-          sendEvent('suggestion_clicked', { channel: 'chat', metadata: { label: question } });
-          send(question, 'suggestion_chip');
-        });
-        chips.append(chip);
-      }
-      ref.messages.append(chips);
-    }
+    const showWelcome = state.history.length === 0 && state.callStatus === 'off';
 
-    for (const message of state.history) {
-      ref.messages.append(messageRow(message.role, message.content));
+    if (showWelcome) {
+      ref.messages.replaceChildren(welcomeBlock(suggestions));
+    } else {
+      ref.messages.replaceChildren(messageRow('assistant', school.greeting));
+      for (const message of state.history) {
+        ref.messages.append(messageRow(message.role, message.content, { allowCopy: message.role === 'assistant' }));
+      }
     }
     if (state.isSending) ref.messages.append(typingRow());
-    if (state.error) ref.messages.append(make('p', 'error', state.error));
+    if (state.error) ref.messages.append(errorBanner(state.error));
 
     renderControls();
     requestAnimationFrame(() => {
       ref.messages.scrollTop = ref.messages.scrollHeight;
+      updateScrollButton();
     });
   }
 
@@ -932,10 +1431,11 @@
         state.openedTracked = true;
         sendEvent('widget_opened');
       }
+      renderDemo();
       renderMessages();
-      // Selama telepon, kolom pertanyaan disembunyikan, jadi fokus ke tombol Akhiri panggilan.
+      // Selama telepon, kolom pertanyaan disembunyikan, jadi fokus ke tombol Akhiri.
       if (state.callStatus !== 'off') ref.callEnd.focus();
-      else (state.apiKey ? ref.input : ref.demo.querySelector('input')).focus();
+      else (state.apiKey ? ref.input : (ref.demo.querySelector('input') ?? ref.input)).focus();
     } else {
       // Widget ditutup saat merekam: mikrofon langsung dimatikan, tanpa mengirim apa pun.
       if (state.voiceStatus !== 'idle') cancelRecording();
@@ -955,9 +1455,10 @@
     if (!state.apiKey) {
       ref.input.value = question;
       fitInput();
-      state.error = `Masukkan ${state.needsLogin ? 'password' : 'API key Netra'} dulu di kotak kuning di atas.`;
+      state.error = `Masukkan ${state.needsLogin ? 'password' : 'API key Netra'} dulu di panel akses di atas.`;
+      renderDemo();
       renderMessages();
-      ref.demo.querySelector('input').focus();
+      ref.demo.querySelector('input')?.focus();
       return;
     }
 
@@ -1024,6 +1525,9 @@
     const voice = state.voiceStatus;
     const busy = voice !== 'idle';
     const inCall = state.callStatus !== 'off';
+    const allowVoice = !IS_EMBED || Boolean(school.voiceEnabled);
+    ref.mic.hidden = !allowVoice;
+    ref.phone.hidden = !allowVoice;
     ref.mic.dataset.recording = String(voice === 'recording');
     ref.mic.setAttribute('aria-label', VOICE[voice].label);
     ref.mic.title = VOICE[voice].label;
@@ -1115,14 +1619,36 @@
   }
 
   // signal: widget ditutup atau panggilan diakhiri selagi menyambung.
-  function openDeepgramSocket(apiKey, signal) {
+  async function openDeepgramSocket(apiKey, signal) {
+    let wsToken = apiKey;
+    let authScheme = 'token';
+    const viaServer = apiKey === SERVER_KEY;
+
+    if (apiKey === EMBED_KEY) {
+      let resp;
+      try {
+        resp = await fetch(`${embedApiBase}/api/v1/voice-token`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Sigi-Key': embedKey },
+          body: '{}',
+          signal,
+        });
+      } catch {
+        throw new Error(LOCAL_SERVER_DOWN);
+      }
+      const data = await resp.json().catch(() => null);
+      if (!resp.ok || !data?.token) {
+        throw new Error(describeSpeechError(resp.status, data));
+      }
+      wsToken = data.token;
+      authScheme = data.authScheme || 'bearer';
+    }
+
     return new Promise((resolve, reject) => {
-      // Key dari .env: lewat server lokal yang menambahkan key-nya. Selain itu key dikirim lewat subprotocol,
-      // karena browser tidak bisa menambah header Authorization ke WebSocket.
-      const viaServer = apiKey === SERVER_KEY;
+      // Key dari .env: lewat server lokal. Mode embed: pakai token sementara Deepgram. Selain itu: key manual di tab.
       const socket = viaServer
         ? new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/api/listen${new URL(DEEPGRAM_LIVE_URL).search}`)
-        : new WebSocket(DEEPGRAM_LIVE_URL, ['token', apiKey]);
+        : new WebSocket(DEEPGRAM_LIVE_URL, [authScheme, wsToken]);
       signal?.addEventListener('abort', () => {
         reject(new Error('Dibatalkan.')); // tidak berpengaruh kalau sudah tersambung
         if (socket.readyState === WebSocket.CONNECTING) socket.close();
@@ -1130,8 +1656,8 @@
       socket.addEventListener('open', () => resolve(socket));
       socket.addEventListener('error', () => {
         if (viaServer) useServerKeys(); // kalau sesinya habis, kolom password muncul lagi
-        reject(new Error(viaServer
-          ? 'Gagal tersambung ke Deepgram. Kalau diminta, masukkan password lagi. Selain itu, lihat penyebabnya di log server.'
+        reject(new Error(viaServer || apiKey === EMBED_KEY
+          ? 'Gagal tersambung ke layanan suara Deepgram. Periksa koneksi internet dan pengaturan suara.'
           : 'Gagal tersambung ke Deepgram. Periksa API key Deepgram dan koneksi internet.'));
       });
     });
@@ -1264,16 +1790,16 @@
     if (state.voiceStatus !== 'idle' || state.isSending || state.callStatus !== 'off') return;
 
     if (state.needsLogin) {
-      showError('Masukkan password dulu di kotak kuning di atas.');
-      ref.demo.querySelector('input').focus();
+      showError('Masukkan password dulu di panel akses di atas.');
+      ref.demo.querySelector('input')?.focus();
       return;
     }
     if (!state.deepgramKey) {
       state.deepgramFormOpen = true;
       state.deepgramFor = 'mic';
       renderDemo();
-      showError('Masukkan API key Deepgram dulu di kotak kuning di atas untuk bertanya lewat suara.');
-      ref.demo.querySelector('[data-deepgram] input').focus();
+      showError('Masukkan API key Deepgram dulu di panel akses di atas untuk bertanya lewat suara.');
+      ref.demo.querySelector('[data-deepgram] input')?.focus();
       return;
     }
 
@@ -1360,21 +1886,25 @@
   // Meminta suara dari Deepgram. signal dipakai endCall untuk membatalkan unduhan yang belum selesai.
   async function requestSpeech(apiKey, text, signal, voice, expressivity) {
     let response;
+    const isEmbed = apiKey === EMBED_KEY;
+    const viaServer = apiKey === SERVER_KEY;
     try {
-      const viaServer = apiKey === SERVER_KEY;
-      response = await fetch(viaServer ? '/api/speak' : speakUrl(voice, expressivity), {
-        method: 'POST',
-        headers: {
-          ...(viaServer ? {} : { Authorization: `Token ${apiKey}` }),
-          'Content-Type': 'application/json',
+      response = await fetch(
+        isEmbed ? `${embedApiBase}/api/v1/speak` : viaServer ? '/api/speak' : speakUrl(voice, expressivity),
+        {
+          method: 'POST',
+          headers: {
+            ...(isEmbed ? { 'X-Sigi-Key': embedKey } : viaServer ? {} : { Authorization: `Token ${apiKey}` }),
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(isEmbed || viaServer ? { text, ...speakOptions(voice, expressivity) } : { text }),
+          signal,
         },
-        body: JSON.stringify(viaServer ? { text, ...speakOptions(voice, expressivity) } : { text }),
-        signal,
-      });
+      );
     } catch {
-      throw new Error(apiKey === SERVER_KEY ? LOCAL_SERVER_DOWN : DEEPGRAM_NETWORK_ERROR);
+      throw new Error(viaServer || isEmbed ? LOCAL_SERVER_DOWN : DEEPGRAM_NETWORK_ERROR);
     }
-    if (!response.ok) throw new Error(describeSpeechError(response.status, apiKey === SERVER_KEY ? await response.json().catch(() => null) : null));
+    if (!response.ok) throw new Error(describeSpeechError(response.status, viaServer || isEmbed ? await response.json().catch(() => null) : null));
     return response;
   }
 
@@ -1556,9 +2086,9 @@
     setCallStatus('thinking');
     renderMessages();
 
-    // Riwayat chat ikut dikirim, ditambah aturan telepon di akhir system prompt.
+    // Riwayat chat ikut dikirim, ditambah aturan telepon di akhir system prompt (di mode embed, aturan telepon ditambahkan di server).
     const messages = [{ role: 'system', content: `${buildSystemPrompt()}\n\n${CALL_RULES}` }, ...state.history];
-    const replyPromise = askAgent(c.netraKey, messages, buildMeta('call', 'call_voice'));
+    const replyPromise = askAgent(c.netraKey, messages, buildMeta('call', 'call_voice'), { mode: 'call' });
 
     try {
       let waited = false;
@@ -1660,19 +2190,19 @@
 
     if (!state.apiKey) {
       if (!state.isOpen) setOpen(true); // mode kios: panel dibuka supaya password atau key bisa diisi
-      showError(`Masukkan ${state.needsLogin ? 'password' : 'API key Netra'} dulu di kotak kuning di atas.`);
+      showError(`Masukkan ${state.needsLogin ? 'password' : 'API key Netra'} dulu di panel akses di atas.`);
       emit('error', { message: state.error, needsKey: true });
-      ref.demo.querySelector('input').focus();
+      ref.demo.querySelector('input')?.focus();
       return;
     }
     if (!state.deepgramKey) {
       if (!state.isOpen) setOpen(true);
-      emit('error', { message: 'Masukkan API key Deepgram dulu di kotak kuning untuk menelepon.', needsKey: true });
+      emit('error', { message: 'Masukkan API key Deepgram dulu di panel akses di atas untuk menelepon.', needsKey: true });
       state.deepgramFormOpen = true;
       state.deepgramFor = 'call';
       renderDemo();
-      showError('Masukkan API key Deepgram dulu di kotak kuning di atas untuk menelepon.');
-      ref.demo.querySelector('[data-deepgram] input').focus();
+      showError('Masukkan API key Deepgram dulu di panel akses di atas untuk menelepon.');
+      ref.demo.querySelector('[data-deepgram] input')?.focus();
       return;
     }
 
@@ -1757,9 +2287,22 @@
   ref.mic.addEventListener('click', handleMicClick);
   ref.phone.addEventListener('click', startCall);
   ref.callEnd.addEventListener('click', () => endCall());
+  ref.keyToggle.addEventListener('click', () => {
+    const opening = !state.keyPanelOpen;
+    state.keyPanelOpen = opening;
+    if (!opening) state.deepgramFormOpen = false;
+    renderDemo();
+    if (opening) (ref.demo.querySelector('input') ?? ref.demo.querySelector('button'))?.focus();
+  });
 
   ref.launcher.addEventListener('click', () => setOpen(!state.isOpen));
+  ref.launcherLabel.addEventListener('click', () => setOpen(true));
   ref.close.addEventListener('click', () => setOpen(false));
+  ref.messages.addEventListener('scroll', updateScrollButton, { passive: true });
+  ref.scrollBottom.addEventListener('click', () => {
+    ref.messages.scrollTop = ref.messages.scrollHeight;
+    updateScrollButton();
+  });
   ref.panel.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') setOpen(false);
   });
@@ -1791,19 +2334,66 @@
 
   // Muat ulang data sekolah: dipanggil setelah dashboard menyimpan, atau saat tab lain mengubah data.
   function refresh() {
+    if (IS_EMBED) return;
     school = load();
     applySchool();
     renderMessages();
   }
 
+  // Dipakai dashboard multi-sekolah untuk menyinkronkan pratinjau widget ke sekolah yang sedang dipilih.
+  function setSchoolData(nextSchool) {
+    if (!nextSchool || typeof nextSchool !== 'object') return;
+    school = {
+      ...defaults(),
+      ...nextSchool,
+      colors: { ...defaults().colors, ...(nextSchool.colors || nextSchool.theme || {}) },
+    };
+    applySchool();
+    renderControls();
+    renderMessages();
+  }
+
   window.addEventListener('storage', (event) => {
-    if (event.key === STORAGE_KEY || event.key === null) refresh();
+    if (!IS_EMBED && (event.key === STORAGE_KEY || event.key === null)) refresh();
   });
 
   renderDemo();
   renderMessages();
 
+  async function loadEmbedConfig() {
+    try {
+      const response = await fetch(`${embedApiBase}/api/v1/widget/config`, {
+        headers: { 'X-Sigi-Key': embedKey },
+        cache: 'no-store',
+      });
+      const data = await response.json().catch(() => null);
+      if (!response.ok) {
+        state.error = describeApiError(response.status, data);
+        renderMessages();
+        return;
+      }
+      school = {
+        ...defaults(),
+        schoolName: data.schoolName || 'Sekolah',
+        colors: { ...defaults().colors, ...(data.colors || {}) },
+        greeting: data.greeting || defaults().greeting,
+        suggestions: Array.isArray(data.suggestions) ? data.suggestions : [],
+        voiceEnabled: Boolean(data.voiceEnabled),
+        voice: data.voice || DEFAULT_VOICE,
+        expressivity: cleanExpressivity(data.expressivity),
+      };
+      state.error = '';
+      applySchool();
+      renderControls();
+      renderMessages();
+    } catch {
+      state.error = 'Tidak bisa memuat konfigurasi chatbot Sigi. Periksa koneksi internet.';
+      renderMessages();
+    }
+  }
+
   async function useServerKeys() {
+    if (IS_EMBED) return;
     const { login, netra, deepgram } = await serverKeys();
     const wasLogin = state.needsLogin;
     state.needsLogin = login === true;
@@ -1826,7 +2416,9 @@
     renderMessages();
     if (hadFocus) (ref.demo.querySelector('input') ?? ref.input).focus(); // kolom key yang sedang fokus baru saja digambar ulang
   }
-  useServerKeys();
+
+  if (IS_EMBED) loadEmbedConfig();
+  else useServerKeys();
 
   // Supaya tombol di halaman sekolah (misalnya "Tanya Asisten SPMB") dan dashboard bisa memakai widget.
   window.SigiWidget = {
@@ -1840,11 +2432,13 @@
     // Untuk tombol "Telepon Sigi" di halaman sekolah: membuka widget lalu langsung menelepon.
     // { open: false } dipakai halaman kios: telepon berjalan tanpa membuka panel widget.
     call: ({ open = true } = {}) => {
+      if (IS_EMBED && !school.voiceEnabled) return;
       if (open) setOpen(true);
       startCall();
     },
     hangUp: () => endCall(),
     refresh,
+    setSchoolData,
     // Dipakai dashboard untuk membaca dan menyimpan data sekolah.
     data: { key: STORAGE_KEY, voices: VOICES, expressivities: EXPRESSIVITY, defaults, load, save, reset, compileContext, systemPrompt: buildSystemPrompt, maxContextChars: MAX_CONTEXT_CHARS },
   };

@@ -49,12 +49,12 @@
 
     <aside id="sidebar" aria-label="Navigasi dashboard"
       class="fixed inset-y-0 left-0 z-40 flex w-72 -translate-x-full flex-col border-r border-line bg-side transition-transform duration-200 lg:static lg:w-64 lg:translate-x-0">
-      <div class="flex items-center gap-2 px-3 pb-2 pt-3">
+      <div class="flex items-center gap-2 border-b border-line px-3 pb-3 pt-3">
         <div class="flex min-w-0 flex-1 items-center gap-2.5 px-2 py-1.5">
           <span id="school-avatar" class="grid size-7 shrink-0 place-items-center rounded-md text-sm font-bold" aria-hidden="true"></span>
           <div class="min-w-0">
             <p id="school-name" class="truncate text-sm font-semibold"></p>
-            <p class="text-xs text-muted">Sigi · mode demo</p>
+            <p id="school-mode-label" class="text-xs text-muted">Sigi · mode demo</p>
           </div>
         </div>
         <button id="btn-close-sidebar" type="button" aria-label="Tutup navigasi" class="grid size-11 place-items-center rounded-md text-muted hover:bg-hover lg:hidden">
@@ -72,15 +72,17 @@
         <p class="nav-label">Chatbot</p>
         <a href="#/uji" data-nav="uji" class="nav-item">Uji chatbot</a>
         <a href="#/tampilan" data-nav="tampilan" class="nav-item">Tampilan widget</a>
-        <a href="#/pasang" data-nav="pasang" class="nav-item">Pasang di website</a>
+        <a href="#/pasang" data-nav="pasang" class="nav-item">Pasang &amp; API Key</a>
         <a href="#/percakapan" data-nav="percakapan" class="nav-item">Percakapan</a>
       </nav>
 
       <div class="space-y-2 border-t border-line p-4 text-xs text-muted">
-        <p>Mode demo: perubahan tersimpan di browser ini saja.</p>
+        <p id="account-email" class="truncate font-medium text-ink">Mode demo lokal</p>
         <div class="flex flex-wrap items-center gap-x-4 gap-y-1">
           <a href="index.html" class="inline-flex min-h-8 items-center font-medium text-ink hover:underline">Website</a>
           <a href="demo-wikrama.html" target="_blank" rel="noopener" class="inline-flex min-h-8 items-center font-medium text-ink hover:underline">Demo sekolah</a>
+          <a id="link-login" href="login.html" class="inline-flex min-h-8 items-center font-semibold text-brand-dark hover:underline">Masuk</a>
+          <button id="btn-logout" type="button" hidden class="inline-flex min-h-8 items-center font-medium text-red-700 hover:underline">Keluar</button>
           <button id="btn-reset" type="button" class="inline-flex min-h-8 items-center font-medium text-red-700 hover:underline">Reset data demo</button>
         </div>
       </div>
@@ -101,8 +103,8 @@
 
   <!-- Data sekolah dan widget. Widget di pojok kanan bawah dipakai untuk menguji chatbot dengan isi dashboard terbaru. -->
   <!-- ?v=… memaksa browser mengambil versi terbaru, bukan salinan lama dari cache. Naikkan angkanya setiap kali widget.js atau sekolah/wikrama.js diubah. -->
-  <script src="sekolah/wikrama.js?v=20261126b"></script>
-  <script src="widget.js?v=20261126b"></script>
+  <script src="sekolah/wikrama.js?v=20261126c"></script>
+  <script src="widget.js?v=20261126c"></script>
   <script>
 'use strict';
 
@@ -111,7 +113,7 @@ const PDFJS_WORKER_URL = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/
 // Ikon SVG yang sama dengan widget, untuk pratinjau di halaman Tampilan widget. String tetap, bukan data pengguna.
 const ICON_BOT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="size-[18px]"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>';
 const ICON_MIC = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="size-[18px]"><rect x="9" y="2.5" width="6" height="12" rx="3"/><path d="M5 11.5a7 7 0 0 0 14 0M12 18.5V22M8 22h8"/></svg>';
-const ICON_SEND = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="size-[18px]"><path d="M3.714 3.048a.498.498 0 0 0-.683.627l2.843 7.627a2 2 0 0 1 0 1.396l-2.842 7.627a.498.498 0 0 0 .682.627l18-8.5a.5.5 0 0 0 0-.904z"/><path d="M6 12h16"/></svg>';
+const ICON_SEND = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="size-[18px]"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg>';
 
 const api = window.SigiWidget;
 const el = {
@@ -124,6 +126,10 @@ const el = {
   reset: document.getElementById('btn-reset'),
   schoolName: document.getElementById('school-name'),
   schoolAvatar: document.getElementById('school-avatar'),
+  schoolModeLabel: document.getElementById('school-mode-label'),
+  accountEmail: document.getElementById('account-email'),
+  linkLogin: document.getElementById('link-login'),
+  logoutBtn: document.getElementById('btn-logout'),
   breadcrumb: document.getElementById('breadcrumb'),
   status: document.getElementById('save-status'),
   view: document.getElementById('view'),
@@ -134,9 +140,75 @@ if (!api) {
   throw new Error('SigiWidget tidak ditemukan');
 }
 
-// Data sekolah yang sedang diedit. Disimpan ke browser (localStorage) lewat widget, supaya chatbot ikut memakainya.
+// Data sekolah yang sedang diedit. Jika server Sigi aktif, disinkronkan langsung ke database Supabase.
 let school = api.data.load();
+let serverMode = false;
+let serverKeys = [];
+let lastCreatedSecret = null; // ditampilkan sekali saja tepat setelah Secret Key dibuat
 let current = { view: 'info', id: null };
+
+function fromServerSchool(record) {
+  return {
+    id: record.id,
+    slug: record.slug,
+    plan: record.plan || 'trial',
+    chatQuota: Number(record.chatQuota) || 50,
+    chatUsed: Number(record.chatUsed) || 0,
+    schoolName: record.name || 'Sekolah',
+    colors: { primary: '#0f766e', onPrimary: '#ffffff', accent: '#bef264', onAccent: '#0b1f1d', ...(record.theme || {}) },
+    greeting: record.greeting || '',
+    suggestions: Array.isArray(record.suggestions) ? record.suggestions : [],
+    voiceEnabled: Boolean(record.voiceEnabled),
+    voice: record.voiceId || 'flux-fitri-id',
+    expressivity: Number.isInteger(record.voiceExpressivity) ? record.voiceExpressivity : 1,
+    allowedOrigins: Array.isArray(record.allowedOrigins) ? record.allowedOrigins : [],
+    pages: Array.isArray(record.pages) ? record.pages : [],
+    documents: Array.isArray(record.documents) ? record.documents : [],
+    updatedAt: record.updatedAt || null,
+  };
+}
+
+function toServerPayload(data) {
+  return {
+    id: data.id,
+    name: data.schoolName,
+    theme: data.colors,
+    greeting: data.greeting,
+    suggestions: data.suggestions,
+    voiceEnabled: Boolean(data.voiceEnabled),
+    voiceId: data.voice,
+    voiceExpressivity: data.expressivity,
+    allowedOrigins: data.allowedOrigins || [],
+    pages: data.pages,
+    documents: data.documents,
+  };
+}
+
+async function syncFromServer(schoolId) {
+  const query = schoolId ? `?id=${encodeURIComponent(schoolId)}` : '';
+  const response = await fetch(`/api/dashboard/schools${query}`, { cache: 'no-store' });
+  if (response.status === 401) {
+    // Server aktif namun pengguna belum login: arahkan ke halaman login sambil menyimpan tujuan.
+    const target = `dashboard.html${location.hash || ''}`;
+    location.replace(`login.html?next=${encodeURIComponent(target)}`);
+    return false;
+  }
+  if (!response.ok) return false;
+  const data = await response.json();
+  if (!data?.school) return false;
+  serverMode = true;
+  serverKeys = data.apiKeys || [];
+  school = fromServerSchool(data.school);
+  api.setSchoolData?.(school);
+  el.schoolModeLabel.textContent = `Sigi · ${school.plan === 'active' ? 'Aktif' : 'Trial'} (${school.chatUsed}/${school.chatQuota})`;
+  if (data.user?.email) {
+    el.accountEmail.textContent = data.user.email;
+    el.linkLogin.hidden = true;
+    el.logoutBtn.hidden = false;
+    el.reset.hidden = true;
+  }
+  return true;
+}
 
 /* Bantuan kecil */
 
@@ -183,18 +255,54 @@ function setStatus(text, isError = false) {
   el.status.className = `shrink-0 text-xs ${isError ? 'font-semibold text-red-700' : 'text-muted'}`;
 }
 
-// Simpan otomatis sebentar setelah pengguna berhenti mengetik, seperti aplikasi catatan.
+// Simpan otomatis sebentar setelah pengguna berhenti mengetik, langsung ke database Supabase.
 function persist({ now = false } = {}) {
   clearTimeout(saveTimer);
-  setStatus('Menyimpan…');
+  setStatus('Menyimpan ke database…');
   const run = () => {
     try {
+      if (serverMode && school.id) {
+        api.setSchoolData?.(school);
+        fetch('/api/dashboard/school', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(toServerPayload(school)),
+        })
+          .then((res) => (res.ok ? res.json() : Promise.reject(new Error(`HTTP ${res.status}`))))
+          .then((data) => {
+            if (data?.school) {
+              // Sinkronkan UUID asli dari Supabase untuk halaman/dokumen yang baru dibuat.
+              const prevPages = school.pages;
+              const nextPages = data.school.pages || [];
+              if (prevPages.length === nextPages.length) {
+                for (let i = 0; i < prevPages.length; i++) {
+                  if (prevPages[i].id !== nextPages[i].id) {
+                    if (current.view === 'halaman' && current.id === prevPages[i].id) {
+                      current.id = nextPages[i].id;
+                      history.replaceState(null, '', `#/halaman/${nextPages[i].id}`);
+                    }
+                    prevPages[i].id = nextPages[i].id;
+                  }
+                }
+              }
+              if (Array.isArray(data.school.documents) && school.documents.length === data.school.documents.length) {
+                for (let i = 0; i < school.documents.length; i++) {
+                  school.documents[i].id = data.school.documents[i].id;
+                }
+              }
+              renderSidebar();
+            }
+            setStatus('Tersimpan di Supabase');
+          })
+          .catch(() => setStatus('Gagal menyimpan ke Supabase', true));
+        return true;
+      }
       api.data.save(school);
-      setStatus('Tersimpan');
+      setStatus('Tersimpan lokal');
       return true;
     } catch (error) {
       console.error(error);
-      setStatus('Gagal menyimpan: penyimpanan browser penuh', true);
+      setStatus('Gagal menyimpan data', true);
       return false;
     }
   };
@@ -578,7 +686,7 @@ function renderTest() {
   for (const question of questions) list.append(button(question, 'btn', () => api.ask(question)));
   wrap.append(list);
 
-  wrap.append(callout('Mode demo: kalau halaman dibuka lewat server lokal atau Vercel dan key sudah ada di env, key tidak perlu diketik. Kalau belum, chatbot meminta API key Netra di kotak kuning. Untuk mencoba tombol mic, isi juga API key Deepgram lewat "Pakai mic". Key yang diketik hanya disimpan di tab ini dan hilang saat halaman dimuat ulang.', 'mt-8'));
+  wrap.append(callout('Mode demo: kalau halaman dibuka lewat server lokal atau Vercel dan key sudah ada di env, key tidak perlu diketik. Kalau belum, chatbot meminta API key Netra di panel akses. Untuk mencoba tombol mic, isi juga API key Deepgram lewat pengaturan kunci. Key yang diketik hanya disimpan di tab ini dan hilang saat halaman dimuat ulang.', 'mt-8'));
 
   const prompt = api.data.systemPrompt(school);
   const details = make('details', 'mt-8 rounded-lg border border-line');
@@ -820,21 +928,15 @@ function renderLook() {
   wrap.append(layout);
 }
 
-/* Halaman: Pasang di website */
+/* Halaman: Pasang & API Key (Embed 1 baris + Headless REST API + Domain Allowlist) */
 
-function renderInstall() {
-  setBreadcrumb([{ label: school.schoolName, href: '#/info' }, { label: 'Pasang di website' }]);
-  const wrap = shell();
-  wrap.append(pageHeader('Pasang di website', 'Tempel dua baris ini sebelum tag </body> di website sekolah. Tombol Asisten SPMB langsung muncul di pojok kanan bawah.'));
-
-  // "<\/script>" ditulis dengan garis miring ter-escape: kalau tidak, browser mengira tag <script> dashboard ini selesai di sini.
-  const code = '<script src="sekolah/wikrama.js"><\/script>\n<script src="widget.js" defer><\/script>';
-  const block = make('div', 'mt-8 overflow-hidden rounded-lg border border-line');
+function codeBlock(filename, codeText) {
+  const block = make('div', 'mt-3 overflow-hidden rounded-lg border border-line');
   const bar = make('div', 'flex items-center justify-between gap-2 border-b border-line bg-side px-3 py-1.5');
-  bar.append(make('span', 'font-mono text-xs text-muted', 'website-sekolah.html'));
+  bar.append(make('span', 'font-mono text-xs text-muted', filename));
   const copy = button('Salin', 'btn', async () => {
     try {
-      await navigator.clipboard.writeText(code);
+      await navigator.clipboard.writeText(codeText);
       copy.textContent = 'Tersalin';
     } catch {
       copy.textContent = 'Gagal menyalin';
@@ -842,18 +944,284 @@ function renderInstall() {
     setTimeout(() => { copy.textContent = 'Salin'; }, 1500);
   });
   bar.append(copy);
-  block.append(bar, make('pre', 'overflow-x-auto p-4 font-mono text-sm leading-relaxed', code));
-  wrap.append(block);
+  block.append(bar, make('pre', 'overflow-x-auto p-4 font-mono text-xs leading-relaxed sm:text-sm', codeText));
+  return block;
+}
 
-  const steps = make('ol', 'mt-8 list-decimal space-y-2 pl-5 leading-relaxed');
-  steps.append(
-    make('li', '', 'Baris pertama berisi nama, warna, dan info bawaan sekolah.'),
-    make('li', '', 'Baris kedua memunculkan tombol chat. Gaya website sekolah tidak terganggu karena widget berjalan terpisah (Shadow DOM).'),
-    make('li', '', 'Tombol lain di website juga bisa membuka chat dengan window.SigiWidget.open().'),
+function renderInstall() {
+  setBreadcrumb([{ label: school.schoolName, href: '#/info' }, { label: 'Pasang & API Key' }]);
+  const wrap = shell();
+  wrap.append(pageHeader(
+    'Pasang & API Key',
+    'Sekolah tidak perlu memberi akses GitHub. Tempel 1 baris skrip widget (Mode Embed) atau panggil REST API Sigi langsung dari chatbot buatan sekolah.',
+  ));
+
+  if (!serverMode) {
+    wrap.append(callout('Halaman ini sedang berjalan dalam mode statis tanpa server. Jalankan server Sigi (node server.mjs atau Vercel) untuk mengelola API Key multi-sekolah, Domain Allowlist, dan kuota.', 'mt-6 bg-amber-50 text-amber-900'));
+    const fallbackCode = '<script src="sekolah/wikrama.js"><\/script>\n<script src="widget.js" defer><\/script>';
+    wrap.append(codeBlock('website-sekolah.html', fallbackCode));
+    return;
+  }
+
+  const origin = location.origin;
+  const activePub = serverKeys.find((k) => k.kind === 'publishable' && !k.revokedAt);
+  const publishableKey = activePub?.keyValue || 'sg_pk_live_belum_dibuat';
+  const secretKeys = serverKeys.filter((k) => k.kind === 'secret');
+
+  /* 1. Paket, Kuota, dan Toggle Suara */
+  const quotaCard = make('section', 'mt-8 rounded-lg border border-line bg-side/60 p-5');
+  const quotaTop = make('div', 'flex flex-wrap items-center justify-between gap-3');
+  const quotaTitleWrap = make('div', 'flex items-center gap-2');
+  quotaTitleWrap.append(
+    make('h2', 'text-base font-bold text-ink', 'Kuota & Fitur'),
+    make('span', 'chip bg-mint text-brand-dark uppercase', school.plan === 'active' ? 'Aktif' : 'Trial'),
   );
-  wrap.append(steps);
+  const used = school.chatUsed || 0;
+  const total = school.chatQuota || 50;
+  const pct = Math.min(100, Math.round((used / Math.max(1, total)) * 100));
+  quotaTop.append(quotaTitleWrap, make('span', 'text-sm font-semibold tabular-nums text-ink', `${numberFormat.format(used)} / ${numberFormat.format(total)} chat`));
+  const barTrack = make('div', 'mt-3 h-2 w-full overflow-hidden rounded-full bg-line');
+  const barFill = make('div', 'h-full rounded-full bg-brand');
+  barFill.style.width = `${pct}%`;
+  barTrack.append(barFill);
 
-  wrap.append(callout('Di versi demo, isi dashboard tersimpan di browser ini, jadi perubahannya hanya terlihat di laptop ini. Versi produksi akan menyimpan data dan kunci AI di server, supaya langsung tampil di website sekolah dan API key tidak ada di browser.', 'mt-8'));
+  const voiceRow = make('label', 'mt-4 flex cursor-pointer items-center justify-between gap-4 border-t border-line pt-4');
+  const voiceText = make('span');
+  voiceText.append(
+    make('span', 'block text-sm font-semibold text-ink', 'Aktifkan fitur Suara (Mic & Telepon)'),
+    make('span', 'block text-xs text-muted', 'Jika dimatikan, tombol Mic dan Telepon otomatis disembunyikan di website sekolah.'),
+  );
+  const voiceToggle = make('input', 'size-5 shrink-0 accent-brand');
+  voiceToggle.type = 'checkbox';
+  voiceToggle.checked = Boolean(school.voiceEnabled);
+  voiceToggle.addEventListener('change', () => {
+    school.voiceEnabled = voiceToggle.checked;
+    persist({ now: true });
+  });
+  voiceRow.append(voiceText, voiceToggle);
+  quotaCard.append(quotaTop, barTrack, voiceRow);
+  wrap.append(quotaCard);
+
+  /* 2. Mode 1: Widget Embed 1 Baris */
+  const embedSection = make('section', 'mt-10');
+  embedSection.append(
+    make('h2', 'text-xl font-bold tracking-tight text-ink', 'Mode 1: Widget Siap Pakai (1 Baris)'),
+    make('p', 'mt-1.5 text-sm leading-relaxed text-muted', 'Cocok untuk sekolah yang belum punya tampilan chatbot. Tempel tepat sebelum tag </body> di HTML atau WordPress sekolah.'),
+  );
+  const embedSnippet = `<script src="${origin}/widget.js" data-key="${publishableKey}" defer><\/script>`;
+  embedSection.append(codeBlock('website-sekolah.html', embedSnippet));
+
+  const embedActions = make('div', 'mt-3 flex flex-wrap items-center gap-2');
+  const testLink = make('a', 'btn btn-primary', 'Uji di halaman embed eksternal ↗');
+  testLink.href = `demo-embed.html?key=${encodeURIComponent(publishableKey)}`;
+  testLink.target = '_blank';
+  testLink.rel = 'noopener';
+  const rotateBtn = button('Putar ulang Publishable Key', 'btn', async () => {
+    if (!window.confirm('Putar ulang Publishable Key? Key lama langsung berhenti bekerja dan kode <script> di website sekolah harus diperbarui.')) return;
+    rotateBtn.disabled = true;
+    try {
+      const res = await fetch('/api/dashboard/keys', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ schoolId: school.id, kind: 'publishable', label: 'Widget Website' }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        serverKeys = data.apiKeys || serverKeys;
+        setStatus('Publishable Key diperbarui');
+        renderInstall();
+      }
+    } finally {
+      rotateBtn.disabled = false;
+    }
+  });
+  embedActions.append(testLink, rotateBtn);
+  embedSection.append(embedActions);
+  wrap.append(embedSection);
+
+  /* 3. Domain Allowlist */
+  const originSection = make('section', 'mt-10 border-t border-line pt-8');
+  originSection.append(
+    make('h2', 'text-xl font-bold tracking-tight text-ink', 'Domain Allowlist'),
+    make('p', 'mt-1.5 text-sm leading-relaxed text-muted', 'Publishable Key (sg_pk_...) hanya bisa dipakai dari domain yang terdaftar di bawah ini agar saldo AI tidak dibajak website lain.'),
+  );
+  const originList = make('ul', 'mt-4 divide-y divide-line rounded-lg border border-line');
+  const origins = school.allowedOrigins || [];
+  if (origins.length === 0) {
+    originList.append(make('li', 'px-3 py-3 text-sm text-muted', 'Belum ada domain terdaftar.'));
+  } else {
+    for (const item of origins) {
+      const li = make('li', 'flex items-center justify-between gap-2 px-3 py-2');
+      li.append(make('span', 'truncate font-mono text-sm text-ink', item));
+      const del = button('Hapus', 'btn btn-danger', () => {
+        school.allowedOrigins = (school.allowedOrigins || []).filter((o) => o !== item);
+        persist({ now: true });
+        renderInstall();
+      });
+      li.append(del);
+      originList.append(li);
+    }
+  }
+  originSection.append(originList);
+
+  const originForm = make('form', 'mt-3 flex flex-col gap-2 sm:flex-row');
+  const originInput = make('input', 'field flex-1 font-mono');
+  originInput.placeholder = 'https://smkwikrama.sch.id';
+  originInput.setAttribute('aria-label', 'Tambah domain website sekolah');
+  const originAdd = make('button', 'btn btn-primary shrink-0', 'Tambah domain');
+  originAdd.type = 'submit';
+  const originErr = make('p', 'mt-1.5 text-xs text-red-700');
+  originForm.append(originInput, originAdd);
+  originForm.addEventListener('submit', (event) => {
+    event.preventDefault();
+    const raw = originInput.value.trim();
+    if (!raw) return;
+    let clean = '';
+    if (raw === '*') {
+      clean = '*';
+    } else {
+      try {
+        const parsed = new URL(raw.includes('://') ? raw : `https://${raw}`);
+        if (parsed.protocol === 'http:' || parsed.protocol === 'https:') clean = parsed.origin.toLowerCase();
+      } catch {
+        // invalid
+      }
+    }
+    if (!clean) {
+      originErr.textContent = 'Format domain tidak valid. Contoh: https://namasekolah.sch.id';
+      return;
+    }
+    school.allowedOrigins = [...new Set([...(school.allowedOrigins || []), clean])];
+    persist({ now: true });
+    renderInstall();
+  });
+  originSection.append(originForm, originErr);
+  wrap.append(originSection);
+
+  /* 4. Mode 2: Headless REST API & Secret Key (maksimal 1 aktif per sekolah) */
+  const restSection = make('section', 'mt-10 border-t border-line pt-8');
+  restSection.append(
+    make('h2', 'text-xl font-bold tracking-tight text-ink', 'Mode 2: REST API (Untuk UI Chatbot Sendiri)'),
+    make('p', 'mt-1.5 text-sm leading-relaxed text-muted', 'Jika sekolah sudah punya tampilan chatbot sendiri, panggil endpoint Sigi dari backend sekolah memakai Secret Key (sg_sk_...). Setiap sekolah dibatasi maksimal 1 Secret Key aktif.'),
+  );
+
+  if (lastCreatedSecret && lastCreatedSecret.schoolId === school.id) {
+    const secretBox = make('div', 'mt-4 rounded-lg border border-emerald-300 bg-emerald-50 p-4 text-sm text-emerald-950');
+    secretBox.append(
+      make('p', 'font-bold', 'Secret Key berhasil dibuat — salin sekarang!'),
+      make('p', 'mt-1 text-xs', 'Demi keamanan, Sigi hanya menyimpan hash SHA-256. Key ini tidak akan ditampilkan lagi setelah halaman ditutup.'),
+    );
+    const keyRow = make('div', 'mt-3 flex flex-wrap items-center gap-2');
+    keyRow.append(make('code', 'flex-1 break-all rounded bg-white px-3 py-2 font-mono text-xs border border-emerald-200', lastCreatedSecret.plainKey));
+    const copySec = button('Salin Secret Key', 'btn btn-primary', async () => {
+      await navigator.clipboard.writeText(lastCreatedSecret.plainKey).catch(() => {});
+      copySec.textContent = 'Tersalin';
+      setTimeout(() => { copySec.textContent = 'Salin Secret Key'; }, 1500);
+    });
+    keyRow.append(copySec);
+    secretBox.append(keyRow);
+    restSection.append(secretBox);
+  }
+
+  const activeSecret = secretKeys.find((k) => !k.revokedAt);
+  const secretCard = make('div', 'mt-4 rounded-lg border border-line p-4');
+
+  if (!activeSecret) {
+    const emptyRow = make('div', 'flex flex-wrap items-center justify-between gap-3');
+    const emptyText = make('div', 'min-w-0');
+    emptyText.append(
+      make('p', 'text-sm font-semibold text-ink', 'Belum ada Secret Key aktif'),
+      make('p', 'mt-0.5 text-xs text-muted', 'Buat 1 Secret Key jika sekolah ingin menghubungkan backend atau tampilan chatbot sendiri ke REST API Sigi.'),
+    );
+    const createSecBtn = button('Buat Secret Key', 'btn btn-primary shrink-0', async () => {
+      createSecBtn.disabled = true;
+      try {
+        const res = await fetch('/api/dashboard/keys', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ schoolId: school.id, kind: 'secret', label: 'Backend REST API' }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          serverKeys = data.apiKeys || serverKeys;
+          lastCreatedSecret = { schoolId: school.id, plainKey: data.plainKey };
+          setStatus('Secret Key dibuat');
+          renderInstall();
+        } else {
+          const err = await res.json().catch(() => null);
+          setStatus(err?.error?.message || 'Gagal membuat Secret Key', true);
+        }
+      } finally {
+        createSecBtn.disabled = false;
+      }
+    });
+    emptyRow.append(emptyText, createSecBtn);
+    secretCard.append(emptyRow);
+  } else {
+    const activeRow = make('div', 'flex flex-wrap items-center justify-between gap-3');
+    const meta = make('div', 'min-w-0');
+    meta.append(
+      make('p', 'text-sm font-semibold text-ink', activeSecret.label || 'Backend REST API'),
+      make('p', 'mt-0.5 font-mono text-xs text-muted', `${activeSecret.keyPrefix}••••••••  ·  Aktif (maks. 1 key per sekolah)`),
+    );
+    const actions = make('div', 'flex flex-wrap items-center gap-2');
+    const rotateSecBtn = button('Putar ulang', 'btn', async () => {
+      if (!window.confirm('Putar ulang Secret Key? Key lama langsung dicabut dan diganti dengan 1 key baru.')) return;
+      rotateSecBtn.disabled = true;
+      try {
+        const res = await fetch('/api/dashboard/keys', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ schoolId: school.id, kind: 'secret', label: activeSecret.label || 'Backend REST API', rotate: true }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          serverKeys = data.apiKeys || serverKeys;
+          lastCreatedSecret = { schoolId: school.id, plainKey: data.plainKey };
+          setStatus('Secret Key diputar ulang');
+          renderInstall();
+        }
+      } finally {
+        rotateSecBtn.disabled = false;
+      }
+    });
+    const revokeSecBtn = button('Cabut', 'btn btn-danger', async () => {
+      if (!window.confirm('Cabut Secret Key ini? Aplikasi sekolah yang memakainya akan langsung terputus.')) return;
+      revokeSecBtn.disabled = true;
+      try {
+        const res = await fetch('/api/dashboard/keys', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ schoolId: school.id, keyId: activeSecret.id }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          serverKeys = data.apiKeys || serverKeys;
+          if (lastCreatedSecret?.schoolId === school.id) lastCreatedSecret = null;
+          setStatus('Secret Key dicabut');
+          renderInstall();
+        }
+      } finally {
+        revokeSecBtn.disabled = false;
+      }
+    });
+    actions.append(rotateSecBtn, revokeSecBtn);
+    activeRow.append(meta, actions);
+    secretCard.append(activeRow);
+  }
+  restSection.append(secretCard);
+
+  const curlExample = [
+    `curl -X POST "${origin}/api/v1/chat" \\`,
+    `  -H "Authorization: Bearer sg_sk_live_ISI_SECRET_KEY" \\`,
+    `  -H "Content-Type: application/json" \\`,
+    `  -d '{"messages":[{"role":"user","content":"Bagaimana cara daftar SPMB?"}]}'`,
+  ].join('\n');
+  restSection.append(make('p', 'mt-6 text-sm font-semibold text-ink', 'Contoh pemanggilan REST API'));
+  restSection.append(codeBlock('contoh-rest-api.sh', curlExample));
+
+  wrap.append(restSection);
+  wrap.append(callout('Terhubung langsung ke Supabase: seluruh akun admin, halaman konteks, dokumen PDF, API Key, kuota, dan analitik percakapan tersimpan permanen di database Supabase PostgreSQL.', 'mt-8'));
 }
 
 /* Halaman: Percakapan (analytics dari Supabase via /api/analytics) */
@@ -997,7 +1365,7 @@ function renderConversations() {
   body.setAttribute('aria-live', 'polite');
   wrap.append(body);
 
-  const schoolId = window.Sigi?.id || 'wikrama';
+  const schoolId = school.id || window.Sigi?.id || 'wikrama';
   let activeRequest = 0;
 
   daysSelect.addEventListener('change', () => {
@@ -1387,9 +1755,20 @@ el.reset.addEventListener('click', () => {
   route();
 });
 
+el.logoutBtn.addEventListener('click', async () => {
+  await fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
+  location.href = 'login.html';
+});
+
 setStatus(school.updatedAt ? `Tersimpan ${formatUpdated(school.updatedAt).toLowerCase()}` : 'Data bawaan');
 syncSidebarMode();
 route();
+syncFromServer().then((ok) => {
+  if (ok) {
+    setStatus('Terhubung ke Supabase');
+    route();
+  }
+}).catch(() => {});
   </script>
 </body>
 </html>

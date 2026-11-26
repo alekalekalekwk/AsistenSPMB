@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Simulasi Website Sekolah Eksternal · Sigi Embed</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.1.11"></script>
+  <style type="text/tailwindcss">
+    @theme {
+      --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+  </style>
+</head>
+<body class="min-h-dvh bg-slate-50 font-sans text-slate-900 antialiased">
+  <header class="border-b border-slate-200 bg-white">
+    <div class="mx-auto flex h-16 max-w-4xl items-center justify-between gap-4 px-4">
+      <div class="min-w-0">
+        <p class="truncate text-base font-bold">Simulasi Website Sekolah Eksternal</p>
+        <p class="truncate text-xs text-slate-600">Halaman ini tidak memuat file sekolah/*.js — hanya 1 baris embed widget Sigi</p>
+      </div>
+      <div class="flex shrink-0 items-center gap-2">
+        <a href="login.html" class="inline-flex min-h-10 items-center rounded-lg border border-slate-200 bg-white px-3.5 text-sm font-semibold text-slate-800 hover:bg-slate-50">Masuk</a>
+        <a href="dashboard.html#/pasang" class="inline-flex min-h-10 items-center rounded-lg bg-teal-700 px-3.5 text-sm font-semibold text-white hover:bg-teal-800">Dashboard</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="mx-auto max-w-4xl px-4 py-10">
+    <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs sm:p-8">
+      <h1 class="text-2xl font-bold tracking-tight sm:text-3xl">Uji Pemasangan 1 Baris via API Key</h1>
+      <p class="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600">
+        Halaman ini mensimulasikan website milik sekolah lain. Tidak ada kode konfigurasi sekolah di halaman ini — tampilan warna, nama sekolah, sapaan, dan konteks jawaban dimuat otomatis dari server Sigi menggunakan Publishable Key (<code class="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs">sg_pk_...</code>).
+      </p>
+
+      <div class="mt-6 overflow-hidden rounded-xl border border-slate-200 bg-slate-900 text-slate-100">
+        <div class="border-b border-slate-800 px-4 py-2 font-mono text-xs text-slate-400">Kode yang aktif di halaman ini</div>
+        <pre id="active-snippet" class="overflow-x-auto p-4 font-mono text-xs leading-relaxed sm:text-sm"></pre>
+      </div>
+
+      <form id="key-form" class="mt-6 flex flex-col gap-2 sm:flex-row">
+        <label for="key-input" class="sr-only">Publishable Key sekolah</label>
+        <input id="key-input" type="text" class="min-h-11 flex-1 rounded-lg border border-slate-300 bg-white px-3 font-mono text-sm text-slate-900 focus:border-teal-700 focus:outline-none" placeholder="Tempel Publishable Key (sg_pk_...)">
+        <button type="submit" class="min-h-11 shrink-0 rounded-lg bg-teal-700 px-5 text-sm font-semibold text-white hover:bg-teal-800">Muat dengan Key ini</button>
+      </form>
+
+      <div class="mt-6 flex flex-wrap gap-2 border-t border-slate-200 pt-5">
+        <button id="btn-open" type="button" class="min-h-11 rounded-lg border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-800 hover:bg-slate-50">Buka Widget Chat</button>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const params = new URLSearchParams(location.search);
+    const activeKey = (params.get('key') || 'sg_pk_demo_wikrama_2027').trim();
+    const apiOrigin = location.origin;
+
+    document.getElementById('key-input').value = activeKey;
+    document.getElementById('active-snippet').textContent = `<script src="${apiOrigin}/widget.js" data-key="${activeKey}" defer><\/script>`;
+
+    document.getElementById('key-form').addEventListener('submit', (event) => {
+      event.preventDefault();
+      const nextKey = document.getElementById('key-input').value.trim();
+      if (!nextKey) return;
+      location.search = `?key=${encodeURIComponent(nextKey)}`;
+    });
+
+    document.getElementById('btn-open').addEventListener('click', () => {
+      window.SigiWidget?.open();
+    });
+
+    // Pasang widget.js secara dinamis dengan atribut data-key persis seperti embed 1 baris di website sekolah.
+    window.SigiConfig = { key: activeKey, api: apiOrigin };
+    const script = document.createElement('script');
+    script.src = 'widget.js?v=20261126d';
+    script.dataset.key = activeKey;
+    script.dataset.api = apiOrigin;
+    script.defer = true;
+    document.body.append(script);
+  </script>
+</body>
+</html>
