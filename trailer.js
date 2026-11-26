@@ -11,6 +11,8 @@
 
   const mount = document.getElementById('sigi-trailer');
   if (!mount) return;
+  // Alamat aset dihitung dari lokasi trailer.js, supaya halaman di subfolder (tools/trailer-render.html) juga bisa.
+  const BASE = new URL('.', document.currentScript?.src || location.href);
 
   const W = 960;
   const DURATION = 40000;
@@ -138,7 +140,7 @@
   /* Maskot: satu SVG (assets/kijang/states/idle.svg) yang dipindah antar adegan.
      <style> bawaannya dibuang supaya animasinya tidak bocor ke maskot lain di halaman; gayanya ada di trailer.css. */
   let kijangMarkup = '';
-  const kijangReady = fetch('assets/kijang/states/idle.svg')
+  const kijangReady = fetch(new URL('assets/kijang/states/idle.svg', BASE))
     .then((res) => (res.ok ? res.text() : ''))
     .then((text) => {
       let svg = text.slice(text.indexOf('<svg'));
@@ -328,4 +330,7 @@
 
   kijangReady.then(poster);
   poster();
+
+  // Dipakai tools/render-trailer.mjs untuk merekam trailer jadi video: mulai dari awal tanpa tombol.
+  window.SigiTrailer = { ready: kijangReady, start, duration: DURATION };
 })();

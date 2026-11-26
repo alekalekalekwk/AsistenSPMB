@@ -12,6 +12,9 @@
   box-shadow: 0 30px 70px -30px rgb(4 47 46 / 0.55);
 }
 .tr-stage [hidden] { display: none !important; }
+/* Margin bawaan browser dinolkan (spesifisitas rendah lewat :where), supaya tampilan sama di landing
+   (yang memakai reset Tailwind) dan di tools/trailer-render.html (tanpa Tailwind). */
+:where(.tr-stage, .tr-bar) :where(p, ul, ol, figure) { margin: 0; padding: 0; }
 .tr-stage { position: absolute; left: 0; top: 0; width: 960px; height: 540px; transform-origin: 0 0; }
 .tr-scene { position: absolute; inset: 0; opacity: 0; visibility: hidden; transition: opacity .45s ease, visibility 0s linear .45s; }
 .tr-scene.is-on { opacity: 1; visibility: visible; transition: opacity .45s ease; }

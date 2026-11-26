@@ -9,7 +9,6 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.1.11"></script>
-  <link rel="stylesheet" href="trailer.css?v=20261127a">
   <style type="text/tailwindcss">
     /* Gaya catatan (Notion-like), sama dengan dashboard: putih bersih, teks hitam, kartu abu muda.
        Tanpa emoji, label kecil di atas judul, kata yang distabilo, atau animasi berulang
@@ -361,12 +360,15 @@
       </div>
     </section>
 
-    <!-- Trailer: animasi HTML di trailer.js, hanya berjalan setelah tombol Putar ditekan. -->
+    <!-- Trailer: video MP4 hasil rekaman trailer.js (node tools/render-trailer.mjs). Tidak autoplay, tanpa suara. -->
     <section id="trailer" aria-labelledby="trailer-title" class="mx-auto max-w-5xl scroll-mt-20 px-4 pt-24">
       <h2 id="trailer-title" class="h2 max-w-2xl">Lihat Sigi bekerja dalam 40 detik.</h2>
-      <div id="sigi-trailer" class="mt-8">
-        <noscript><p class="rounded-xl bg-soft p-6 text-muted">Trailer butuh JavaScript. Naskahnya ada di bawah.</p></noscript>
-      </div>
+      <video class="mt-8 aspect-video w-full rounded-2xl bg-deep shadow-[0_30px_70px_-30px_rgba(4,47,46,0.55)]"
+        controls preload="none" playsinline poster="assets/trailer/sigi-trailer-poster.jpg"
+        aria-label="Trailer Sigi, 40 detik, tanpa suara. Naskahnya ada di bawah video.">
+        <source src="assets/trailer/sigi-trailer.mp4" type="video/mp4">
+        <a href="assets/trailer/sigi-trailer.mp4">Unduh trailer Sigi (MP4)</a>
+      </video>
       <details class="mt-4 text-sm text-muted">
         <summary class="inline-flex min-h-11 cursor-pointer items-center font-semibold text-ink">Baca naskah trailer</summary>
         <ol class="mt-2 max-w-2xl list-decimal space-y-1.5 pl-5 leading-relaxed">
@@ -787,7 +789,6 @@
     </div>
   </footer>
 
-  <script src="trailer.js?v=20261127a" defer></script>
   <script>
     // Maskot hero melambai sekali saat dibuka, lalu lagi setiap kali kursor masuk atau maskot disentuh.
     const heroKijang = document.getElementById('hero-kijang');
