@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <title>Render trailer Sigi</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../trailer.css">
+  <style>
+    /* Halaman khusus perekaman (tools/render-trailer.mjs): bingkai trailer memenuhi 1920x1080, tanpa tombol. */
+    html, body { margin: 0; background: #042f2e; overflow: hidden; }
+    #sigi-trailer { width: 1920px; }
+    .tr-frame { border-radius: 0; box-shadow: none; }
+    .tr-poster, .tr-bar { display: none !important; }
+    .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  </style>
+</head>
+<body>
+  <div id="sigi-trailer"></div>
+  <script>
+    // Jam palsu untuk perekaman: trailer.js memakai performance.now() dan requestAnimationFrame,
+    // dan semua animasi/transisi CSS dimajukan manual. Jadi setiap frame tepat, tidak bergantung kecepatan komputer.
+    (() => {
+      const realRaf = window.requestAnimationFrame.bind(window);
+      let now = 0;
+      let queue = [];
+      performance.now = () => now;
+      window.requestAnimationFrame = (cb) => { queue.push(cb); return queue.length; };
+      window.cancelAnimationFrame = () => { queue = []; };
+      const syncAnimations = () => {
+        for (const anim of document.getAnimations()) {
+          if (anim.__born === undefined) anim.__born = now;
+          anim.pause();
+          anim.currentTime = now - anim.__born;
+        }
+      };
+      // Maju satu langkah: jalankan jam trailer, samakan animasi CSS, lalu tunggu satu frame asli supaya tergambar.
+      window.__step = (ms) => {
+        now += ms;
+        const run = queue;
+        queue = [];
+        for (const cb of run) cb(now);
+        syncAnimations();
+        return new Promise((resolve) => realRaf(() => realRaf(resolve)));
+      };
+      window.__begin = () => { now = 0; queue = []; window.SigiTrailer.start(); syncAnimations(); };
+    })();
+  </script>
+  <script src="../trailer.js"></script>
+</body>
+</html>
