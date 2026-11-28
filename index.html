@@ -49,6 +49,32 @@
       .h2 { @apply text-balance text-3xl font-bold tracking-tight text-ink sm:text-[2.6rem] sm:leading-[1.15]; }
       .lead { @apply text-pretty text-lg leading-relaxed text-muted; }
       .card { @apply rounded-xl bg-soft p-6; }
+      .skeleton {
+        display: block;
+        border-radius: 8px;
+        background: linear-gradient(90deg, #eaeae7 25%, #f4f4f1 50%, #eaeae7 75%);
+        background-size: 200% 100%;
+        animation: sigi-shimmer 1.4s ease-in-out infinite;
+      }
+      .map-pin {
+        @apply absolute -translate-x-1/2 -translate-y-1/2 grid size-10 place-items-center rounded-full bg-transparent p-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand;
+      }
+      .map-pin-dot {
+        @apply flex items-center justify-center rounded-full ring-[3px] ring-white shadow-sm transition-transform duration-150;
+      }
+      .map-pin:hover .map-pin-dot,
+      .map-pin:focus-visible .map-pin-dot,
+      .map-pin[aria-pressed="true"] .map-pin-dot {
+        transform: scale(1.22);
+      }
+    }
+    @keyframes sigi-shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .skeleton { animation: none; background: #eaeae7; }
+      .map-pin-dot, #school-drawer, #school-drawer-backdrop { transition: none !important; }
     }
     /* Pola batik kawung, digambar sendiri sebagai ubin SVG 56 piksel.
        kawung-bg: latar bagian bawah halaman, hanya terlihat di ruang kosong kiri-kanan. Polanya sudah habis memudar
@@ -636,24 +662,30 @@
       </div>
     </section>
 
-    <!-- Cerita: peta titik Nusantara. Titik-titiknya dihitung sekali dari data peta asli (world-atlas, Indonesia),
-         lalu disimpan statis di sini, jadi tidak ada beban tambahan saat halaman dibuka. -->
-    <section aria-labelledby="cerita-title" class="mx-auto max-w-6xl px-4 pt-28">
+    <!-- Cerita: peta titik Nusantara interaktif. Titik-titiknya dihitung sekali dari data peta asli (world-atlas, Indonesia),
+         lalu pin sekolah terdaftar dimuat dari database Supabase (/api/public/schools) dengan fallback SMK Wikrama Bogor. -->
+    <section id="cerita" aria-labelledby="cerita-title" class="mx-auto max-w-6xl scroll-mt-20 px-4 pt-28">
       <div class="rounded-2xl border border-line bg-white px-6 pb-10 pt-16 text-center sm:px-12 sm:pt-20">
         <h2 id="cerita-title" class="h2">Berawal dari Wikrama.</h2>
-        <p class="lead mx-auto mt-6 max-w-3xl text-balance">Sigi dikembangkan oleh alumni SMK Wikrama Bogor, bekerja sama dengan sekolahnya sendiri. Demo pertamanya memakai data SPMB SMK Wikrama Bogor yang sebenarnya.</p>
-        <figure class="mx-auto mt-12 max-w-4xl">
-          <div class="relative">
+        <p class="lead mx-auto mt-6 max-w-3xl text-balance">Sigi dikembangkan oleh alumni SMK Wikrama Bogor, bekerja sama dengan sekolahnya sendiri. Klik titik di peta untuk melihat profil sekolah yang sudah terdaftar di Sigi.</p>
+
+        <div id="map-summary" role="status" aria-live="polite" class="mt-6 flex min-h-8 items-center justify-center">
+          <span class="inline-flex items-center gap-2 rounded-full border border-line bg-soft px-3.5 py-1.5 text-xs font-medium text-muted">
+            <span class="size-2 rounded-full bg-brand" aria-hidden="true"></span>
+            <span>Klik titik sekolah pada peta untuk melihat detail</span>
+          </span>
+        </div>
+
+        <figure class="mx-auto mt-8 max-w-4xl">
+          <div id="nusantara-map-stage" class="relative select-none">
             <svg viewBox="0 0 960 380" role="img" aria-labelledby="peta-title" class="h-auto w-full">
-              <title id="peta-title">Peta Indonesia dari titik-titik, dengan penanda di Bogor, Jawa Barat</title>
+              <title id="peta-title">Peta Indonesia interaktif dari titik-titik, menampilkan sekolah yang terdaftar di Sigi</title>
               <path d="M13.5 22.5h0M13.5 31.5h0M22.5 31.5h0M31.5 31.5h0M40.5 31.5h0M49.5 31.5h0M58.5 31.5h0M22.5 40.5h0M31.5 40.5h0M40.5 40.5h0M49.5 40.5h0M58.5 40.5h0M31.5 49.5h0M40.5 49.5h0M49.5 49.5h0M58.5 49.5h0M67.5 49.5h0M436.5 49.5h0M445.5 49.5h0M454.5 49.5h0M40.5 58.5h0M49.5 58.5h0M58.5 58.5h0M67.5 58.5h0M76.5 58.5h0M274.5 58.5h0M436.5 58.5h0M445.5 58.5h0M454.5 58.5h0M463.5 58.5h0M49.5 67.5h0M58.5 67.5h0M67.5 67.5h0M76.5 67.5h0M85.5 67.5h0M94.5 67.5h0M436.5 67.5h0M445.5 67.5h0M454.5 67.5h0M463.5 67.5h0M634.5 67.5h0M58.5 76.5h0M67.5 76.5h0M76.5 76.5h0M85.5 76.5h0M94.5 76.5h0M103.5 76.5h0M427.5 76.5h0M436.5 76.5h0M445.5 76.5h0M454.5 76.5h0M463.5 76.5h0M31.5 85.5h0M67.5 85.5h0M76.5 85.5h0M85.5 85.5h0M94.5 85.5h0M103.5 85.5h0M112.5 85.5h0M427.5 85.5h0M436.5 85.5h0M445.5 85.5h0M454.5 85.5h0M463.5 85.5h0M472.5 85.5h0M76.5 94.5h0M85.5 94.5h0M94.5 94.5h0M103.5 94.5h0M112.5 94.5h0M121.5 94.5h0M130.5 94.5h0M418.5 94.5h0M427.5 94.5h0M436.5 94.5h0M445.5 94.5h0M454.5 94.5h0M463.5 94.5h0M472.5 94.5h0M85.5 103.5h0M94.5 103.5h0M103.5 103.5h0M112.5 103.5h0M121.5 103.5h0M130.5 103.5h0M139.5 103.5h0M301.5 103.5h0M409.5 103.5h0M418.5 103.5h0M427.5 103.5h0M436.5 103.5h0M445.5 103.5h0M454.5 103.5h0M463.5 103.5h0M472.5 103.5h0M679.5 103.5h0M58.5 112.5h0M85.5 112.5h0M94.5 112.5h0M103.5 112.5h0M112.5 112.5h0M121.5 112.5h0M130.5 112.5h0M139.5 112.5h0M148.5 112.5h0M157.5 112.5h0M301.5 112.5h0M310.5 112.5h0M364.5 112.5h0M373.5 112.5h0M382.5 112.5h0M391.5 112.5h0M400.5 112.5h0M409.5 112.5h0M418.5 112.5h0M427.5 112.5h0M436.5 112.5h0M445.5 112.5h0M454.5 112.5h0M463.5 112.5h0M472.5 112.5h0M481.5 112.5h0M490.5 112.5h0M544.5 112.5h0M616.5 112.5h0M679.5 112.5h0M688.5 112.5h0M697.5 112.5h0M94.5 121.5h0M103.5 121.5h0M112.5 121.5h0M121.5 121.5h0M130.5 121.5h0M139.5 121.5h0M148.5 121.5h0M157.5 121.5h0M166.5 121.5h0M292.5 121.5h0M301.5 121.5h0M310.5 121.5h0M319.5 121.5h0M328.5 121.5h0M337.5 121.5h0M346.5 121.5h0M355.5 121.5h0M364.5 121.5h0M373.5 121.5h0M382.5 121.5h0M391.5 121.5h0M400.5 121.5h0M409.5 121.5h0M418.5 121.5h0M427.5 121.5h0M436.5 121.5h0M445.5 121.5h0M454.5 121.5h0M463.5 121.5h0M472.5 121.5h0M526.5 121.5h0M535.5 121.5h0M544.5 121.5h0M553.5 121.5h0M562.5 121.5h0M571.5 121.5h0M580.5 121.5h0M589.5 121.5h0M598.5 121.5h0M607.5 121.5h0M679.5 121.5h0M688.5 121.5h0M94.5 130.5h0M103.5 130.5h0M112.5 130.5h0M121.5 130.5h0M130.5 130.5h0M139.5 130.5h0M148.5 130.5h0M157.5 130.5h0M166.5 130.5h0M175.5 130.5h0M292.5 130.5h0M301.5 130.5h0M310.5 130.5h0M319.5 130.5h0M328.5 130.5h0M337.5 130.5h0M346.5 130.5h0M355.5 130.5h0M364.5 130.5h0M373.5 130.5h0M382.5 130.5h0M391.5 130.5h0M400.5 130.5h0M409.5 130.5h0M418.5 130.5h0M427.5 130.5h0M436.5 130.5h0M445.5 130.5h0M454.5 130.5h0M463.5 130.5h0M517.5 130.5h0M589.5 130.5h0M598.5 130.5h0M679.5 130.5h0M697.5 130.5h0M103.5 139.5h0M112.5 139.5h0M121.5 139.5h0M130.5 139.5h0M139.5 139.5h0M148.5 139.5h0M157.5 139.5h0M166.5 139.5h0M175.5 139.5h0M202.5 139.5h0M301.5 139.5h0M310.5 139.5h0M319.5 139.5h0M328.5 139.5h0M337.5 139.5h0M346.5 139.5h0M355.5 139.5h0M364.5 139.5h0M373.5 139.5h0M382.5 139.5h0M391.5 139.5h0M400.5 139.5h0M409.5 139.5h0M418.5 139.5h0M427.5 139.5h0M436.5 139.5h0M445.5 139.5h0M454.5 139.5h0M463.5 139.5h0M517.5 139.5h0M679.5 139.5h0M742.5 139.5h0M76.5 148.5h0M112.5 148.5h0M121.5 148.5h0M130.5 148.5h0M139.5 148.5h0M148.5 148.5h0M157.5 148.5h0M166.5 148.5h0M175.5 148.5h0M301.5 148.5h0M310.5 148.5h0M319.5 148.5h0M328.5 148.5h0M337.5 148.5h0M346.5 148.5h0M355.5 148.5h0M364.5 148.5h0M373.5 148.5h0M382.5 148.5h0M391.5 148.5h0M400.5 148.5h0M409.5 148.5h0M418.5 148.5h0M427.5 148.5h0M436.5 148.5h0M445.5 148.5h0M454.5 148.5h0M463.5 148.5h0M517.5 148.5h0M553.5 148.5h0M670.5 148.5h0M769.5 148.5h0M778.5 148.5h0M787.5 148.5h0M85.5 157.5h0M121.5 157.5h0M130.5 157.5h0M139.5 157.5h0M148.5 157.5h0M157.5 157.5h0M166.5 157.5h0M175.5 157.5h0M184.5 157.5h0M310.5 157.5h0M319.5 157.5h0M328.5 157.5h0M337.5 157.5h0M346.5 157.5h0M355.5 157.5h0M364.5 157.5h0M373.5 157.5h0M382.5 157.5h0M391.5 157.5h0M400.5 157.5h0M409.5 157.5h0M418.5 157.5h0M427.5 157.5h0M436.5 157.5h0M445.5 157.5h0M454.5 157.5h0M517.5 157.5h0M526.5 157.5h0M553.5 157.5h0M562.5 157.5h0M571.5 157.5h0M742.5 157.5h0M751.5 157.5h0M760.5 157.5h0M769.5 157.5h0M778.5 157.5h0M787.5 157.5h0M796.5 157.5h0M805.5 157.5h0M85.5 166.5h0M121.5 166.5h0M130.5 166.5h0M139.5 166.5h0M148.5 166.5h0M157.5 166.5h0M166.5 166.5h0M175.5 166.5h0M184.5 166.5h0M193.5 166.5h0M319.5 166.5h0M328.5 166.5h0M337.5 166.5h0M346.5 166.5h0M355.5 166.5h0M364.5 166.5h0M373.5 166.5h0M382.5 166.5h0M391.5 166.5h0M400.5 166.5h0M409.5 166.5h0M418.5 166.5h0M427.5 166.5h0M436.5 166.5h0M445.5 166.5h0M508.5 166.5h0M517.5 166.5h0M526.5 166.5h0M535.5 166.5h0M544.5 166.5h0M553.5 166.5h0M562.5 166.5h0M580.5 166.5h0M589.5 166.5h0M751.5 166.5h0M760.5 166.5h0M769.5 166.5h0M778.5 166.5h0M787.5 166.5h0M796.5 166.5h0M805.5 166.5h0M130.5 175.5h0M139.5 175.5h0M148.5 175.5h0M157.5 175.5h0M166.5 175.5h0M175.5 175.5h0M184.5 175.5h0M193.5 175.5h0M220.5 175.5h0M229.5 175.5h0M319.5 175.5h0M328.5 175.5h0M337.5 175.5h0M346.5 175.5h0M355.5 175.5h0M364.5 175.5h0M373.5 175.5h0M382.5 175.5h0M391.5 175.5h0M400.5 175.5h0M409.5 175.5h0M418.5 175.5h0M427.5 175.5h0M436.5 175.5h0M445.5 175.5h0M508.5 175.5h0M517.5 175.5h0M526.5 175.5h0M535.5 175.5h0M544.5 175.5h0M553.5 175.5h0M616.5 175.5h0M625.5 175.5h0M634.5 175.5h0M643.5 175.5h0M724.5 175.5h0M769.5 175.5h0M778.5 175.5h0M787.5 175.5h0M796.5 175.5h0M805.5 175.5h0M850.5 175.5h0M859.5 175.5h0M877.5 175.5h0M886.5 175.5h0M895.5 175.5h0M103.5 184.5h0M130.5 184.5h0M139.5 184.5h0M148.5 184.5h0M157.5 184.5h0M166.5 184.5h0M175.5 184.5h0M184.5 184.5h0M193.5 184.5h0M202.5 184.5h0M229.5 184.5h0M319.5 184.5h0M328.5 184.5h0M337.5 184.5h0M346.5 184.5h0M355.5 184.5h0M364.5 184.5h0M373.5 184.5h0M382.5 184.5h0M391.5 184.5h0M400.5 184.5h0M409.5 184.5h0M418.5 184.5h0M427.5 184.5h0M436.5 184.5h0M445.5 184.5h0M508.5 184.5h0M517.5 184.5h0M526.5 184.5h0M535.5 184.5h0M544.5 184.5h0M553.5 184.5h0M805.5 184.5h0M859.5 184.5h0M868.5 184.5h0M877.5 184.5h0M886.5 184.5h0M895.5 184.5h0M904.5 184.5h0M913.5 184.5h0M112.5 193.5h0M139.5 193.5h0M148.5 193.5h0M157.5 193.5h0M166.5 193.5h0M175.5 193.5h0M184.5 193.5h0M193.5 193.5h0M202.5 193.5h0M211.5 193.5h0M220.5 193.5h0M238.5 193.5h0M265.5 193.5h0M274.5 193.5h0M319.5 193.5h0M328.5 193.5h0M337.5 193.5h0M346.5 193.5h0M355.5 193.5h0M364.5 193.5h0M373.5 193.5h0M382.5 193.5h0M391.5 193.5h0M400.5 193.5h0M409.5 193.5h0M418.5 193.5h0M427.5 193.5h0M436.5 193.5h0M499.5 193.5h0M508.5 193.5h0M517.5 193.5h0M526.5 193.5h0M544.5 193.5h0M553.5 193.5h0M787.5 193.5h0M796.5 193.5h0M805.5 193.5h0M814.5 193.5h0M850.5 193.5h0M859.5 193.5h0M868.5 193.5h0M877.5 193.5h0M886.5 193.5h0M895.5 193.5h0M904.5 193.5h0M913.5 193.5h0M922.5 193.5h0M931.5 193.5h0M940.5 193.5h0M949.5 193.5h0M148.5 202.5h0M157.5 202.5h0M166.5 202.5h0M175.5 202.5h0M184.5 202.5h0M193.5 202.5h0M202.5 202.5h0M211.5 202.5h0M220.5 202.5h0M229.5 202.5h0M265.5 202.5h0M274.5 202.5h0M355.5 202.5h0M364.5 202.5h0M373.5 202.5h0M382.5 202.5h0M391.5 202.5h0M400.5 202.5h0M409.5 202.5h0M418.5 202.5h0M427.5 202.5h0M436.5 202.5h0M499.5 202.5h0M508.5 202.5h0M517.5 202.5h0M544.5 202.5h0M553.5 202.5h0M562.5 202.5h0M643.5 202.5h0M652.5 202.5h0M661.5 202.5h0M688.5 202.5h0M697.5 202.5h0M706.5 202.5h0M715.5 202.5h0M724.5 202.5h0M733.5 202.5h0M778.5 202.5h0M787.5 202.5h0M796.5 202.5h0M805.5 202.5h0M814.5 202.5h0M823.5 202.5h0M841.5 202.5h0M850.5 202.5h0M859.5 202.5h0M868.5 202.5h0M877.5 202.5h0M886.5 202.5h0M895.5 202.5h0M904.5 202.5h0M913.5 202.5h0M922.5 202.5h0M931.5 202.5h0M940.5 202.5h0M949.5 202.5h0M157.5 211.5h0M166.5 211.5h0M175.5 211.5h0M184.5 211.5h0M193.5 211.5h0M202.5 211.5h0M211.5 211.5h0M220.5 211.5h0M409.5 211.5h0M418.5 211.5h0M427.5 211.5h0M517.5 211.5h0M526.5 211.5h0M544.5 211.5h0M553.5 211.5h0M562.5 211.5h0M652.5 211.5h0M661.5 211.5h0M688.5 211.5h0M697.5 211.5h0M733.5 211.5h0M787.5 211.5h0M796.5 211.5h0M805.5 211.5h0M814.5 211.5h0M823.5 211.5h0M832.5 211.5h0M841.5 211.5h0M850.5 211.5h0M859.5 211.5h0M868.5 211.5h0M877.5 211.5h0M886.5 211.5h0M895.5 211.5h0M904.5 211.5h0M913.5 211.5h0M922.5 211.5h0M931.5 211.5h0M940.5 211.5h0M949.5 211.5h0M166.5 220.5h0M175.5 220.5h0M184.5 220.5h0M193.5 220.5h0M202.5 220.5h0M211.5 220.5h0M220.5 220.5h0M409.5 220.5h0M517.5 220.5h0M526.5 220.5h0M553.5 220.5h0M562.5 220.5h0M571.5 220.5h0M787.5 220.5h0M823.5 220.5h0M832.5 220.5h0M841.5 220.5h0M850.5 220.5h0M859.5 220.5h0M868.5 220.5h0M877.5 220.5h0M886.5 220.5h0M895.5 220.5h0M904.5 220.5h0M913.5 220.5h0M922.5 220.5h0M931.5 220.5h0M940.5 220.5h0M949.5 220.5h0M175.5 229.5h0M184.5 229.5h0M193.5 229.5h0M202.5 229.5h0M211.5 229.5h0M220.5 229.5h0M517.5 229.5h0M526.5 229.5h0M553.5 229.5h0M562.5 229.5h0M580.5 229.5h0M832.5 229.5h0M841.5 229.5h0M850.5 229.5h0M859.5 229.5h0M868.5 229.5h0M877.5 229.5h0M886.5 229.5h0M895.5 229.5h0M904.5 229.5h0M913.5 229.5h0M922.5 229.5h0M931.5 229.5h0M940.5 229.5h0M949.5 229.5h0M184.5 238.5h0M193.5 238.5h0M202.5 238.5h0M211.5 238.5h0M220.5 238.5h0M517.5 238.5h0M571.5 238.5h0M580.5 238.5h0M868.5 238.5h0M877.5 238.5h0M886.5 238.5h0M895.5 238.5h0M904.5 238.5h0M913.5 238.5h0M922.5 238.5h0M931.5 238.5h0M940.5 238.5h0M949.5 238.5h0M193.5 247.5h0M202.5 247.5h0M211.5 247.5h0M220.5 247.5h0M508.5 247.5h0M517.5 247.5h0M526.5 247.5h0M571.5 247.5h0M580.5 247.5h0M886.5 247.5h0M895.5 247.5h0M904.5 247.5h0M913.5 247.5h0M922.5 247.5h0M931.5 247.5h0M940.5 247.5h0M949.5 247.5h0M202.5 256.5h0M814.5 256.5h0M895.5 256.5h0M904.5 256.5h0M913.5 256.5h0M922.5 256.5h0M931.5 256.5h0M940.5 256.5h0M949.5 256.5h0M229.5 265.5h0M238.5 265.5h0M247.5 265.5h0M256.5 265.5h0M814.5 265.5h0M904.5 265.5h0M913.5 265.5h0M922.5 265.5h0M931.5 265.5h0M940.5 265.5h0M949.5 265.5h0M229.5 274.5h0M238.5 274.5h0M247.5 274.5h0M256.5 274.5h0M265.5 274.5h0M274.5 274.5h0M283.5 274.5h0M328.5 274.5h0M814.5 274.5h0M904.5 274.5h0M913.5 274.5h0M922.5 274.5h0M931.5 274.5h0M940.5 274.5h0M247.5 283.5h0M256.5 283.5h0M265.5 283.5h0M274.5 283.5h0M283.5 283.5h0M292.5 283.5h0M301.5 283.5h0M310.5 283.5h0M319.5 283.5h0M328.5 283.5h0M337.5 283.5h0M346.5 283.5h0M355.5 283.5h0M364.5 283.5h0M373.5 283.5h0M382.5 283.5h0M391.5 283.5h0M904.5 283.5h0M913.5 283.5h0M922.5 283.5h0M931.5 283.5h0M940.5 283.5h0M949.5 283.5h0M265.5 292.5h0M274.5 292.5h0M283.5 292.5h0M292.5 292.5h0M301.5 292.5h0M310.5 292.5h0M319.5 292.5h0M328.5 292.5h0M337.5 292.5h0M346.5 292.5h0M355.5 292.5h0M364.5 292.5h0M751.5 292.5h0M895.5 292.5h0M904.5 292.5h0M913.5 292.5h0M922.5 292.5h0M931.5 292.5h0M940.5 292.5h0M949.5 292.5h0M319.5 301.5h0M328.5 301.5h0M337.5 301.5h0M346.5 301.5h0M355.5 301.5h0M364.5 301.5h0M373.5 301.5h0M382.5 301.5h0M391.5 301.5h0M400.5 301.5h0M751.5 301.5h0M886.5 301.5h0M895.5 301.5h0M904.5 301.5h0M913.5 301.5h0M922.5 301.5h0M931.5 301.5h0M940.5 301.5h0M949.5 301.5h0M364.5 310.5h0M391.5 310.5h0M400.5 310.5h0M409.5 310.5h0M418.5 310.5h0M427.5 310.5h0M445.5 310.5h0M481.5 310.5h0M490.5 310.5h0M526.5 310.5h0M535.5 310.5h0M616.5 310.5h0M886.5 310.5h0M895.5 310.5h0M904.5 310.5h0M940.5 310.5h0M949.5 310.5h0M436.5 319.5h0M445.5 319.5h0M454.5 319.5h0M463.5 319.5h0M472.5 319.5h0M481.5 319.5h0M490.5 319.5h0M517.5 319.5h0M526.5 319.5h0M535.5 319.5h0M544.5 319.5h0M553.5 319.5h0M949.5 319.5h0M616.5 328.5h0M499.5 337.5h0M508.5 337.5h0M517.5 337.5h0M526.5 337.5h0M598.5 337.5h0M607.5 337.5h0M616.5 337.5h0M526.5 346.5h0M535.5 346.5h0M598.5 346.5h0M607.5 346.5h0" fill="none" stroke="#37352f" stroke-opacity="0.22" stroke-width="5" stroke-linecap="round" class="max-sm:[stroke-width:7]"/>
             </svg>
-            <!-- Penanda (diam, tidak berdenyut) dan label Bogor berupa HTML (bukan bagian SVG), supaya ukurannya tetap terbaca di layar kecil.
-                 Label ditaruh di bawah penanda, di atas laut, jadi tidak menutupi daratan. -->
-            <span aria-hidden="true" class="absolute size-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-brand ring-[3px] ring-white" style="left:25.82%;top:72.03%"></span>
-            <span class="absolute whitespace-nowrap rounded-full bg-ink px-3 py-1 text-xs font-semibold text-white shadow-sm sm:text-sm" style="left:calc(25.82% - 16px);top:calc(72.03% + 14px)">SMK Wikrama Bogor</span>
+            <div id="map-pins-layer" class="absolute inset-0"></div>
+            <div id="map-tooltip" role="tooltip" hidden class="pointer-events-none absolute z-20 max-w-[15rem] rounded-xl bg-ink px-3 py-2 text-left text-xs text-white shadow-lg"></div>
           </div>
-          <figcaption class="mt-4 text-sm text-muted">Setiap titik adalah daratan Indonesia. Titik hijau: Bogor, tempat Sigi dimulai.</figcaption>
+          <figcaption id="map-caption" class="mt-4 text-sm text-muted">Setiap titik adalah daratan Indonesia. Klik penanda untuk melihat profil lengkap sekolah.</figcaption>
         </figure>
       </div>
     </section>
@@ -765,6 +797,32 @@
     </div>
   </footer>
 
+  <!-- Slide-over Sidebar Detail Sekolah (muncul saat pin pada peta Nusantara diklik) -->
+  <div id="school-drawer-backdrop" hidden class="fixed inset-0 z-50 bg-ink/35 opacity-0 backdrop-blur-[1px] transition-opacity duration-200"></div>
+  <aside id="school-drawer" role="dialog" aria-modal="true" aria-labelledby="drawer-title" hidden
+    class="fixed inset-y-0 right-0 z-50 flex w-full max-w-md translate-x-full flex-col border-l border-line bg-white shadow-2xl transition-transform duration-200">
+    <div id="drawer-accent" class="h-1.5 w-full shrink-0 bg-brand"></div>
+    <header class="flex shrink-0 items-start justify-between gap-3 border-b border-line px-5 py-4">
+      <div class="min-w-0 flex-1">
+        <button id="drawer-back" type="button" hidden class="mb-2 inline-flex min-h-8 items-center gap-1 rounded-md px-2 text-xs font-semibold text-brand-dark hover:bg-soft">← Kembali ke daftar kota</button>
+        <div class="flex items-center gap-3">
+          <span id="drawer-avatar" class="grid size-10 shrink-0 place-items-center rounded-xl bg-brand text-sm font-bold text-white" aria-hidden="true">S</span>
+          <div class="min-w-0">
+            <h2 id="drawer-title" class="truncate text-lg font-bold tracking-tight text-ink">Detail Sekolah</h2>
+            <p id="drawer-subtitle" class="truncate text-xs text-muted"></p>
+          </div>
+        </div>
+      </div>
+      <button id="drawer-close" type="button" aria-label="Tutup panel detail sekolah"
+        class="grid size-11 shrink-0 place-items-center rounded-lg text-muted hover:bg-soft hover:text-ink">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="size-5"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      </button>
+    </header>
+    <div id="drawer-body" class="flex-1 overflow-y-auto px-5 py-5"></div>
+    <footer id="drawer-footer" hidden class="shrink-0 border-t border-line bg-white px-5 py-4"></footer>
+  </aside>
+
+  <script src="data/indonesia-cities.js?v=20261128a"></script>
   <script>
     // Maskot hero melambai sekali saat dibuka, lalu lagi setiap kali kursor masuk atau maskot disentuh.
     const heroKijang = document.getElementById('hero-kijang');
@@ -801,6 +859,469 @@
       link.href = `https://wa.me/${KONTAK_WHATSAPP}?text=${encodeURIComponent('Halo, saya tertarik dengan Sigi untuk sekolah kami.')}`;
       link.hidden = false;
     }
+
+    /* ==================== Peta Sekolah Interaktif Nusantara & Slide-Over Sidebar ==================== */
+    (() => {
+      const LOC = window.SIGI_LOCATIONS || { projectToMap: () => null };
+      const HAS_SERVER_HOST = (location.protocol === 'http:' && ['localhost', '127.0.0.1'].includes(location.hostname))
+        || (location.protocol === 'https:' && location.hostname.endsWith('.vercel.app'));
+
+      const WIKRAMA_FALLBACK = {
+        id: 'wikrama-fallback',
+        slug: 'wikrama',
+        name: 'SMK Wikrama Bogor',
+        level: 'SMK',
+        province: 'Jawa Barat',
+        city: 'Kota Bogor',
+        address: 'Jl. Raya Wangun No. 21, RT.01/RW.06, Kel. Sindangsari, Kec. Bogor Timur, Kota Bogor, Jawa Barat',
+        latitude: -6.5971,
+        longitude: 106.8060,
+        npsn: '20220299',
+        accreditation: 'A',
+        website: 'https://smkwikrama.sch.id',
+        description: 'SMK Pusat Keunggulan di bawah Yayasan Wikrama Indonesia dengan 7 jurusan di bidang Teknologi Informasi, Bisnis Manajemen, dan Pariwisata. Sekolah pertama tempat Sigi dikembangkan bersama alumni.',
+        theme: { primary: '#001e42', onPrimary: '#ffffff', accent: '#e3ce0f', onAccent: '#001e42' },
+        greeting: 'Halo! Aku Asisten SPMB SMK Wikrama Bogor. Mau tanya soal pendaftaran, jurusan, atau ekskul?',
+        suggestions: ['Cara daftarnya gimana?', 'Ada jurusan apa aja?', 'Berkas apa yang perlu disiapin?'],
+        activePeriodLabel: '2027-2028',
+        sections: [
+          {
+            title: 'Program Keahlian & Jurusan (7 Jurusan)',
+            body: 'Teknologi Informasi: PPLG (Pengembangan Perangkat Lunak & Gim), TJKT (Teknik Jaringan Komputer & Telekomunikasi), DKV (Desain Komunikasi Visual).\nBisnis Manajemen: PMN (Pemasaran), MPLB (Manajemen Perkantoran & Layanan Bisnis).\nPariwisata: KLN (Kuliner), HTL (Perhotelan).',
+          },
+          {
+            title: 'Keunggulan Sekolah',
+            body: 'SMK Pusat Keunggulan sejak 2021, percontohan Cyber Security dengan Laboratorium SOC, Sekolah Adiwiyata Mandiri tingkat nasional, Teaching Factory, serta hotel & kafe praktik sendiri.',
+          },
+          {
+            title: 'Alur Pendaftaran SPMB',
+            body: 'Daftar online di spmb.smkwikrama.sch.id atau datang langsung ke sekolah, bayar biaya seleksi, isi data diri & pilihan jurusan, wawancara membawa berkas rapor semester 1-4, KK, KTP orang tua, akta lahir, dan surat kesehatan, lalu daftar ulang.',
+          },
+        ],
+      };
+
+      const mapEl = {
+        stage: document.getElementById('nusantara-map-stage'),
+        pinsLayer: document.getElementById('map-pins-layer'),
+        tooltip: document.getElementById('map-tooltip'),
+        summary: document.getElementById('map-summary'),
+        caption: document.getElementById('map-caption'),
+        backdrop: document.getElementById('school-drawer-backdrop'),
+        drawer: document.getElementById('school-drawer'),
+        accent: document.getElementById('drawer-accent'),
+        back: document.getElementById('drawer-back'),
+        avatar: document.getElementById('drawer-avatar'),
+        title: document.getElementById('drawer-title'),
+        subtitle: document.getElementById('drawer-subtitle'),
+        close: document.getElementById('drawer-close'),
+        body: document.getElementById('drawer-body'),
+        footer: document.getElementById('drawer-footer'),
+      };
+
+      let schoolsList = [];
+      let clusters = [];
+      let activeClusterId = null;
+      let activeTriggerBtn = null;
+      let drawerOpen = false;
+      let closeTimer = null;
+
+      function mk(tag, className, text) {
+        const node = document.createElement(tag);
+        if (className) node.className = className;
+        if (text !== undefined) node.textContent = text;
+        return node;
+      }
+
+      function safeColor(hex, fallback) {
+        return typeof hex === 'string' && /^#[0-9a-f]{6}$/i.test(hex) ? hex : fallback;
+      }
+
+      function safeWebsite(url) {
+        if (typeof url !== 'string' || !url.trim()) return '';
+        try {
+          const parsed = new URL(url.trim());
+          return parsed.protocol === 'http:' || parsed.protocol === 'https:' ? parsed.href : '';
+        } catch {
+          return '';
+        }
+      }
+
+      function groupSchoolsIntoClusters(list) {
+        const groups = new Map();
+        for (const school of list) {
+          const pos = LOC.projectToMap(school.latitude, school.longitude);
+          if (!pos) continue;
+          const key = school.city
+            ? `${school.province.toLowerCase()}::${school.city.toLowerCase()}`
+            : `${Math.round(pos.left * 2)}::${Math.round(pos.top * 2)}`;
+          if (!groups.has(key)) {
+            groups.set(key, {
+              id: key,
+              city: school.city || 'Indonesia',
+              province: school.province || '',
+              left: pos.left,
+              top: pos.top,
+              schools: [],
+            });
+          }
+          groups.get(key).schools.push(school);
+        }
+        return [...groups.values()];
+      }
+
+      function renderSummaryLoading() {
+        mapEl.summary.setAttribute('aria-busy', 'true');
+        const bar = mk('span', 'skeleton h-7 w-64 rounded-full');
+        bar.setAttribute('aria-hidden', 'true');
+        mapEl.summary.replaceChildren(bar, mk('span', 'sr-only', 'Memuat data sekolah terdaftar dari database...'));
+      }
+
+      function renderSummaryLoaded(totalSchools, totalCities) {
+        mapEl.summary.setAttribute('aria-busy', 'false');
+        const pill = mk('span', 'inline-flex flex-wrap items-center justify-center gap-2 rounded-full border border-line bg-soft px-3.5 py-1.5 text-xs font-medium text-body');
+        const dot = mk('span', 'size-2 shrink-0 rounded-full bg-brand');
+        dot.setAttribute('aria-hidden', 'true');
+        const countText = totalSchools === 1
+          ? '1 sekolah terdaftar · Klik titik pada peta untuk melihat detail'
+          : `${totalSchools} sekolah terdaftar di ${totalCities} kota · Klik titik pada peta untuk melihat detail`;
+        pill.append(dot, document.createTextNode(countText));
+        mapEl.summary.replaceChildren(pill);
+        mapEl.caption.textContent = totalSchools === 1
+          ? 'Setiap titik adalah daratan Indonesia. Klik penanda untuk melihat profil SMK Wikrama Bogor.'
+          : `Setiap titik adalah daratan Indonesia. Terdapat ${totalSchools} sekolah aktif di ${totalCities} kota/kabupaten — klik pin untuk melihat profil lengkap.`;
+      }
+
+      function showTooltip(cluster) {
+        mapEl.tooltip.replaceChildren();
+        if (cluster.schools.length === 1) {
+          const s = cluster.schools[0];
+          mapEl.tooltip.append(
+            mk('p', 'font-semibold leading-snug text-white', s.name),
+            mk('p', 'mt-0.5 text-[11px] text-white/75', [s.city, s.province].filter(Boolean).join(', ') || 'Klik untuk detail'),
+          );
+        } else {
+          mapEl.tooltip.append(
+            mk('p', 'font-semibold leading-snug text-white', `${cluster.city} (${cluster.schools.length} sekolah)`),
+            mk('p', 'mt-0.5 truncate text-[11px] text-white/75', cluster.schools.slice(0, 2).map((s) => s.name).join(', ') + (cluster.schools.length > 2 ? ', …' : '')),
+          );
+        }
+        mapEl.tooltip.hidden = false;
+        // Posisikan tooltip agar tetap di dalam kotak peta (otomatis balik arah di tepi kiri/kanan/atas).
+        const placeBelow = cluster.top < 24;
+        const alignRight = cluster.left > 76;
+        const alignLeft = cluster.left < 24;
+        mapEl.tooltip.style.left = `${cluster.left}%`;
+        mapEl.tooltip.style.top = placeBelow ? `calc(${cluster.top}% + 18px)` : `calc(${cluster.top}% - 18px)`;
+        const tx = alignRight ? '-100%' : alignLeft ? '0%' : '-50%';
+        const ty = placeBelow ? '0%' : '-100%';
+        mapEl.tooltip.style.transform = `translate(${tx}, ${ty})`;
+      }
+
+      function hideTooltip() {
+        mapEl.tooltip.hidden = true;
+      }
+
+      function syncPinPressedState() {
+        for (const btn of mapEl.pinsLayer.querySelectorAll('button[data-cluster-id]')) {
+          btn.setAttribute('aria-pressed', String(drawerOpen && btn.dataset.clusterId === activeClusterId));
+        }
+      }
+
+      function renderPins() {
+        mapEl.pinsLayer.replaceChildren();
+
+        for (const cluster of clusters) {
+          const isMulti = cluster.schools.length > 1;
+          const primarySchool = cluster.schools[0];
+          const pinColor = isMulti ? '#0f766e' : safeColor(primarySchool?.theme?.primary, '#0f766e');
+
+          const btn = mk('button', 'map-pin');
+          btn.type = 'button';
+          btn.dataset.clusterId = cluster.id;
+          btn.style.left = `${cluster.left.toFixed(2)}%`;
+          btn.style.top = `${cluster.top.toFixed(2)}%`;
+          btn.setAttribute('aria-pressed', 'false');
+          btn.setAttribute(
+            'aria-label',
+            isMulti
+              ? `${cluster.city}: ${cluster.schools.length} sekolah terdaftar. Klik untuk memilih sekolah.`
+              : `${primarySchool.name}, ${cluster.city}. Klik untuk melihat detail sekolah.`,
+          );
+
+          if (isMulti) {
+            const badge = mk('span', 'map-pin-dot h-6 min-w-6 px-1.5 text-[11px] font-bold text-white', String(cluster.schools.length));
+            badge.style.backgroundColor = pinColor;
+            badge.setAttribute('aria-hidden', 'true');
+            btn.append(badge);
+          } else {
+            const dot = mk('span', 'map-pin-dot size-3.5');
+            dot.style.backgroundColor = pinColor;
+            dot.setAttribute('aria-hidden', 'true');
+            btn.append(dot);
+          }
+
+          btn.addEventListener('mouseenter', () => showTooltip(cluster));
+          btn.addEventListener('focus', () => showTooltip(cluster));
+          btn.addEventListener('mouseleave', hideTooltip);
+          btn.addEventListener('blur', hideTooltip);
+          btn.addEventListener('click', () => {
+            hideTooltip();
+            openClusterDrawer(cluster, btn);
+          });
+
+          mapEl.pinsLayer.append(btn);
+        }
+        syncPinPressedState();
+      }
+
+      function renderCityPickerInDrawer(cluster) {
+        mapEl.accent.style.backgroundColor = '#0f766e';
+        mapEl.back.hidden = true;
+        mapEl.avatar.style.backgroundColor = '#0f766e';
+        mapEl.avatar.style.color = '#ffffff';
+        mapEl.avatar.textContent = String(cluster.schools.length);
+        mapEl.title.textContent = cluster.city;
+        mapEl.subtitle.textContent = `${cluster.province ? `${cluster.province} · ` : ''}${cluster.schools.length} sekolah terdaftar`;
+
+        const intro = mk('p', 'text-sm leading-relaxed text-muted', `Pilih salah satu sekolah di ${cluster.city} untuk melihat profil lengkap dan informasi SPMB-nya.`);
+        const list = mk('div', 'mt-4 space-y-3');
+
+        for (const s of cluster.schools) {
+          const primary = safeColor(s.theme?.primary, '#0f766e');
+          const onPrimary = safeColor(s.theme?.onPrimary, '#ffffff');
+          const card = mk('button', 'flex w-full items-start gap-3.5 rounded-xl border border-line bg-white p-4 text-left transition hover:border-brand/50 hover:bg-soft');
+          card.type = 'button';
+
+          const badge = mk('span', 'grid size-10 shrink-0 place-items-center rounded-lg text-sm font-bold', (s.name.trim()[0] || 'S').toUpperCase());
+          badge.style.backgroundColor = primary;
+          badge.style.color = onPrimary;
+          badge.setAttribute('aria-hidden', 'true');
+
+          const content = mk('div', 'min-w-0 flex-1');
+          const topRow = mk('div', 'flex flex-wrap items-center gap-2');
+          topRow.append(mk('span', 'truncate text-sm font-bold text-ink', s.name));
+          if (s.level) {
+            topRow.append(mk('span', 'rounded bg-soft px-1.5 py-0.5 text-[11px] font-semibold text-body', s.level));
+          }
+          content.append(topRow);
+          if (s.address) {
+            content.append(mk('p', 'mt-1 line-clamp-2 text-xs leading-relaxed text-muted', s.address));
+          }
+          if (s.description) {
+            content.append(mk('p', 'mt-1.5 line-clamp-2 text-xs leading-relaxed text-body', s.description));
+          }
+
+          const arrow = mk('span', 'mt-2 shrink-0 text-sm font-semibold text-muted', '→');
+          arrow.setAttribute('aria-hidden', 'true');
+
+          card.append(badge, content, arrow);
+          card.addEventListener('click', () => renderSchoolDetailInDrawer(s, cluster));
+          list.append(card);
+        }
+
+        mapEl.body.replaceChildren(intro, list);
+        mapEl.body.scrollTop = 0;
+        mapEl.footer.hidden = true;
+        mapEl.footer.replaceChildren();
+      }
+
+      function renderSchoolDetailInDrawer(school, parentCluster) {
+        const primary = safeColor(school.theme?.primary, '#0f766e');
+        const onPrimary = safeColor(school.theme?.onPrimary, '#ffffff');
+
+        mapEl.accent.style.backgroundColor = primary;
+        mapEl.avatar.style.backgroundColor = primary;
+        mapEl.avatar.style.color = onPrimary;
+        mapEl.avatar.textContent = (school.name.trim()[0] || 'S').toUpperCase();
+        mapEl.title.textContent = school.name;
+        mapEl.subtitle.textContent = [school.city, school.province].filter(Boolean).join(', ') || 'Sekolah Terdaftar Sigi';
+
+        if (parentCluster && parentCluster.schools.length > 1) {
+          mapEl.back.hidden = false;
+          mapEl.back.textContent = `← Semua sekolah di ${parentCluster.city}`;
+          mapEl.back.onclick = () => renderCityPickerInDrawer(parentCluster);
+        } else {
+          mapEl.back.hidden = true;
+          mapEl.back.onclick = null;
+        }
+
+        const frag = document.createDocumentFragment();
+
+        // Chip identitas terstruktur (Jenjang, Akreditasi, NPSN, Periode SPMB)
+        const badges = [];
+        if (school.level) badges.push(['Jenjang', school.level]);
+        if (school.accreditation) badges.push(['Akreditasi', school.accreditation]);
+        if (school.npsn) badges.push(['NPSN', school.npsn]);
+        if (school.activePeriodLabel) badges.push(['SPMB', school.activePeriodLabel]);
+
+        if (badges.length > 0) {
+          const row = mk('div', 'flex flex-wrap gap-2');
+          for (const [k, v] of badges) {
+            const chip = mk('span', 'inline-flex items-center gap-1.5 rounded-full border border-line bg-soft px-3 py-1 text-xs');
+            chip.append(mk('span', 'text-muted', k), mk('strong', 'font-semibold text-ink', v));
+            row.append(chip);
+          }
+          frag.append(row);
+        }
+
+        // Deskripsi singkat
+        if (school.description) {
+          const box = mk('section', 'mt-5');
+          box.append(
+            mk('h3', 'text-xs font-semibold uppercase tracking-wide text-muted', 'Tentang sekolah'),
+            mk('p', 'mt-1.5 text-sm leading-relaxed text-body', school.description),
+          );
+          frag.append(box);
+        }
+
+        // Alamat & Lokasi
+        const locationBox = mk('section', 'mt-5 rounded-xl border border-line bg-soft/70 p-4');
+        locationBox.append(mk('h3', 'text-xs font-semibold uppercase tracking-wide text-muted', 'Alamat & lokasi'));
+        if (school.address) {
+          locationBox.append(mk('p', 'mt-1.5 text-sm leading-relaxed text-ink', school.address));
+        }
+        const regionText = [school.city, school.province].filter(Boolean).join(', ');
+        if (regionText) {
+          locationBox.append(mk('p', 'mt-1 text-xs font-medium text-muted', regionText));
+        }
+        frag.append(locationBox);
+
+        // Ringkasan informasi dari halaman Dashboard sekolah
+        const sections = Array.isArray(school.sections) ? school.sections : [];
+        if (sections.length > 0) {
+          const infoWrap = mk('section', 'mt-6 space-y-3');
+          infoWrap.append(mk('h3', 'text-xs font-semibold uppercase tracking-wide text-muted', 'Informasi SPMB & sekolah'));
+          for (const sec of sections) {
+            const card = mk('div', 'rounded-xl border border-line bg-white p-4');
+            card.append(
+              mk('h4', 'text-sm font-bold text-ink', sec.title || 'Informasi'),
+              mk('p', 'mt-1.5 whitespace-pre-line text-xs leading-relaxed text-body', sec.body || ''),
+            );
+            infoWrap.append(card);
+          }
+          frag.append(infoWrap);
+        } else if (!school.description) {
+          const empty = mk('div', 'mt-5 rounded-xl border border-dashed border-line p-4 text-xs leading-relaxed text-muted');
+          empty.textContent = 'Sekolah ini sudah terdaftar di Sigi dan sedang melengkapi halaman informasi SPMB melalui Dashboard.';
+          frag.append(empty);
+        }
+
+        // Contoh pertanyaan yang sering ditanyakan di sekolah ini
+        const suggestions = Array.isArray(school.suggestions) ? school.suggestions.filter(Boolean) : [];
+        if (suggestions.length > 0) {
+          const qWrap = mk('section', 'mt-6');
+          qWrap.append(mk('h3', 'text-xs font-semibold uppercase tracking-wide text-muted', 'Topik yang biasa ditanyakan calon murid'));
+          const chips = mk('ul', 'mt-2 flex flex-wrap gap-2');
+          for (const q of suggestions) {
+            chips.append(mk('li', 'rounded-full border border-line bg-soft px-3 py-1.5 text-xs text-body', q));
+          }
+          qWrap.append(chips);
+          frag.append(qWrap);
+        }
+
+        mapEl.body.replaceChildren(frag);
+        mapEl.body.scrollTop = 0;
+
+        // Footer CTA: hanya tautan Website Resmi Sekolah (jika tersedia), tanpa uji coba chatbot agar kuota sekolah terjaga.
+        const websiteUrl = safeWebsite(school.website);
+        mapEl.footer.replaceChildren();
+        if (websiteUrl) {
+          const link = mk('a', 'btn btn-primary w-full', 'Kunjungi Website Sekolah ↗');
+          link.href = websiteUrl;
+          link.target = '_blank';
+          link.rel = 'noopener noreferrer';
+          mapEl.footer.append(link);
+          mapEl.footer.hidden = false;
+        } else {
+          mapEl.footer.hidden = true;
+        }
+      }
+
+      function openClusterDrawer(cluster, triggerBtn) {
+        clearTimeout(closeTimer);
+        activeClusterId = cluster.id;
+        activeTriggerBtn = triggerBtn || null;
+        drawerOpen = true;
+
+        if (cluster.schools.length > 1) renderCityPickerInDrawer(cluster);
+        else renderSchoolDetailInDrawer(cluster.schools[0], cluster);
+
+        mapEl.backdrop.hidden = false;
+        mapEl.drawer.hidden = false;
+        document.body.style.overflow = 'hidden';
+        syncPinPressedState();
+
+        requestAnimationFrame(() => {
+          mapEl.backdrop.classList.remove('opacity-0');
+          mapEl.drawer.classList.remove('translate-x-full');
+          mapEl.close.focus();
+        });
+      }
+
+      function closeDrawer() {
+        if (!drawerOpen) return;
+        drawerOpen = false;
+        activeClusterId = null;
+        syncPinPressedState();
+
+        mapEl.backdrop.classList.add('opacity-0');
+        mapEl.drawer.classList.add('translate-x-full');
+        document.body.style.overflow = '';
+
+        clearTimeout(closeTimer);
+        closeTimer = setTimeout(() => {
+          if (!drawerOpen) {
+            mapEl.backdrop.hidden = true;
+            mapEl.drawer.hidden = true;
+          }
+        }, 200);
+
+        if (activeTriggerBtn && activeTriggerBtn.isConnected) {
+          activeTriggerBtn.focus();
+        }
+      }
+
+      mapEl.close.addEventListener('click', closeDrawer);
+      mapEl.backdrop.addEventListener('click', closeDrawer);
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && drawerOpen) closeDrawer();
+      });
+
+      function applySchoolsData(list) {
+        const cleanList = Array.isArray(list) ? list.filter((s) => s && Number.isFinite(Number(s.latitude)) && Number.isFinite(Number(s.longitude))) : [];
+        const hasWikrama = cleanList.some((s) => s.slug === 'wikrama');
+        if (hasWikrama) {
+          schoolsList = cleanList.map((s) => (s.slug === 'wikrama' ? {
+            ...WIKRAMA_FALLBACK,
+            ...s,
+            description: s.description || WIKRAMA_FALLBACK.description,
+            website: s.website || WIKRAMA_FALLBACK.website,
+            npsn: s.npsn || WIKRAMA_FALLBACK.npsn,
+            accreditation: s.accreditation || WIKRAMA_FALLBACK.accreditation,
+            sections: s.sections && s.sections.length > 0 ? s.sections : WIKRAMA_FALLBACK.sections,
+          } : s));
+        } else {
+          schoolsList = [WIKRAMA_FALLBACK, ...cleanList];
+        }
+        clusters = groupSchoolsIntoClusters(schoolsList);
+        renderPins();
+        renderSummaryLoaded(schoolsList.length, clusters.length);
+      }
+
+      if (HAS_SERVER_HOST) {
+        renderSummaryLoading();
+        fetch('/api/public/schools', { cache: 'no-store' })
+          .then((res) => (res.ok ? res.json() : null))
+          .then((data) => {
+            applySchoolsData(data?.schools || []);
+          })
+          .catch(() => {
+            applySchoolsData([WIKRAMA_FALLBACK]);
+          });
+      } else {
+        applySchoolsData([WIKRAMA_FALLBACK]);
+      }
+    })();
   </script>
 
   <!-- Globe latar hero: bumi berputar dari Afrika ke timur, lalu nge-zoom ke Indonesia dan menandai Bogor

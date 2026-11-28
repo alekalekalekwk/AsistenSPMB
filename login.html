@@ -61,7 +61,7 @@
   </header>
 
   <main class="flex flex-1 items-center justify-center px-4 py-10">
-    <div class="w-full max-w-md">
+    <div class="w-full max-w-lg">
       <div class="rounded-2xl border border-line bg-white p-6 shadow-[0_16px_44px_-20px_rgba(15,23,42,0.18)] sm:p-8">
         <div id="auth-skeleton" hidden aria-busy="true" aria-live="polite" class="space-y-5">
           <p id="auth-skeleton-label" class="sr-only">Memeriksa sesi akun dari server...</p>
@@ -120,10 +120,40 @@
 
         <!-- Form Daftar Sekolah Baru -->
         <form id="form-register" class="mt-5 space-y-4" hidden>
-          <div>
-            <label for="reg-school" class="block text-sm font-semibold text-ink">Nama sekolah</label>
-            <input id="reg-school" type="text" required maxlength="120" placeholder="Contoh: SMA Negeri 1 Bogor" class="field mt-1.5">
+          <div class="grid gap-4 sm:grid-cols-[minmax(0,1fr)_8.5rem]">
+            <div>
+              <label for="reg-school" class="block text-sm font-semibold text-ink">Nama sekolah</label>
+              <input id="reg-school" type="text" required maxlength="120" placeholder="Contoh: SMA Negeri 1 Bogor" class="field mt-1.5">
+            </div>
+            <div>
+              <label for="reg-level" class="block text-sm font-semibold text-ink">Jenjang</label>
+              <select id="reg-level" required class="field mt-1.5">
+                <option value="">Pilih</option>
+              </select>
+            </div>
           </div>
+
+          <div class="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label for="reg-province" class="block text-sm font-semibold text-ink">Provinsi</label>
+              <select id="reg-province" required class="field mt-1.5">
+                <option value="">Pilih provinsi</option>
+              </select>
+            </div>
+            <div>
+              <label for="reg-city" class="block text-sm font-semibold text-ink">Kota / Kabupaten</label>
+              <select id="reg-city" required disabled class="field mt-1.5 disabled:bg-soft disabled:text-muted">
+                <option value="">Pilih provinsi dulu</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label for="reg-address" class="block text-sm font-semibold text-ink">Alamat lengkap sekolah</label>
+            <textarea id="reg-address" rows="2" required minlength="8" maxlength="300" placeholder="Contoh: Jl. Raya Wangun No. 21, Kel. Sindangsari, Kec. Bogor Timur" class="field mt-1.5 min-h-[4.5rem] py-2.5 leading-relaxed"></textarea>
+            <p class="mt-1 text-xs text-muted">Dipakai untuk menempatkan pin sekolah Anda di peta Nusantara Sigi (bisa disembunyikan kapan saja di Dashboard).</p>
+          </div>
+
           <div>
             <label for="reg-email" class="block text-sm font-semibold text-ink">Email admin sekolah</label>
             <input id="reg-email" type="email" autocomplete="email" required placeholder="spmb@sekolah.sch.id" class="field mt-1.5">
@@ -133,7 +163,7 @@
             <input id="reg-password" type="password" autocomplete="new-password" required minlength="8" placeholder="Minimal 8 karakter" class="field mt-1.5">
           </div>
           <p class="rounded-xl bg-soft px-3.5 py-2.5 text-xs leading-relaxed text-muted">
-            Otomatis mendapat workspace dengan 6 halaman template konteks SPMB, kuota uji coba 50 chat, dan Publishable API Key siap tempel.
+            Otomatis mendapat workspace dengan 6 halaman template konteks SPMB, kuota uji coba 50 chat, Publishable API Key siap tempel, dan pin otomatis di peta sekolah Sigi.
           </p>
           <button id="btn-register-submit" type="submit" class="btn btn-primary">Daftar &amp; Buat API Key</button>
         </form>
@@ -142,6 +172,7 @@
     </div>
   </main>
 
+  <script src="data/indonesia-cities.js?v=20261128a"></script>
   <script>
     'use strict';
 
@@ -164,10 +195,49 @@
       loginSubmit: document.getElementById('btn-login-submit'),
       demoLogin: document.getElementById('btn-demo-login'),
       regSchool: document.getElementById('reg-school'),
+      regLevel: document.getElementById('reg-level'),
+      regProvince: document.getElementById('reg-province'),
+      regCity: document.getElementById('reg-city'),
+      regAddress: document.getElementById('reg-address'),
       regEmail: document.getElementById('reg-email'),
       regPassword: document.getElementById('reg-password'),
       regSubmit: document.getElementById('btn-register-submit'),
     };
+
+    const LOCATIONS = window.SIGI_LOCATIONS || { LEVELS: [], PROVINCES: [] };
+    for (const lvl of LOCATIONS.LEVELS) {
+      const opt = document.createElement('option');
+      opt.value = lvl;
+      opt.textContent = lvl;
+      el.regLevel.append(opt);
+    }
+    for (const prov of LOCATIONS.PROVINCES) {
+      const opt = document.createElement('option');
+      opt.value = prov.name;
+      opt.textContent = prov.name;
+      el.regProvince.append(opt);
+    }
+
+    function populateCities(provinceName) {
+      const prov = LOCATIONS.PROVINCES.find((p) => p.name === provinceName);
+      el.regCity.replaceChildren();
+      const first = document.createElement('option');
+      first.value = '';
+      first.textContent = prov ? 'Pilih kota / kabupaten' : 'Pilih provinsi dulu';
+      el.regCity.append(first);
+      el.regCity.disabled = !prov;
+      if (!prov) return;
+      for (const city of prov.cities) {
+        const opt = document.createElement('option');
+        opt.value = city.name;
+        opt.textContent = city.name;
+        el.regCity.append(opt);
+      }
+    }
+
+    el.regProvince.addEventListener('change', () => {
+      populateCities(el.regProvince.value);
+    });
 
     function nextDestination() {
       const next = new URLSearchParams(location.search).get('next') || 'dashboard.html';
@@ -270,6 +340,10 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             schoolName: el.regSchool.value.trim(),
+            level: el.regLevel.value,
+            province: el.regProvince.value,
+            city: el.regCity.value,
+            address: el.regAddress.value.trim(),
             email: el.regEmail.value.trim(),
             password: el.regPassword.value,
           }),

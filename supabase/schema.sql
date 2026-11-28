@@ -18,6 +18,17 @@ create table if not exists public.schools (
   voice_expressivity integer not null default 1 check (voice_expressivity between -2 and 2),
   allowed_origins text[] not null default '{}',
   active_period_label text not null default '2027-2028',
+  level text not null default '',
+  province text not null default '',
+  city text not null default '',
+  address text not null default '',
+  latitude double precision check (latitude is null or (latitude between -12 and 7)),
+  longitude double precision check (longitude is null or (longitude between 94 and 142)),
+  npsn text not null default '',
+  accreditation text not null default '',
+  website text not null default '',
+  description text not null default '',
+  show_on_map boolean not null default true,
   created_at timestamptz not null default now()
 );
 
@@ -172,6 +183,10 @@ create index if not exists idx_school_documents_school_created
 create index if not exists idx_api_keys_school_active
   on public.api_keys (school_id, kind)
   where revoked_at is null;
+
+create index if not exists idx_schools_public_map
+  on public.schools (created_at asc)
+  where show_on_map = true and latitude is not null and longitude is not null;
 
 -- 4. Views untuk inspeksi di Table Editor & kompatibilitas usage_logs.
 create or replace view public.v_chat_qa
@@ -392,7 +407,10 @@ create policy widget_events_member_select on public.widget_events
 
 -- 7. Seed sekolah bawaan SMK Wikrama Bogor.
 insert into public.schools (
-  name, slug, plan, chat_quota, chat_used, theme, greeting, suggestions, voice_enabled, voice_id, voice_expressivity, active_period_label
+  name, slug, plan, chat_quota, chat_used, theme, greeting, suggestions,
+  voice_enabled, voice_id, voice_expressivity, active_period_label,
+  level, province, city, address, latitude, longitude,
+  npsn, accreditation, website, description, show_on_map
 )
 values (
   'SMK Wikrama Bogor',
@@ -406,7 +424,18 @@ values (
   true,
   'flux-fitri-id',
   1,
-  '2027-2028'
+  '2027-2028',
+  'SMK',
+  'Jawa Barat',
+  'Kota Bogor',
+  'Jl. Raya Wangun No. 21, Kel. Sindangsari, Kec. Bogor Timur, Kota Bogor, Jawa Barat',
+  -6.5971,
+  106.8060,
+  '20220299',
+  'A',
+  'https://smkwikrama.sch.id',
+  'SMK Pusat Keunggulan di bawah Yayasan Wikrama Indonesia dengan 7 jurusan di bidang Teknologi Informasi, Bisnis Manajemen, dan Pariwisata.',
+  true
 )
 on conflict (slug) do nothing;
 

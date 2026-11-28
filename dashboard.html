@@ -118,6 +118,7 @@
 
   <!-- Data sekolah dan widget. Widget di pojok kanan bawah dipakai untuk menguji chatbot dengan isi dashboard terbaru. -->
   <!-- ?v=… memaksa browser mengambil versi terbaru, bukan salinan lama dari cache. Naikkan angkanya setiap kali widget.js atau sekolah/wikrama.js diubah. -->
+  <script src="data/indonesia-cities.js?v=20261128a"></script>
   <script src="sekolah/wikrama.js?v=20261126e"></script>
   <script src="widget.js?v=20261127a"></script>
   <script>
@@ -184,6 +185,17 @@ function fromServerSchool(record) {
     voice: record.voiceId || 'flux-fitri-id',
     expressivity: Number.isInteger(record.voiceExpressivity) ? record.voiceExpressivity : 1,
     allowedOrigins: Array.isArray(record.allowedOrigins) ? record.allowedOrigins : [],
+    level: record.level || '',
+    province: record.province || '',
+    city: record.city || '',
+    address: record.address || '',
+    latitude: record.latitude ?? null,
+    longitude: record.longitude ?? null,
+    npsn: record.npsn || '',
+    accreditation: record.accreditation || '',
+    website: record.website || '',
+    description: record.description || '',
+    showOnMap: record.showOnMap !== false,
     pages: Array.isArray(record.pages) ? record.pages : [],
     documents: Array.isArray(record.documents) ? record.documents : [],
     updatedAt: record.updatedAt || null,
@@ -201,6 +213,15 @@ function toServerPayload(data) {
     voiceId: data.voice,
     voiceExpressivity: data.expressivity,
     allowedOrigins: data.allowedOrigins || [],
+    level: data.level || '',
+    province: data.province || '',
+    city: data.city || '',
+    address: data.address || '',
+    npsn: data.npsn || '',
+    accreditation: data.accreditation || '',
+    website: data.website || '',
+    description: data.description || '',
+    showOnMap: data.showOnMap !== false,
     pages: data.pages,
     documents: data.documents,
   };
@@ -605,6 +626,221 @@ function renderInfo() {
   wrap.append(table);
 
   wrap.append(callout('Tulis seperti menjelaskan ke CS baru: singkat, jelas, dan pakai poin-poin. Info yang tidak ada di halaman mana pun akan dijawab "belum tersedia", lalu calon murid diarahkan ke CS SPMB.', 'mt-8'));
+
+  // Bagian Profil & Lokasi Peta Nusantara Sigi
+  const LOC = window.SIGI_LOCATIONS || { LEVELS: [], PROVINCES: [], findCity: () => null };
+  const mapSection = make('section', 'mt-12 border-t border-line pt-8');
+  mapSection.setAttribute('aria-labelledby', 'map-profile-title');
+
+  const sectionHead = make('div', 'flex flex-wrap items-start justify-between gap-3');
+  const headText = make('div');
+  const h2 = make('h2', 'text-xl font-bold tracking-tight text-ink', 'Profil & lokasi peta Sigi');
+  h2.id = 'map-profile-title';
+  headText.append(
+    h2,
+    make('p', 'mt-1 max-w-xl text-sm leading-relaxed text-muted', 'Ditampilkan di sidebar saat pengunjung mengklik pin sekolah Anda pada peta Nusantara di beranda Sigi.'),
+  );
+  const viewMapLink = make('a', 'btn shrink-0', 'Lihat peta Sigi ↗');
+  viewMapLink.href = 'index.html#cerita';
+  viewMapLink.target = '_blank';
+  viewMapLink.rel = 'noopener';
+  sectionHead.append(headText, viewMapLink);
+  mapSection.append(sectionHead);
+
+  const mapBadge = make('p', 'mt-4 text-xs font-medium');
+  const updateMapBadge = () => {
+    const visible = school.showOnMap !== false;
+    const hasCoords = Boolean(school.province && school.city);
+    if (!visible) {
+      mapBadge.className = 'mt-4 inline-flex items-center gap-1.5 rounded-full bg-callout px-3 py-1 text-xs font-medium text-muted';
+      mapBadge.textContent = 'Disembunyikan dari peta publik Sigi';
+    } else if (hasCoords) {
+      mapBadge.className = 'mt-4 inline-flex items-center gap-1.5 rounded-full bg-mint/70 px-3 py-1 text-xs font-semibold text-brand-dark';
+      mapBadge.textContent = `Aktif di peta: ${school.city}, ${school.province}`;
+    } else {
+      mapBadge.className = 'mt-4 inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-900';
+      mapBadge.textContent = 'Pilih Provinsi dan Kota/Kabupaten agar pin sekolah muncul di peta';
+    }
+  };
+  updateMapBadge();
+  mapSection.append(mapBadge);
+
+  const toggleBox = make('label', 'mt-4 flex cursor-pointer items-start justify-between gap-4 rounded-lg border border-line bg-side/70 p-4');
+  const toggleCopy = make('span', 'block');
+  toggleCopy.append(
+    make('span', 'block text-sm font-semibold text-ink', 'Tampilkan di peta Nusantara Sigi'),
+    make('span', 'mt-0.5 block text-xs leading-relaxed text-muted', 'Nonaktifkan jika akun ini hanya untuk uji coba internal dan tidak ingin tampil di halaman utama.'),
+  );
+  const showMapCheck = make('input', 'mt-0.5 size-5 shrink-0 accent-brand');
+  showMapCheck.type = 'checkbox';
+  showMapCheck.checked = school.showOnMap !== false;
+  showMapCheck.addEventListener('change', () => {
+    school.showOnMap = showMapCheck.checked;
+    updateMapBadge();
+    persist({ now: true });
+  });
+  toggleBox.append(toggleCopy, showMapCheck);
+  mapSection.append(toggleBox);
+
+  const makeField = (labelText, control, hintText = '') => {
+    const box = make('div');
+    const lbl = make('label', 'label', labelText);
+    lbl.htmlFor = control.id;
+    control.classList.add('mt-1.5');
+    box.append(lbl, control);
+    if (hintText) box.append(make('p', 'mt-1 text-xs text-muted', hintText));
+    return box;
+  };
+
+  const levelSelect = make('select', 'field');
+  levelSelect.id = 'profile-level';
+  levelSelect.append(make('option', '', 'Pilih jenjang'));
+  levelSelect.firstChild.value = '';
+  for (const lvl of LOC.LEVELS) {
+    const opt = make('option', '', lvl);
+    opt.value = lvl;
+    levelSelect.append(opt);
+  }
+  levelSelect.value = school.level || '';
+  levelSelect.addEventListener('change', () => {
+    school.level = levelSelect.value;
+    persist({ now: true });
+  });
+
+  const accSelect = make('select', 'field');
+  accSelect.id = 'profile-accreditation';
+  for (const [val, label] of [
+    ['', 'Belum diisi'],
+    ['A', 'Akreditasi A'],
+    ['B', 'Akreditasi B'],
+    ['C', 'Akreditasi C'],
+    ['UNGGUL', 'Unggul'],
+    ['BAIK SEKALI', 'Baik Sekali'],
+    ['BAIK', 'Baik'],
+  ]) {
+    const opt = make('option', '', label);
+    opt.value = val;
+    accSelect.append(opt);
+  }
+  accSelect.value = school.accreditation || '';
+  accSelect.addEventListener('change', () => {
+    school.accreditation = accSelect.value;
+    persist({ now: true });
+  });
+
+  const provSelect = make('select', 'field');
+  provSelect.id = 'profile-province';
+  provSelect.append(make('option', '', 'Pilih provinsi'));
+  provSelect.firstChild.value = '';
+  for (const p of LOC.PROVINCES) {
+    const opt = make('option', '', p.name);
+    opt.value = p.name;
+    provSelect.append(opt);
+  }
+  provSelect.value = school.province || '';
+
+  const citySelect = make('select', 'field disabled:bg-side disabled:text-muted');
+  citySelect.id = 'profile-city';
+
+  const fillCityOptions = (provName, selectedCity = '') => {
+    const prov = LOC.PROVINCES.find((p) => p.name === provName);
+    citySelect.replaceChildren();
+    const placeholder = make('option', '', prov ? 'Pilih kota / kabupaten' : 'Pilih provinsi dulu');
+    placeholder.value = '';
+    citySelect.append(placeholder);
+    citySelect.disabled = !prov;
+    if (!prov) return;
+    for (const c of prov.cities) {
+      const opt = make('option', '', c.name);
+      opt.value = c.name;
+      citySelect.append(opt);
+    }
+    citySelect.value = selectedCity || '';
+  };
+  fillCityOptions(school.province || '', school.city || '');
+
+  provSelect.addEventListener('change', () => {
+    school.province = provSelect.value;
+    school.city = '';
+    school.latitude = null;
+    school.longitude = null;
+    fillCityOptions(school.province, '');
+    updateMapBadge();
+    persist({ now: true });
+  });
+  citySelect.addEventListener('change', () => {
+    school.city = citySelect.value;
+    const hit = LOC.findCity(school.province, school.city);
+    school.latitude = hit ? hit.lat : null;
+    school.longitude = hit ? hit.lng : null;
+    updateMapBadge();
+    persist({ now: true });
+  });
+
+  const addrInput = make('textarea', 'field min-h-[4.5rem] py-2 leading-relaxed');
+  addrInput.id = 'profile-address';
+  addrInput.rows = 2;
+  addrInput.maxLength = 300;
+  addrInput.placeholder = 'Contoh: Jl. Raya Wangun No. 21, Kel. Sindangsari, Kec. Bogor Timur';
+  addrInput.value = school.address || '';
+  addrInput.addEventListener('input', () => {
+    school.address = addrInput.value;
+    persist();
+  });
+
+  const npsnInput = make('input', 'field font-mono');
+  npsnInput.id = 'profile-npsn';
+  npsnInput.inputMode = 'numeric';
+  npsnInput.maxLength = 16;
+  npsnInput.placeholder = 'Contoh: 20220299';
+  npsnInput.value = school.npsn || '';
+  npsnInput.addEventListener('input', () => {
+    school.npsn = npsnInput.value.replace(/[^0-9]/g, '');
+    if (npsnInput.value !== school.npsn) npsnInput.value = school.npsn;
+    persist();
+  });
+
+  const webInput = make('input', 'field');
+  webInput.id = 'profile-website';
+  webInput.type = 'url';
+  webInput.maxLength = 300;
+  webInput.placeholder = 'https://sekolah.sch.id';
+  webInput.value = school.website || '';
+  webInput.addEventListener('input', () => {
+    school.website = webInput.value;
+    persist();
+  });
+
+  const descInput = make('textarea', 'field min-h-24 py-2 leading-relaxed');
+  descInput.id = 'profile-description';
+  descInput.rows = 3;
+  descInput.maxLength = 500;
+  descInput.placeholder = 'Ringkasan keunggulan sekolah, bidang keahlian, atau program unggulan yang ingin ditampilkan di peta Sigi.';
+  descInput.value = school.description || '';
+  descInput.addEventListener('input', () => {
+    school.description = descInput.value;
+    persist();
+  });
+
+  const formGrid = make('div', 'mt-5 space-y-4');
+  const row1 = make('div', 'grid gap-4 sm:grid-cols-2');
+  row1.append(makeField('Jenjang', levelSelect), makeField('Akreditasi (opsional)', accSelect));
+  const row2 = make('div', 'grid gap-4 sm:grid-cols-2');
+  row2.append(makeField('Provinsi', provSelect), makeField('Kota / Kabupaten', citySelect));
+  const row3 = make('div', 'grid gap-4 sm:grid-cols-2');
+  row3.append(
+    makeField('NPSN (opsional)', npsnInput),
+    makeField('Website resmi sekolah (opsional)', webInput, 'Muncul sebagai tombol "Kunjungi Website Sekolah" di sidebar peta.'),
+  );
+  formGrid.append(
+    row1,
+    row2,
+    makeField('Alamat lengkap sekolah', addrInput),
+    row3,
+    makeField('Deskripsi singkat sekolah (opsional)', descInput),
+  );
+  mapSection.append(formGrid);
+  wrap.append(mapSection);
 }
 
 /* Halaman: editor satu halaman */
